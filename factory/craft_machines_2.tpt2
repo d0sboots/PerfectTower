@@ -1,0 +1,40 @@
+:local int tier
+:local double previous_amount
+
+:global int tier_factor
+
+:global int mixer
+:global int crusher
+:global int belt
+:global int shaper
+:global int boiler
+
+tierloop:
+tier += 1
+
+previous_amount = count("machine.mixer", tier)
+craft("machine.mixer", tier, global.double.get("craft_queue_"    . i2s(tier * tier_factor + mixer)))
+global.double.set("craft_queue_"    . i2s(tier * tier_factor + mixer), global.double.get("craft_queue_"    . i2s(tier * tier_factor + mixer)) - (count("machine.mixer", tier) - previous_amount))
+nomixer:
+
+previous_amount = count("machine.crusher", tier)
+craft("machine.crusher", tier, global.double.get("craft_queue_"    . i2s(tier * tier_factor + crusher)))
+global.double.set("craft_queue_"    . i2s(tier * tier_factor + crusher), global.double.get("craft_queue_"    . i2s(tier * tier_factor + crusher)) - (count("machine.crusher", tier) - previous_amount))
+nocrusher:
+
+previous_amount = count("machine.transportbelt", tier)
+craft("machine.transportbelt", tier, global.double.get("craft_queue_"    . i2s(tier * tier_factor + belt)))
+global.double.set("craft_queue_"    . i2s(tier * tier_factor + belt), global.double.get("craft_queue_"    . i2s(tier * tier_factor + belt)) - (count("machine.transportbelt", tier) - previous_amount))
+nobelt:
+
+previous_amount = count("machine.shaper", tier)
+craft("machine.shaper", tier, global.double.get("craft_queue_"    . i2s(tier * tier_factor + shaper)))
+global.double.set("craft_queue_"    . i2s(tier * tier_factor + shaper), global.double.get("craft_queue_"    . i2s(tier * tier_factor + shaper)) - (count("machine.shaper", tier) - previous_amount))
+noshaper:
+
+previous_amount = count("machine.boiler", tier)
+craft("machine.boiler", tier, global.double.get("craft_queue_"    . i2s(tier * tier_factor + boiler)))
+global.double.set("craft_queue_"    . i2s(tier * tier_factor + boiler), global.double.get("craft_queue_"    . i2s(tier * tier_factor + boiler)) - (count("machine.boiler", tier) - previous_amount))
+noboiler:
+
+gotoif(tierloop, tier < 10)

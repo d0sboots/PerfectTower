@@ -1,0 +1,40 @@
+:local int tier
+:local double previous_amount
+
+:global int tier_factor
+
+:global int assembly
+:global int refiner
+:global int oven
+:global int presser
+:global int cutter
+
+tierloop:
+tier += 1
+
+previous_amount = count("machine.assembler", tier)
+craft("machine.assembler", tier, global.double.get("craft_queue_"    . i2s(tier * tier_factor + assembly)))
+global.double.set("craft_queue_"    . i2s(tier * tier_factor + assembly), global.double.get("craft_queue_"    . i2s(tier * tier_factor + assembly)) - (count("machine.assembler", tier) - previous_amount))
+noassembly:
+
+previous_amount = count("machine.refinery", tier)
+craft("machine.refinery", tier, global.double.get("craft_queue_"    . i2s(tier * tier_factor + refiner)))
+global.double.set("craft_queue_"    . i2s(tier * tier_factor + refiner), global.double.get("craft_queue_"    . i2s(tier * tier_factor + refiner)) - (count("machine.refinery", tier) - previous_amount))
+norefiner:
+
+previous_amount = count("machine.oven", tier)
+craft("machine.oven", tier, global.double.get("craft_queue_"    . i2s(tier * tier_factor + oven)))
+global.double.set("craft_queue_"    . i2s(tier * tier_factor + oven), global.double.get("craft_queue_"    . i2s(tier * tier_factor + oven)) - (count("machine.oven", tier) - previous_amount))
+nooven:
+
+previous_amount = count("machine.presser", tier)
+craft("machine.presser", tier, global.double.get("craft_queue_"    . i2s(tier * tier_factor + presser)))
+global.double.set("craft_queue_"    . i2s(tier * tier_factor + presser), global.double.get("craft_queue_"    . i2s(tier * tier_factor + presser)) - (count("machine.presser", tier) - previous_amount))
+nopresser:
+
+previous_amount = count("machine.cutter", tier)
+craft("machine.cutter", tier, global.double.get("craft_queue_"    . i2s(tier * tier_factor + cutter)))
+global.double.set("craft_queue_"    . i2s(tier * tier_factor + cutter), global.double.get("craft_queue_"    . i2s(tier * tier_factor + cutter)) - (count("machine.cutter", tier) - previous_amount))
+nocutter:
+
+gotoif(tierloop, tier < 10)

@@ -1,0 +1,35 @@
+:global int _tier
+
+:global int tier_factor
+:global int rubber
+:global int rubber_plate
+:local double previous_amount
+
+:global int motor
+:global int pump
+:global int block
+:global int chip
+
+previous_amount = count("rubber", 1)
+produce("rubber", 1, global.double.get("craft_queue_"    . i2s(1 * tier_factor + rubber_plate)), "presser")
+gotoif(noproduceplates, count("rubber", 1) == previous_amount)
+global.double.set("craft_queue_"    . i2s(1 * tier_factor + rubber_plate), 0.)
+noproduceplates:
+
+_tier = 1
+tierloop:
+
+executesync("produce dust")
+stop("produce dust")
+gotoif(nexttier, global.double.get("craft_queue_" . i2s(((_tier - 2) / 2) * tier_factor + chip)) > 0. | global.double.get("craft_queue_" . i2s((_tier - 4) * tier_factor + motor)) > 0.) 
+
+executesync("produce misc")
+stop("produce misc")
+executesync("produce plates")
+stop("produce plates")
+
+nexttier:
+_tier += 1
+gotoif(tierloop, _tier < 11)
+
+wait(0.0)

@@ -1,0 +1,37 @@
+
+
+:global int _tier
+:local double previous_amount
+:local double limit
+
+
+:global int tier_factor
+
+:global int ore
+:global int lump
+:global int dust
+:global int ingot
+
+gotoif(noprocessores, active("crusher"))
+previous_amount = count("ore", _tier)
+produce("ore", _tier, global.double.get("craft_queue_"    . i2s(_tier * tier_factor + ore)), "crusher")
+gotoif(noprocessores, count("ore", _tier) == previous_amount)
+global.double.set("craft_queue_"    . i2s(_tier * tier_factor + ore), 0.)
+noprocessores:
+
+gotoif(notierupdust, _tier == 10 | active("mixer"))
+limit = (count("dust", _tier) - 1.) / 4.
+craft("lump", _tier, min(min(limit, count("dust", _tier + 1)), global.double.get("craft_queue_"    . i2s(_tier * tier_factor + lump)) - count("lump", _tier)))
+previous_amount = count("lump", _tier)
+produce("lump", _tier, min(previous_amount, global.double.get("craft_queue_"    . i2s(_tier * tier_factor + lump))), "mixer")
+global.double.set("craft_queue_"    . i2s(_tier * tier_factor + lump), max(0., global.double.get("craft_queue_"    . i2s(_tier * tier_factor + lump)) - previous_amount))
+notierupdust:
+
+gotoif(noproduceingot, active("oven") | ((global.double.get("craft_queue_"    . i2s(_tier * tier_factor + lump)) - count("lump", _tier)) * 4. > 2. * min(0., count("dust", _tier) - (global.double.get("craft_queue_"    . i2s(_tier * tier_factor + ingot)))) & count("dust", _tier) < 2. * (global.double.get("craft_queue_"    . i2s(_tier * tier_factor + ingot)))))
+previous_amount = count("dust", _tier)
+produce("dust", _tier, min(previous_amount - 1., global.double.get("craft_queue_"    . i2s(_tier * tier_factor + ingot))), "oven")
+global.double.set("craft_queue_"    . i2s(_tier * tier_factor + ingot), global.double.get("craft_queue_"    . i2s(_tier * tier_factor + ingot)) - (previous_amount - count("dust", _tier)))
+noproduceingot:
+
+wait(0.0)
+

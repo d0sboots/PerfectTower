@@ -1,0 +1,37 @@
+
+:global int _tier
+:local double previous_amount
+:local double limit
+
+
+:global int tier_factor
+
+:global int plate
+:global int dense_plate
+:global int pipe
+:global int dense_block
+
+previous_amount = count("ingot", _tier)
+produce("ingot", _tier, min(previous_amount, global.double.get("craft_queue_"    . i2s(_tier * tier_factor + plate))), "presser")
+global.double.set("craft_queue_"    . i2s(_tier * tier_factor + plate), global.double.get("craft_queue_"    . i2s(_tier * tier_factor + plate)) - (previous_amount - count("ingot", _tier)))
+noproduceplates:
+
+previous_amount = count("plate", _tier)
+produce("plate", _tier, min(previous_amount, global.double.get("craft_queue_"    . i2s(_tier * tier_factor + pipe))), "shaper")
+global.double.set("craft_queue_"    . i2s(_tier * tier_factor + pipe), global.double.get("craft_queue_"    . i2s(_tier * tier_factor + pipe)) - (previous_amount - count("plate", _tier)))
+noproducepipes:
+
+gotoif(noproducedenseplates, active("presser"))
+craft("plate.stack", _tier, min(floor(count("plate", _tier) / 9.), global.double.get("craft_queue_"    . i2s(_tier * tier_factor + dense_plate)) - count("plate.stack", _tier)))
+previous_amount = count("plate.stack", _tier)
+produce("plate.stack", _tier, min(count("plate.stack", _tier), global.double.get("craft_queue_"    . i2s(_tier * tier_factor + dense_plate))), "presser")
+global.double.set("craft_queue_"    . i2s(_tier * tier_factor + dense_plate), max(0., global.double.get("craft_queue_"    . i2s(_tier * tier_factor + dense_plate)) - previous_amount))
+noproducedenseplates:
+
+previous_amount = count("block", _tier)
+produce("block", _tier, min(previous_amount, global.double.get("craft_queue_"    . i2s(_tier * tier_factor + dense_block))), "boiler")
+global.double.set("craft_queue_"    . i2s(_tier * tier_factor + dense_block), global.double.get("craft_queue_"    . i2s(_tier * tier_factor + dense_block)) - (previous_amount - count("block", _tier)))
+noproducedenseblocks:
+
+wait(0.0)
+

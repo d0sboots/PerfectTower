@@ -1,0 +1,41 @@
+:local int tier
+:local double previous_amount
+
+:global int tier_factor
+
+:global int motor
+:global int pump
+:global int block
+:global int insul_cable
+:global int chip
+
+tierloop:
+tier += 1
+
+previous_amount = count("motor", tier)
+craft("motor", tier, global.double.get("craft_queue_"    . i2s(tier * tier_factor + motor)))
+global.double.set("craft_queue_"    . i2s(tier * tier_factor + motor), global.double.get("craft_queue_"    . i2s(tier * tier_factor + motor)) - (count("motor", tier) - previous_amount))
+nomotor:
+
+previous_amount = count("pump", tier)
+craft("pump", tier, global.double.get("craft_queue_"    . i2s(tier * tier_factor + pump)))
+global.double.set("craft_queue_"    . i2s(tier * tier_factor + pump), global.double.get("craft_queue_"    . i2s(tier * tier_factor + pump)) - (count("pump", tier) - previous_amount))
+nopump:
+
+previous_amount = count("block", tier)
+craft("block", tier, global.double.get("craft_queue_"    . i2s(tier * tier_factor + block)))
+global.double.set("craft_queue_"    . i2s(tier * tier_factor + block), global.double.get("craft_queue_"    . i2s(tier * tier_factor + block)) - (count("block", tier) - previous_amount))
+noblocks:
+
+previous_amount = count("cable.insulated", tier)
+craft("cable.insulated", tier, global.double.get("craft_queue_"    . i2s(tier * tier_factor + insul_cable)))
+global.double.set("craft_queue_"    . i2s(tier * tier_factor + insul_cable), global.double.get("craft_queue_"    . i2s(tier * tier_factor + insul_cable)) - (count("cable.insulated", tier) - previous_amount))
+noinsulcables:
+
+gotoif(nochips, tier > 5)
+previous_amount = count("chip", tier)
+craft("chip", tier, global.double.get("craft_queue_"    . i2s(tier * tier_factor + chip)))
+global.double.set("craft_queue_"    . i2s(tier * tier_factor + chip), global.double.get("craft_queue_"    . i2s(tier * tier_factor + chip)) - (count("chip", tier) - previous_amount))
+nochips:
+
+gotoif(tierloop, tier < 10)

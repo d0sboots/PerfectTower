@@ -1,0 +1,55 @@
+
+:global int _tier
+:local double previous_amount
+:local double limit
+
+
+:global int tier_factor
+
+:global int circuit
+:global int board
+
+:global int cable
+:global int wire
+
+:global int rod
+:global int screw
+:global int ring
+
+previous_amount = count("ingot", _tier)
+produce("ingot", _tier, min(previous_amount, ceil(global.double.get("craft_queue_"    . i2s(_tier * tier_factor + cable)) / 2.)), "refinery")
+global.double.set("craft_queue_"    . i2s(_tier * tier_factor + cable), global.double.get("craft_queue_"    . i2s(_tier * tier_factor + cable)) - 2. * (previous_amount - count("ingot", _tier)))
+noproducecables:
+
+previous_amount = count("cable", _tier)
+produce("cable", _tier, min(previous_amount, global.double.get("craft_queue_"    . i2s(_tier * tier_factor + wire))), "refinery")
+global.double.set("craft_queue_"    . i2s(_tier * tier_factor + wire), global.double.get("craft_queue_"    . i2s(_tier * tier_factor + wire)) - (previous_amount - count("cable", _tier)))
+noproducewire:
+
+previous_amount = count("cable", _tier)
+produce("cable", _tier, min(previous_amount, global.double.get("craft_queue_"    . i2s(_tier * tier_factor + circuit))), "assembler")
+global.double.set("craft_queue_"    . i2s(_tier * tier_factor + circuit), global.double.get("craft_queue_"    . i2s(_tier * tier_factor + circuit)) - (previous_amount - count("cable", _tier)))
+noproducecircuits:
+
+previous_amount = count("plate", _tier)
+produce("plate", _tier, min(previous_amount, global.double.get("craft_queue_"    . i2s(_tier * tier_factor + board))), "refinery")
+global.double.set("craft_queue_"    . i2s(_tier * tier_factor + board), global.double.get("craft_queue_"    . i2s(_tier * tier_factor + board)) - (previous_amount - count("plate", _tier)))
+noproduceboards:
+
+previous_amount = count("ingot", _tier)
+produce("ingot", _tier, min(previous_amount, ceil(global.double.get("craft_queue_"    . i2s(_tier * tier_factor + rod)) / 2.)), "shaper")
+global.double.set("craft_queue_"    . i2s(_tier * tier_factor + rod), global.double.get("craft_queue_"    . i2s(_tier * tier_factor + rod)) - 2. * (previous_amount - count("ingot", _tier)))
+noproducerods:
+
+previous_amount = count("rod", _tier)
+produce("rod", _tier, min(previous_amount, ceil(global.double.get("craft_queue_"    . i2s(_tier * tier_factor + screw)) / 4.)), "cutter")
+global.double.set("craft_queue_"    . i2s(_tier * tier_factor + screw), global.double.get("craft_queue_"    . i2s(_tier * tier_factor + screw)) - 4. * (previous_amount - count("rod", _tier)))
+noproducescrews:
+
+previous_amount = count("rod", _tier)
+produce("rod", _tier, min(previous_amount, global.double.get("craft_queue_"    . i2s(_tier * tier_factor + ring))), "shaper")
+global.double.set("craft_queue_"    . i2s(_tier * tier_factor + ring), global.double.get("craft_queue_"    . i2s(_tier * tier_factor + ring)) - (previous_amount - count("rod", _tier)))
+noproducerings:
+
+wait(0.0)
+

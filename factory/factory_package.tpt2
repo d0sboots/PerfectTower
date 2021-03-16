@@ -1,0 +1,38 @@
+
+:global int current_step
+:global int current_package
+:global int factory_package_id
+:global int package_executing
+:global int turbo_counter
+
+:global int factory_launch
+:global int factory_target
+:global double factory_target_amount
+
+begincycle:
+
+waituntil(current_step == 2 & current_package == factory_package_id)
+gotoif(skipcomputing, isopen("factory") == false | factory_launch == 0 | global.double.get("craft_queue_" . factory_target) > 0.)
+package_executing = 1
+factory_launch = 0
+executesync("count inventory")
+stop("count inventory")
+
+global.double.set("craft_queue_"   . factory_target, factory_target_amount)
+
+executesync("make craft tree")
+stop("make craft tree")
+package_executing = 0
+skipcomputing:
+
+waituntil(current_step == 3 & current_package == factory_package_id)
+gotoif(skipactions, isopen("factory") == false | global.double.get("craft_queue_" . factory_target) == 0.)
+package_executing = 1
+executesync("produce")
+stop("produce")
+executesync("craft")
+stop("craft")
+package_executing = 0
+skipactions:
+
+goto(begincycle)

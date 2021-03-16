@@ -1,0 +1,8 @@
+
+:global int exotic_producer
+:global int gem_producer
+
+:global int producer
+
+gem_producer = 15 + producer
+exotic_producer = 16 + producer

@@ -1,0 +1,74 @@
+; ++ Valid ids ++
+
+:global int exotic_producer
+:global int gem_producer
+
+
+:global int oven
+:global int presser
+:global int assembly
+:global int refiner
+:global int mixer
+:global int crusher
+:global int belt
+:global int cutter
+:global int shaper
+:global int boiler
+
+
+;Transforms ore into dust
+:global int ore
+
+;Tiers up dust
+:global int lump
+
+;Tries to make dust from ores and lower-tier dusts
+:global int dust
+
+:global int ingot
+
+:global int plate
+:global int pipe
+:global int dense_plate
+:global int block
+:global int dense_block
+
+:global int cable
+:global int wire
+:global int insul_cable
+
+:global int rod
+:global int ring
+:global int screw
+
+:global int motor
+:global int pump
+
+:global int board
+:global int circuit
+:global int rubber
+:global int rubber_plate
+:global int chip
+
+; -- Valid ids --
+
+
+:global int factory_target
+:global double factory_target_amount
+:global int factory_launch
+
+:global int tier_factor
+
+:local int target_tier
+:local int target_type
+
+key.f()
+
+isopen("factory")
+
+target_tier = 1
+target_type = plate
+factory_target_amount = 8.
+waitwhile("You can edit previous lines, but don't the lines bellow" == "")
+factory_target = target_tier * tier_factor + target_type
+factory_launch = 1

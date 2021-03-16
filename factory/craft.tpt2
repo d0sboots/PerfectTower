@@ -1,0 +1,32 @@
+:global int _tier
+
+;_tier = 1
+;tierloop:
+
+executesync("craft parts")
+stop("craft parts")
+executesync("craft machines 1")
+stop("craft machines 1")
+executesync("craft machines 2")
+stop("craft machines 2")
+
+;_tier += 1
+;gotoif(tierloop, _tier < 11)
+
+:global int tier_factor
+:global int exotic_producer
+:global int gem_producer
+
+:local double previous_amount
+
+previous_amount = count("producer.exoticgems", 1)
+craft("producer.exoticgems", 1, global.double.get("craft_queue_"    . i2s(1 * tier_factor + exotic_producer)))
+global.double.set("craft_queue_"    . i2s(1 * tier_factor + exotic_producer), global.double.get("craft_queue_"    . i2s(1 * tier_factor + exotic_producer)) - (count("producer.exoticgems", 1) - previous_amount))
+noexoprod:
+
+previous_amount = count("producer.gems", 1)
+craft("producer.gems", 1, global.double.get("craft_queue_"    . i2s(1 * tier_factor + gem_producer)))
+global.double.set("craft_queue_"    . i2s(1 * tier_factor + gem_producer), global.double.get("craft_queue_"    . i2s(1 * tier_factor + gem_producer)) - (count("producer.gems", 1) - previous_amount))
+nogemprod:
+
+wait(0.0)

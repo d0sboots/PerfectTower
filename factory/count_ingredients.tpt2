@@ -1,0 +1,56 @@
+:global int ore
+:global int lump
+:global int dust
+:global int ingot
+
+:global int plate
+:global int pipe
+:global int dense_plate
+:global int block
+:global int dense_block
+
+:global int cable
+:global int wire
+:global int insul_cable
+
+:global int rod
+:global int ring
+:global int screw
+
+:global int motor
+:global int pump
+
+:global int board
+:global int circuit
+:global int chip
+
+:global int tier_factor
+:global int _tier
+
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + dust), 1. - count("dust", _tier))
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + ingot), 0. - count("ingot", _tier))
+
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + plate), 0. - count("plate", _tier))
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + pipe), 0. - count("pipe", _tier))
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + dense_plate), 0. - count("plate.dense", _tier))
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + block), 0. - count("block", _tier))
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + dense_block), 0. - count("block.dense", _tier))
+
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + cable), 0. - count("cable", _tier))
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + wire), 0. - count("wire", _tier))
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + insul_cable), 0. - count("cable.insulated", _tier))
+
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + rod), 0. - count("rod", _tier))
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + ring), 0. - count("ring", _tier))
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + screw), 0. - count("screw", _tier))
+
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + motor), 0. - count("motor", _tier))
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + pump), 0. - count("pump", _tier))
+
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + board), 0. - count("plate.circuit", _tier))
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + circuit), 0. - count("circuit", _tier))
+
+gotoif(99, _tier > 5)
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + chip), 0. - count("chip", _tier))
+
+wait(0.0)

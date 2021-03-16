@@ -1,0 +1,59 @@
+:global int ingredient
+
+:global int ore
+:global int lump
+:global int dust
+:global int ingot
+
+:global int plate
+:global int pipe
+:global int stacked_plate
+:global int dense_plate
+:global int block
+:global int dense_block
+
+:global int cable
+:global int wire
+:global int insul_cable
+
+:global int rod
+:global int ring
+:global int screw
+
+:global int motor
+:global int pump
+
+:global int board
+:global int circuit
+:global int rubber
+:global int rubber_plate
+:global int chip
+
+ore = 0 + ingredient
+lump = 1 + ingredient
+dust = 2 + ingredient
+ingot = 3 + ingredient
+
+plate = 4 + ingredient
+dense_plate = 5 + ingredient
+block = 6 + ingredient
+dense_block = 7 + ingredient
+pipe = 8 + ingredient
+
+cable = 9 + ingredient
+wire = 10 + ingredient
+insul_cable = 11 + ingredient
+
+rod = 12 + ingredient
+ring = 13 + ingredient
+screw = 14 + ingredient
+
+motor = 15 + ingredient
+pump = 16 + ingredient
+
+board = 17 + ingredient
+circuit = 18 + ingredient
+
+rubber = 19 + ingredient
+rubber_plate = 20 + ingredient
+chip = 21 + ingredient
