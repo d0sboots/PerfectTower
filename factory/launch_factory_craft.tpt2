@@ -72,3 +72,4 @@ factory_target_amount = 8.
 waitwhile("You can edit previous lines, but don't the lines bellow" == "")
 factory_target = target_tier * tier_factor + target_type
 factory_launch = 1
+wait(0.0)
