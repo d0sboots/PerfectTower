@@ -1,4 +1,13 @@
 :global int _tier
+:global int rubber
+:global int rubber_plate
+
+:global int tier_factor
+
+:global int exotic_producer
+:global int gem_producer
+:global int ore
+:global int lump
 
 _tier = 1
 loop:
@@ -10,15 +19,11 @@ stop("count machines")
 executesync("count ingredients")
 stop("count ingredients")
 
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + ore), 0.)
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + lump), 0.)
+
 _tier += 1
 gotoif(loop, _tier < 11)
-:global int rubber
-:global int rubber_plate
-:global int exotic_producer
-:global int gem_producer
-
-:global int ingredient
-:global int tier_factor
 global.double.set("craft_queue_" . i2s(1 * tier_factor + rubber), 0. - count("rubber", 1))
 global.double.set("craft_queue_" . i2s(1 * tier_factor + rubber_plate), 0. - count("plate.rubber", 1))
 global.double.set("craft_queue_" . i2s(1 * tier_factor + exotic_producer), 0. - count("producer.exoticgems", 1))
