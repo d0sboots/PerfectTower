@@ -53,7 +53,7 @@ global.double.set("craft_queue_" . i2s(tier * tier_factor + dust), global.double
 global.double.set("craft_queue_" . i2s(tier * tier_factor + ore), global.double.get("craft_queue_" . i2s(tier * tier_factor + ore)) + max(0., min(count("ore", tier), ceil(global.double.get("craft_queue_" . i2s(tier * tier_factor + dust)) / 2.))))
 
 gotoif(noprevtier, tier == 1)
-global.double.set("craft_queue_" . i2s((tier - 1) * tier_factor + lump), global.double.get("craft_queue_" . i2s(tier * tier_factor + lump)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + dust)) - global.double.get("craft_queue_" . i2s(tier * tier_factor + ore)) * 2.))
+global.double.set("craft_queue_" . i2s((tier - 1) * tier_factor + lump), global.double.get("craft_queue_" . i2s((tier - 1) * tier_factor + lump)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + dust)) - global.double.get("craft_queue_" . i2s(tier * tier_factor + ore)) * 2.))
 noprevtier:
 
 tier -= 1
