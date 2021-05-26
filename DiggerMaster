@@ -1,0 +1,18 @@
+:local int tab
+:global int drillpos
+
+open.mine()
+
+; Have to reset global, last run might have left it uncleared
+drillpos = 0
+execute("DiggerHead")
+; We have an extra drill for code-size reasons
+waituntil(drillpos == 17)
+
+new_tab:
+  tab = tab + 1
+  tab(tab)
+
+  new_layer:
+    newlayer()
+goto(ternary.int(hasLayers(), new_layer, ternary.int(tab < 13, new_tab, 99)))
