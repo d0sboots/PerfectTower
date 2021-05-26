@@ -1,0 +1,15 @@
+:local int pos
+:global int drillpos
+
+drillpos = drillpos + 1
+; The execute is a no-op for the last one.
+; We create an extra DiggerHead because, due to timing the
+; last two can't be distinguished by drillpos # by the time it's
+; assigned to pos.
+execute(ternary.string(drillpos < 17, "DiggerHead", ""))
+; drillpos is inc'd once by this script and once by the script we spawn
+; before this line is executed.
+pos = drillpos - 2
+dig(pos % 4, pos / 4)
+gotoif(4, isopen("mine"))
+gu("drillpos")
