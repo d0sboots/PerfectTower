@@ -16,7 +16,7 @@ DERpZ2dlck1hc3RlcgEAAAAJb3Blbi5taW5lAAAAAAcAAAAOZ2xvYmFsLmludC5zZXQIY29uc3RhbnQE
 ```
 
 ## Factory management scripts
-The first one is a simple ore crushing/dust up-tiering combo. This works stand-alone, but pairs nicely with other factory automation that expects dust to be available. At __10__ actions, this should also work for everyone. (It can go as low as 7, but by default it includes 3 overrides.) It tries to crush any un-crushed ores, and up-tiers dust while keeping a certain buffer of each type. Edit the first line which sets the variable "dust_safety_buffer" to customize; the default of 200 should be reasonable. You can also override individual tiers by setting "buffer_override_t<num>". It works equally well with or without Chemical Lumps, but if you don't have Lumps it will undershoot the buffer by 4 dust (but it will never consume the last dust, no matter what).
+The first one is a simple ore crushing/dust up-tiering combo. This works stand-alone, but pairs nicely with other factory automation that expects dust to be available. At __10__ actions, this should also work for everyone. (It can go as low as 7, but by default it includes 3 overrides.) It tries to crush any un-crushed ores, and up-tiers dust while keeping a certain buffer of each type. Edit the first line which sets the variable "dust_safety_buffer" to customize; the default of 200 should be reasonable. You can also override individual tiers by setting "buffer_override_t&lt;NUM&gt;". It works equally well with or without Chemical Lumps, but if you don't have Lumps it will undershoot the buffer by 4 dust (but it will never consume the last dust, no matter what).
 
 ```
 D0S.DustManager 1 0 10
