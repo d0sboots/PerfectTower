@@ -2,8 +2,12 @@
 ; ore_tier is offset by 10, so that we can avoid having to initialize it
 :local int ore_tier
 :local double dust_safety_buffer
+:local double buffer_override_t1
+:local double buffer_override_t2
+:local double buffer_override_t3
 
 #ore_pair "ore", ore_tier + 10
+#override ldg("buffer_override_t" . lump_tier)
 
 open.factory()
 
@@ -12,10 +16,19 @@ open.factory()
 ; lumps, because that "sweeps" the wave forward up the tiers.
 
 dust_safety_buffer = 200.
+buffer_override_t1 = 10000.
+buffer_override_t2 = 10000.
+buffer_override_t3 = 2000.
 top:
 produce({ore_pair}, count({ore_pair}), "crusher")
 ore_tier = if(active("crusher"), ore_tier, if(ore_tier > -9, ore_tier - 1, 0))
-craft("lump", lump_tier, min(count("dust", lump_tier + 1) - dust_safety_buffer, (count("dust", lump_tier) - dust_safety_buffer) / 8.))
+; We always save one dust on the producing side, so that dust ordering doesn't
+; get messed up in the inventory.
+; The "- 4" on the consuming side is to adjust for Chemical Lumps.
+; That way, in the terminal case it'll hit the safety target exactly. If you
+; don't have lumps, you'll be up to 3 under the target. However, we always
+; ensure that you'll leave one leftover no matter what.
+craft("lump", lump_tier, min(count("dust", lump_tier + 1) - 1., (count("dust", lump_tier) - max(if({override} == 0.0, dust_safety_buffer, {override}) - 4., 1.)) / 8.))
 produce("lump", lump_tier, count("lump", lump_tier), "mixer")
 ; We put an extra ternary in here to handle initializing lump_tier lazily.
 ; It'll spend one iteration on a useless value, that's OK.
