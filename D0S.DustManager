@@ -1,4 +1,4 @@
-:global int lump_tier
+:global double dust_data
 ; ore_tier is offset by 10, so that we can avoid having to initialize it
 :local int ore_tier
 :local double dust_safety_buffer
@@ -7,7 +7,10 @@
 :local double buffer_override_t3
 
 #ore_pair "ore", ore_tier + 10
-#override ldg("buffer_override_t" . lump_tier)
+#lump_tier d2i((dust_data % 9.) + 1.)
+#next_tier ((if(dust_data == 0., 0., dust_data + 1.)) % 9.)
+#override ldg("buffer_override_t" . {lump_tier})
+#override_next ldg("buffer_override_t" . d2i((dust_data % 9.) + 2.))
 
 open.factory()
 
@@ -22,17 +25,35 @@ buffer_override_t3 = 2000.
 top:
 produce({ore_pair}, count({ore_pair}), "crusher")
 ore_tier = if(active("crusher"), ore_tier, if(ore_tier > -9, ore_tier - 1, 0))
+
 ; We always save one dust on the producing side, so that dust ordering doesn't
 ; get messed up in the inventory.
 ; The "- 4" on the consuming side is to adjust for Chemical Lumps.
 ; That way, in the terminal case it'll hit the safety target exactly. If you
 ; don't have lumps, you'll be up to 3 under the target. However, we always
 ; ensure that you'll leave one leftover no matter what.
-craft("lump", lump_tier, min(count("dust", lump_tier + 1) - 1., (count("dust", lump_tier) - max(if({override} == 0.0, dust_safety_buffer, {override}) - 4., 1.)) / 8.))
-produce("lump", lump_tier, count("lump", lump_tier), "mixer")
-; We put an extra ternary in here to handle initializing lump_tier lazily.
+
+craft("lump", {lump_tier}, min(count("dust", {lump_tier} + 1) - max(1., min(if({override_next} == 0.0, dust_safety_buffer, {override_next}), floor(dust_data/9.) - 10.)), (count("dust", {lump_tier}) - max(if({override} == 0.0, dust_safety_buffer, {override}) - 4., 1.)) / 8.))
+produce("lump", {lump_tier}, count("lump", {lump_tier}), "mixer")
+
+; "dust_data" combines both the amount of dust we saw when we started
+; processing this tier, and the lump processing tier. We combine them into
+; one variable so it only takes one action to set them.
+; The scheme is that dust_data % 9 is the tier, and dust_data / 9 is the
+; amount of dust at (tier + 1). Because we're storing this in an double,
+; we need to take care to stay in the range where we have exact integer math,
+; but fortunately no one is likely to have that much dust (right?)
+; We keep the amount of dust at the start because if it's <= the safety
+; buffer, we'll only go 10 below it. This gives us 10 lumps to hand to the
+; mixer, but avoids destroying all the saved dust while we wait
+; for a large amount of lumps to process. As we process more lumps, the
+; amount of queued lumps will grow, since all the produced dust will get
+; turned back into lumps (until we run out of the base tier dust buffer).
+
+; We put an extra ternary in here to handle initializing dust_data lazily.
 ; It'll spend one iteration on a useless value, that's OK.
 ; We need the extra guard for isopen("factory"), otherwise there are
 ; spurious advanced when the window is closed (because active() returns false).
-lump_tier = if(lump_tier < 1, 1, if(active("mixer") | isopen("factory") == false, lump_tier, if(lump_tier < 9, lump_tier + 1, 1)))
+
+dust_data = if(dust_data > 0. & (active("mixer") | isopen("factory") == false), dust_data, min(count("dust", d2i({next_tier}) + 2), 1000799917193442.) * 9. + {next_tier})
 gotoif(top, isopen("factory"))
