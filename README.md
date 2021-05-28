@@ -1,8 +1,10 @@
 # AI Scripts and Utilities for Perfect Tower II
 This is my collection of AI scripts. I focus on low-RAM scripts (i.e. 14 actions or less), so that they'll be usable by everyone who has unlocked the AI.
 
+All of these also work under `turbo exec` (https://github.com/Xenos6666/TPT2_scripts/tree/modular_V2/common/execution_stack), although with some quirks - for instance, the autominer will cause noticable lag on entering the mine, and mine everything before you can see it happen!
+
 ## Auto mining script
-This pair of scripts mines across all tabs, at 16x speed (i.e. all squares simultaneously). It takes ~3 seconds to mine 10 layers * 12 tabs at the default 120 FPS. The max actions required is __7__, which should be accessible to everyone.
+This pair of scripts mines across all tabs, at 16x speed (i.e. all squares simultaneously). It takes ~3 seconds to mine 10 layers * 12 tabs at the default 120 FPS (with vsync disabled). The max actions required is __7__, which should be accessible to everyone.
 
 ```
 DiggerMaster 1 0 7
