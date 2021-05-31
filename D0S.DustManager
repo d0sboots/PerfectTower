@@ -2,9 +2,6 @@
 ; ore_tier is offset by 10, so that we can avoid having to initialize it
 :local int ore_tier
 :local double dust_safety_buffer
-:local double buffer_override_t1
-:local double buffer_override_t2
-:local double buffer_override_t3
 
 #ore_pair "ore", ore_tier + 10
 #lump_tier d2i((dust_data % 9.) + 1.)
@@ -12,16 +9,21 @@
 #override ldg("buffer_override_t" . {lump_tier})
 #override_next ldg("buffer_override_t" . d2i((dust_data % 9.) + 2.))
 
+; This controls the progression of how ore is kept. It's based on the ratios
+; needed to build an Exotic Gem Producer, which are largely based on chip
+; tiers and thus universally applicable. With this, per-tier overrides
+; should mostly be unneeded.
+#buffer  dust_safety_buffer * if(dust_data % 9. <= 1., 1., if(dust_data % 9. == 2., 0.625, if(dust_data % 9. == 3., 0.5, if(dust_data % 9. == 4., 0.1, if(dust_data % 9. == 5., 0.1, 0.05)))))
+#nbuffer dust_safety_buffer * if(dust_data % 9. <= 0., 1., if(dust_data % 9. == 1., 0.625, if(dust_data % 9. == 2., 0.5, if(dust_data % 9. == 3., 0.1, if(dust_data % 9. == 4., 0.1, 0.05)))))
+
 open.factory()
 
 ; The overall plan is to count down through the ores, so that the best ones
 ; (with the least count) get processed first, but to count up through the
 ; lumps, because that "sweeps" the wave forward up the tiers.
 
-dust_safety_buffer = 200.
-buffer_override_t1 = 10000.
-buffer_override_t2 = 10000.
-buffer_override_t3 = 2000.
+dust_safety_buffer = 20000.
+lds("buffer_override_t9", 5000.)
 top:
 ; "dust_data" combines both the amount of dust we saw when we started
 ; processing this tier, and the lump processing tier. We combine them into
@@ -58,7 +60,7 @@ ore_tier = if(active("crusher"), ore_tier, if(ore_tier > -9, ore_tier - 1, 0))
 ; don't have lumps, you'll be up to 3 under the target. However, we always
 ; ensure that you'll leave one leftover no matter what.
 
-craft("lump", {lump_tier}, min(count("dust", {lump_tier} + 1) - max(1., min(if({override_next} == 0.0, dust_safety_buffer, {override_next}), floor(dust_data/9.) - 10.)), (count("dust", {lump_tier}) - max(if({override} == 0.0, dust_safety_buffer, {override}) - 4., 1.)) / 8.))
+craft("lump", {lump_tier}, min(count("dust", {lump_tier} + 1) - max(1., min(if({override_next} == 0.0, {nbuffer}, {override_next}), floor(dust_data/9.) - 10.)), (count("dust", {lump_tier}) - max(if({override} == 0.0, {buffer}, {override}) - 4., 1.)) / 8.))
 produce("lump", {lump_tier}, count("lump", {lump_tier}), "mixer")
 
 gotoif(top, isopen("factory"))
