@@ -23,7 +23,7 @@ open.factory()
 ; lumps, because that "sweeps" the wave forward up the tiers.
 
 dust_safety_buffer = 20000.
-lds("buffer_override_t9", 5000.)
+lds("buffer_override_t9", 500.)
 top:
 ; "dust_data" combines both the amount of dust we saw when we started
 ; processing this tier, and the lump processing tier. We combine them into
