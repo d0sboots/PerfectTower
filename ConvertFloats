@@ -1,0 +1,51 @@
+:local string dust_multipliers
+:local int i
+:global double acc
+
+key.g()
+
+; Initialize multipliers from a string. This is annoying because we don't
+; have native string->double parsing, but we can pull it off in 3 lines
+; with some very fiddly expressions.
+
+dust_multipliers = "1 1 .625 .5 .1 .1 .05"
+; "i" combines the position in the string with the tier currently being
+; initialized. It also stores the position of the dot, needed to properly
+; handle the decimals. The encoding is pos + tier * 1000 + dot * 100000.
+; (I.e. the string can only be 1000 long.)
+; "dot" is offset by 1 because 0 is a sentinel value that means "no dot seen".
+; "tier" technically only needs room for 10 values, but we make room for 100
+; so that there's a sentinel at the end, and also to make this easy to
+; incorporate in other things.
+#pos (i%1000)
+#tier (i/1000 % 100)
+#dotpos (i/100000)
+#char sub(dust_multipliers, {pos}, 1)
+#prevchar sub(dust_multipliers, {pos} - 1, 1)
+#nextchar sub(dust_multipliers, {pos} + 1, 1)
+#isspace ({pos} >= len(dust_multipliers) | {char} == " ")
+#charvalue if({char} == "1", 1., if({char} == "2", 2., if({char} == "3", 3., if({char} == "4", 4., if({char} == "5", 5., if({char} == "6", 6., if({char} == "7", 7., if({char} == "8", 8., if({char} == "9", 9., 0.)))))))))
+
+; Everything in this loop is tied up in checking for if the current character
+; is a space, or (mostly equivilantly) if we've run off the end of the string.
+; This condition is {isspace}. When we hit a space, we transfer the
+; accumulator to the appropriate buffer (perhaps redundantly, if there are
+; multiple spaces in a row.) Otherwise, we keep building the accumulator.
+
+; Mostly the accumulator is multiplied by 10 and then the current digit is
+; added. However, there are wrinkles: If this is the first non-space
+; character, acc will be cleared instead of multiplied. The dot character
+; counts as zero and multiplies by 1, since it has no real value. And we
+; have to adjust the value for the dotpos if this is the last character
+; before a space or the end of the string.
+
+; Adjusting "i" is a bit simpler: The pos component always increases by one.
+; "tier" increases when transitioning to a non-space character, or when we're
+; off the end of the string. (The latter allows for the string to be short,
+; and missing values will be duplicated at the end.) "dotpos" gets set directly
+; if the current character is a dot, otherwise it gets reset to 0 when the
+; current char is a space.
+init_multipliers:
+gds(if({isspace}, "buffer".{tier}, "acc"), if({isspace}, acc, (acc * if({prevchar} == " " | {pos} == 0, 0., if({char} == ".", 1., 10.)) + {charvalue}) * if(({nextchar} != " " & {pos} + 1 != len(dust_multipliers)) | {dotpos} == 0, 1., 0.1^i2d({pos} + 1 - {dotpos}))))
+i = {pos} + 1 + ({tier} + if({isspace} & {nextchar} != " ", 1, 0)) * 1000 + if({isspace}, 0, if({char} == ".", {pos} + 1, {dotpos})) * 100000
+gotoif(init_multipliers, {tier} <= 9)
