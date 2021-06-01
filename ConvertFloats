@@ -46,6 +46,6 @@ dust_multipliers = "1 1 .625 .5 .1 .1 .05"
 ; if the current character is a dot, otherwise it gets reset to 0 when the
 ; current char is a space.
 init_multipliers:
-gds(if({isspace}, "buffer".{tier}, "acc"), if({isspace}, acc, (acc * if({prevchar} == " " | {pos} == 0, 0., if({char} == ".", 1., 10.)) + {charvalue}) * if(({nextchar} != " " & {pos} + 1 != len(dust_multipliers)) | {dotpos} == 0, 1., 0.1^i2d({pos} + 1 - {dotpos}))))
+gds(if({isspace}, "buffer".({tier} + 1), "acc"), if({isspace}, acc, (acc * if({prevchar} == " " | {pos} == 0, 0., if({char} == ".", 1., 10.)) + {charvalue}) * if(({nextchar} != " " & {pos} + 1 != len(dust_multipliers)) | {dotpos} == 0, 1., 0.1^i2d({pos} + 1 - {dotpos}))))
 i = {pos} + 1 + ({tier} + if({isspace} & {nextchar} != " ", 1, 0)) * 1000 + if({isspace}, 0, if({char} == ".", {pos} + 1, {dotpos})) * 100000
 gotoif(init_multipliers, {tier} <= 9)
