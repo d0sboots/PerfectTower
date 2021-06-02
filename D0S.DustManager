@@ -27,7 +27,9 @@ dust_multipliers = "1 1 .625 .5 .1 .1 .05"
 #prevchar sub(dust_multipliers, {pos} - 1, 1)
 #nextchar sub(dust_multipliers, {pos} + 1, 1)
 #isspace ({pos} >= len(dust_multipliers) | {char} == " ")
-#charvalue if({char} == "1", 1., if({char} == "2", 2., if({char} == "3", 3., if({char} == "4", 4., if({char} == "5", 5., if({char} == "6", 6., if({char} == "7", 7., if({char} == "8", 8., if({char} == "9", 9., 0.)))))))))
+#nest2_9(macro, final) {{macro}(2,{{macro}(3,{{macro}(4,{{macro}(5,{{macro}(6,{{macro}(7,{{macro}(8,{{macro}(9,{final})})})})})})})})}
+#charvalue_nest(value, rest) if({char} == "{value}", {value}., {rest})
+#charvalue {charvalue_nest(1, {nest2_9(charvalue_nest, 0.)})}
 
 ; Everything in this loop is tied up in checking for if the current character
 ; is a space, or (mostly equivilantly) if we've run off the end of the string.
@@ -99,14 +101,12 @@ ore_tier = if(active("crusher"), ore_tier, if(ore_tier > -9, ore_tier - 1, 0))
 ; The ratio between them tells how to scale a particular entry of
 ; dust_multipliers into a target value.
 
-#countd ) + 4. * (count("dust",
-#dust_value (count("dust", 1{countd}2{countd}3{countd}4{countd}5{countd}6{countd}7{countd}8{countd}9{countd}10)))))))))))
-#denda ") + if(count("dust", 
-#dendb ) == 0., 0., 4.) * (ldg("buffer
-#denominator (ldg("buffer1{denda}2{dendb}2{denda}3{dendb}3{denda}4{dendb}4{denda}5{dendb}5{denda}6{dendb}6{denda}7{dendb}7{denda}8{dendb}8{denda}9{dendb}9{denda}10{dendb}10")))))))))))
-#lump_tier d2i((dust_data % 9.) + 1.)
-#target (ldg("buffer" . {lump_tier}) * {dust_value} / {denominator})
-#target_next (ldg("buffer" . ({lump_tier} + 1)) * {dust_value} / {denominator})
+#count_nest(value, rest) (count("dust", {value}) + 4. * {rest})
+#dust_value {count_nest(1, {nest2_9(count_nest, count("dust", 10))})}
+#denom_nest(value, rest) if(count("dust", {value}) == 0., 0., 4.) * (ldg("buffer{value}") + {rest})
+#denominator (ldg("buffer1") + {nest2_9(denom_nest, if(count("dust", 10) == 0., 0., 4.) * ldg("buffer10"))})
+#lump_tier(offset) (d2i(dust_data % 9.) + {offset})
+#target(offset) (ldg("buffer" . {lump_tier({offset})}) * {dust_value} / {denominator})
 
 ; We always save one dust on the producing side, so that dust ordering doesn't
 ; get messed up in the inventory.
@@ -115,7 +115,7 @@ ore_tier = if(active("crusher"), ore_tier, if(ore_tier > -9, ore_tier - 1, 0))
 ; don't have lumps, you'll be up to 3 under the target. However, we always
 ; ensure that you'll leave one leftover no matter what.
 
-craft("lump", {lump_tier}, min(count("dust", {lump_tier} + 1) - max(1., min({target_next}, floor(dust_data/9.) - 10.)), (count("dust", {lump_tier}) - max({target} - 4., 1.)) / 8.))
-produce("lump", {lump_tier}, count("lump", {lump_tier}), "mixer")
+craft("lump", {lump_tier(1)}, min(count("dust", {lump_tier(2)}) - max(1., min({target(2)}, floor(dust_data/9.) - 10.)), (count("dust", {lump_tier(1)}) - max({target(1)} - 4., 1.)) / 8.))
+produce("lump", {lump_tier(1)}, count("lump", {lump_tier(1)}), "mixer")
 
 gotoif(top, isopen("factory"))
