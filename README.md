@@ -37,3 +37,14 @@ You also might notice that when you first get a new tier (say, the first time yo
 This works equally well with or without Chemical Lumps, but if you don't have Lumps it will undershoot the buffer by 4 dust (but it will never consume the last dust, no matter what).
 
 If you want to manually change what the factory is working on, you can repeatedly shift-right click to remove the current ore/lump from the machine. Due to a semi-intentional race condition, this will sometimes cause the script to advance to the next tier.
+
+## Other Utilities
+### Power Plant Optimizer/Calculator
+https://www.desmos.com/calculator/ymjrbqrcve
+
+Allows for fine-grained control of power-plant building counts to determine the optimal layout, accounting for Town Perks and what building is powered.
+
+### Exotic Lab Simulator
+https://d0sboots.github.io/PerfectTower/exotic_sim.html
+
+A bit quick-and-dirty, this simulates the mechanics of the Exotic Lab. Mostly it just validates that the best strategy is to put one point into everything and then pump Time Factor exclusively. (But you can see how much time you're gaining for your gems...)
