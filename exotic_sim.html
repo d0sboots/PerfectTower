@@ -1,0 +1,85 @@
+<html>
+<head>
+  <title>Exotic Experiment Simulator</title>
+<style>
+input {
+  width: 80px;
+}
+</style>
+</head>
+<body>
+<script>
+function go() {
+    let tf_boost = .01
+    let prod_boost = .01
+    let u_boost = 1
+    let time_factor = 1
+    let production = 1
+    let universes = 0
+    let time_factor_upg = parseInt(document.getElementById("time_factor").value);
+    let production_upg = parseInt(document.getElementById("production").value);
+    let universe_upg = parseInt(document.getElementById("universe").value);
+    let boost_upg = parseInt(document.getElementById("boost").value);
+    let results = document.getElementById("results");
+    results.textContent = "Cost: " + (
+        time_factor_upg * (1.5 * time_factor_upg - 0.5) +
+        production_upg * (0.5 * production_upg + 0.5) +
+        universe_upg * (0.5 * universe_upg + 1.5) +
+        boost_upg * (2.5 * boost_upg + 3.5)) + "\n";
+    let tf_time = 60 * 3600 * (0.8 ** (time_factor_upg - 1));
+    let prod_time = 25 * 3600 * (0.8 ** (production_upg - 1));
+    let u_time = 100 * 3600 * (0.8 ** (universe_upg - 1));
+    let boost_time = 50 * 3600 * (0.8 ** (boost_upg - 1));
+    let tf = tf_time, prod = prod_time, u = u_time, boost = boost_time;
+    let total_time = 0;
+    while (universes < 100) {
+        let next_time = Math.min(tf, prod, u, boost);
+        tf -= next_time;
+        prod -= next_time;
+        u -= next_time;
+        boost -= next_time;
+        total_time += next_time;
+        if (u === 0) {
+            universes += production;
+            u = u_time;
+        }
+        if (boost === 0) {
+            tf_boost += .001;
+            prod_boost *= 1.05;
+            boost = boost_time;
+        }
+        if (tf === 0) {
+            time_factor += tf_boost;
+            u /= time_factor;
+            boost /= time_factor;
+            prod /= time_factor;
+            u_time /= time_factor;
+            boost_time /= time_factor;
+            tf_time /= time_factor;
+            prod_time /= time_factor;
+            tf = tf_time;
+        }
+        if (prod === 0) {
+            production += prod_boost;
+            prod = prod_time;
+        }
+        results.textContent += "Time: " + total_time + ", Universes: " +
+          universes.toFixed(3) + ", production: " + production.toFixed(3) + ", time_factor: " +
+          time_factor.toFixed(3) + "\n";
+    }
+}
+</script>
+<table>
+  <tr><td>Time Factor:</td>
+    <td><input id="time_factor" type="number" min="1" value="1"></td></tr>
+  <tr><td>Production:</td>
+    <td><input id="production" type="number" min="1" value="1"></td></tr>
+  <tr><td>Universe:</td>
+    <td><input id="universe" type="number" min="1" value="1"></td></tr>
+  <tr><td>Boost:</td>
+    <td><input id="boost" type="number" min="1" value="1"></td></tr>
+</table>
+<input type="button" value="Go" onclick="go()">
+<pre id="results"></pre>
+</body>
+</html>
