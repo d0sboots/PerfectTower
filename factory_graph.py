@@ -12,8 +12,12 @@ ORE_PAIRS = [(x, 4**i) for i, x in enumerate(ORE_POINTS)]
 
 matplotlib.use('svg')
 fig, ax = plt.subplots(constrained_layout=True)
+ax.grid(True, linestyle="--")
 ax.set_xlabel("Shards")
 ax.set_ylabel("Ore/Shard")
+ax.set_xscale("log")
+ax.xaxis.set_major_locator(matplotlib.ticker.LogLocator(subs=(1.0,), numticks=15))
+ax.xaxis.set_minor_locator(matplotlib.ticker.LogLocator(subs="all", numticks=100))
 x_axis = []
 data = []
 label = 0
@@ -28,6 +32,6 @@ for i in range(4500):
         label += 1
         ax.annotate(f'T{label}', xy=(x, data[-1]), xytext=(-12, 3),
                     textcoords="offset points")
-ax.semilogx(x_axis, data, label="T1-equivalent Ore", linewidth=1.1)
+ax.plot(x_axis, data, label="T1-equivalent Ore", linewidth=1.1)
 fig.savefig(sys.argv[1])
 print(f"Maximum value: {data[-1]}")
