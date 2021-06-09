@@ -5,7 +5,10 @@
 :local double acc
 :local int i
 
+wakeup()
 open.factory()
+
+isopen("factory")
 
 ; Initialize multipliers from a string. This is annoying because we don't
 ; have native string->double parsing, but we can pull it off in 3 lines
@@ -28,8 +31,7 @@ dust_multipliers = "1 1 .625 .5 .1 .1 .05"
 #nextchar sub(dust_multipliers, {pos} + 1, 1)
 #isspace ({pos} >= len(dust_multipliers) | {char} == " ")
 #nest2_9(macro, final) {{macro}(2,{{macro}(3,{{macro}(4,{{macro}(5,{{macro}(6,{{macro}(7,{{macro}(8,{{macro}(9,{final})})})})})})})})}
-#charvalue_nest(value, rest) if({char} == "{value}", {value}., {rest})
-#charvalue {charvalue_nest(1, {nest2_9(charvalue_nest, 0.)})}
+#charvalue i2d(index("123456789", {char}, 0) + 1)
 
 ; Everything in this loop is tied up in checking for if the current character
 ; is a space, or (mostly equivilantly) if we've run off the end of the string.
