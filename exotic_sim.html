@@ -32,7 +32,7 @@ function go() {
     let boost_time = 50 * 3600 * (0.8 ** (boost_upg - 1));
     let tf = tf_time, prod = prod_time, u = u_time, boost = boost_time;
     let total_time = 0;
-    while (universes < 100) {
+    while (universes < 5000) {
         let next_time = Math.min(tf, prod, u, boost);
         tf -= next_time;
         prod -= next_time;
