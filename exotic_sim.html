@@ -41,27 +41,25 @@ function go() {
         total_time += next_time;
         if (u === 0) {
             universes += production;
-            u = u_time;
+            u = u_time / time_factor;
         }
         if (boost === 0) {
             tf_boost += .001;
             prod_boost *= 1.05;
-            boost = boost_time;
+            boost = boost_time / time_factor;
         }
         if (tf === 0) {
+            let old_factor = time_factor;
             time_factor += tf_boost;
-            u /= time_factor;
-            boost /= time_factor;
-            prod /= time_factor;
-            u_time /= time_factor;
-            boost_time /= time_factor;
-            tf_time /= time_factor;
-            prod_time /= time_factor;
-            tf = tf_time;
+            let time_shift = old_factor / time_factor;
+            u *= time_shift;
+            boost *= time_shfit;
+            prod *= time_shift;
+            tf = tf_time / time_factor;
         }
         if (prod === 0) {
             production += prod_boost;
-            prod = prod_time;
+            prod = prod_time / time_factor;
         }
         results.textContent += "Time: " + total_time + ", Universes: " +
           universes.toFixed(3) + ", production: " + production.toFixed(3) + ", time_factor: " +
