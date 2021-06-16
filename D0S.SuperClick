@@ -1,0 +1,33 @@
+:global int click_instances
+
+key.c()
+
+; Fibonacci multi-exec. Each new instance increments the counter as
+; the first thing it does, so that happens on the frame it's executed.
+; On the next frame, we launch a new copy, as well as on the frame after
+; that. This leads to a Fibonacci sequence of new copies, where the number
+; spawned each frame is 1, 1, 2, 3, 5, 8, 13, 21
+; As a consequence, the total number running is the partial sums:
+; 1, 2, 4, 7, 12, 20, 33, 54 (This is just F(n+2) - 1).
+; We choose 54 as a nice stopping point, because it's a lot but not
+; too close to the limit of 100.
+
+click_instances = click_instances + 1
+execute(if(click_instances < 54, "D0S.SuperClick", ""))
+execute(if(click_instances < 54, "D0S.SuperClick", ""))
+
+; It's important to keep this loop tight, so we get as many clicks/frame
+; as possible.
+loop:
+click(position())
+gotoif(loop, click_instances <= 54)
+
+; The exit check. We count the number of copies exiting (with
+; the same counter), so we know when they've all exited.
+; This is because it takes the script that was launched via impulse
+; (the one that signals we should quit) longer to reach this point,
+; and we don't want to unset the variable prematurely or that copy
+; won't exit.
+
+click_instances = click_instances + 1
+global.unset(if(click_instances > 109, "click_instances", ""))
