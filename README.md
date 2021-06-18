@@ -18,6 +18,16 @@ DERpZ2dlck1hc3RlcgEAAAAJb3Blbi5taW5lAAAAAAcAAAAOZ2xvYmFsLmludC5zZXQIY29uc3RhbnQE
 
 ```
 
+## Autoclicker
+A small, simple script that spam-clicks where the mouse is pointing. It spawns 54 copies to click _really fast_. Press "c" to enable, and "c" to toggle it off again.
+
+__Warning__: This is __not__ compatible with turbo-exec, if you try the sheer number of clicks will lag your game to heck and also the toggle won't work right.
+
+`D0S.SuperClick 1 0 7`
+```
+DkQwUy5TdXBlckNsaWNrAQAAAAVrZXkuYwAAAAAHAAAADmdsb2JhbC5pbnQuc2V0CGNvbnN0YW50BA9jbGlja19pbnN0YW5jZXMOYXJpdGhtZXRpYy5pbnQOZ2xvYmFsLmludC5nZXQIY29uc3RhbnQED2NsaWNrX2luc3RhbmNlcwhjb25zdGFudAQBKwhjb25zdGFudAIBAAAAD2dlbmVyaWMuZXhlY3V0ZQ50ZXJuYXJ5LnN0cmluZw5jb21wYXJpc29uLmludA5nbG9iYWwuaW50LmdldAhjb25zdGFudAQPY2xpY2tfaW5zdGFuY2VzCGNvbnN0YW50BAE8CGNvbnN0YW50AjYAAAAIY29uc3RhbnQEDkQwUy5TdXBlckNsaWNrCGNvbnN0YW50BAAPZ2VuZXJpYy5leGVjdXRlDnRlcm5hcnkuc3RyaW5nDmNvbXBhcmlzb24uaW50Dmdsb2JhbC5pbnQuZ2V0CGNvbnN0YW50BA9jbGlja19pbnN0YW5jZXMIY29uc3RhbnQEATwIY29uc3RhbnQCNgAAAAhjb25zdGFudAQORDBTLlN1cGVyQ2xpY2sIY29uc3RhbnQEAA1nZW5lcmljLmNsaWNrDm1vdXNlLnBvc2l0aW9uDmdlbmVyaWMuZ290b2lmCGNvbnN0YW50AgQAAAAOY29tcGFyaXNvbi5pbnQOZ2xvYmFsLmludC5nZXQIY29uc3RhbnQED2NsaWNrX2luc3RhbmNlcwhjb25zdGFudAQCPD0IY29uc3RhbnQCNgAAAA5nbG9iYWwuaW50LnNldAhjb25zdGFudAQPY2xpY2tfaW5zdGFuY2VzDmFyaXRobWV0aWMuaW50Dmdsb2JhbC5pbnQuZ2V0CGNvbnN0YW50BA9jbGlja19pbnN0YW5jZXMIY29uc3RhbnQEASsIY29uc3RhbnQCAQAAAAxnbG9iYWwudW5zZXQOdGVybmFyeS5zdHJpbmcOY29tcGFyaXNvbi5pbnQOZ2xvYmFsLmludC5nZXQIY29uc3RhbnQED2NsaWNrX2luc3RhbmNlcwhjb25zdGFudAQBPghjb25zdGFudAJtAAAACGNvbnN0YW50BA9jbGlja19pbnN0YW5jZXMIY29uc3RhbnQEAA==
+```
+
 ## Factory management scripts
 The first one is a <s>simple</s> ore crushing/dust up-tiering combo. This works stand-alone, but pairs nicely with other factory automation that expects dust to be available. At __10__ actions, this should also work for everyone. It tries to crush any un-crushed ores, and up-tiers dust while trying to make the dust distribution match its built-in target ratios.
 
