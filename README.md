@@ -1,7 +1,12 @@
 # AI Scripts and Utilities for Perfect Tower II
-This is my collection of AI scripts. I focus on low-RAM scripts (i.e. 14 actions or less), so that they'll be usable by everyone who has unlocked the AI.
+This is my collection of AI scripts and other useful things. I focus on low-RAM scripts (i.e. 14 actions or less), so that they'll be usable by everyone who has unlocked the AI.
 
-All of these also work under `turbo exec` (https://github.com/Xenos6666/TPT2_scripts/tree/modular_V2/common/execution_stack), although with some quirks - for instance, the autominer will cause noticable lag on entering the mine, and mine everything before you can see it happen!
+Almost all of these also work under `turbo exec` (https://github.com/Xenos6666/TPT2_scripts/tree/modular_V2/common/execution_stack), although with some quirks - for instance, the autominer will cause noticable lag on entering the mine, and mine everything before you can see it happen!
+
+## Improved code editor
+I maintain a fork of the external editor at https://d0sboots.github.io/perfect-tower. It has several enhancements, such as improved loading speed, better responsiveness when editing complicated scripts, and support for enhanced macros and syntax. You can see the full list of features at https://github.com/d0sboots/perfect-tower.
+
+It's kind of a pain to move source code between editors, (as opposed to importing compiled code, which is easy), so if you already have a lot of work saved on the base editor at https://kyromyr.github.io/perfect-tower, it may not be worth switching. If you aren't using either yet, you definitely should use one instead of the in-game editor, though - the difference is night and day. Also worth noting is that compiling the source for many of my scripts requires the enhancements in my editor. (You don't need it to just import them.)
 
 ## Auto mining script
 This pair of scripts mines across all tabs, at 16x speed (i.e. all squares simultaneously). It takes ~3 seconds to mine 10 layers * 12 tabs at the default 120 FPS (with vsync disabled). The max actions required is __7__, which should be accessible to everyone.
@@ -58,4 +63,4 @@ Allows for fine-grained control of power-plant building counts to determine the 
 ### Exotic Lab Simulator
 https://d0sboots.github.io/PerfectTower/exotic_sim.html
 
-A bit quick-and-dirty, this simulates the mechanics of the Exotic Lab. Mostly it just validates that the best strategy is to put one point into everything and then pump Time Factor exclusively. (But you can see how much time you're gaining for your gems...)
+A bit quick-and-dirty, this simulates the mechanics of the Exotic Lab. Mostly it just validates that the best strategy is to put one point into everything and then pump Time Factor and Boost. (But you can see how much time you're gaining for your gems...)
