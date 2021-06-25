@@ -1,6 +1,4 @@
 :global double dust_data
-; ore_tier is offset by 10, so that we can avoid having to initialize it
-:local int ore_tier
 :local string dust_multipliers
 :local double acc
 :local int i
@@ -14,7 +12,7 @@ isopen("factory")
 ; have native string->double parsing, but we can pull it off in 3 lines
 ; with some very fiddly expressions.
 
-dust_multipliers = "1 1 .625 .5 .1 .1 .05"
+dust_multipliers = "1 1 .625 .5 .07872 .06312 .01 .01 .0021"
 ; "i" combines the position in the string with the tier currently being
 ; initialized. It also stores the position of the dot, needed to properly
 ; handle the decimals. The encoding is pos + tier * 1000 + dot * 100000.
@@ -84,13 +82,33 @@ top:
 ; It actually comes "after", but you see it here before so that dust_data
 ; is initialized if it's zero.
 
-#ore_pair "ore", ore_tier + 10
 #next_tier ((if(dust_data == 0., 0., dust_data + 1.)) % 9.)
 
 dust_data = if(dust_data > 0. & (active("mixer") | isopen("factory") == false), dust_data, min(count("dust", d2i({next_tier}) + 2), 1000799917193442.) * 9. + {next_tier})
 
-produce({ore_pair}, count({ore_pair}), "crusher")
-ore_tier = if(active("crusher"), ore_tier, if(ore_tier > -9, ore_tier - 1, 0))
+; The core expression that determines if the produce action is dealing
+; with ore or lumps. Unfortuantely, this has to get fanned out x4 across
+; all the parameters.
+#orelump_nest(value, rest) count("ore", {value}) == 0. && {rest}
+#ore_or_lump(ore, lump) if(isopen("factory") && (active("crusher") || ({orelump_nest(1,{nest2_9(orelump_nest,count("ore", 10) == 0.)})})),{lump}, {ore})
+#ore_action(expr) {lua(\
+  local expr = [[{expr}]];\
+  local acc = {};\
+  for i = 10, 1, -1 do\
+    local subbed = expr:gsub("val", i);\
+    if i ~= 1 then\
+      acc[#acc+1] = 'if(count("ore", ' .. i .. ') > 0., ' .. subbed .. ', ';\
+	else\
+	  acc[#acc+1] = subbed;\
+	end\
+  end\
+  for i = 9, 1, -1 do\
+    acc[#acc+1] = ')';\
+  end\
+  return table.concat(acc);\
+)}
+#ore_or_lump_tier {ore_or_lump({ore_action(val)}, {lump_tier(1)})}
+#ore_or_lump_count {ore_or_lump({ore_action(count("ore", val))}, count("lump", {lump_tier(1)}))}
 
 ; These expressions calculate how much dust to keep. #dust_value calculates
 ; the value of all your dust in T1-equivilant units (i.e. if you
@@ -118,6 +136,6 @@ ore_tier = if(active("crusher"), ore_tier, if(ore_tier > -9, ore_tier - 1, 0))
 ; ensure that you'll leave one leftover no matter what.
 
 craft("lump", {lump_tier(1)}, min(count("dust", {lump_tier(2)}) - max(1., min({target(2)}, floor(dust_data/9.) - 100.)), (count("dust", {lump_tier(1)}) - max({target(1)} - 4., 1.)) / 8.))
-produce("lump", {lump_tier(1)}, count("lump", {lump_tier(1)}), "mixer")
+produce({ore_or_lump("ore", "lump")}, {ore_or_lump_tier}, {ore_or_lump_count}, {ore_or_lump("crusher", "mixer")})
 
 gotoif(top, isopen("factory"))
