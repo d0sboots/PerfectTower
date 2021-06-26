@@ -1,7 +1,7 @@
-:global int _tier
-
-;_tier = 1
-;tierloop:
+:global int gem_producer
+:global int exotic_producer
+:global int tier_factor
+:local double previous_amount
 
 executesync("craft parts")
 stop("craft parts")
@@ -9,24 +9,19 @@ executesync("craft machines 1")
 stop("craft machines 1")
 executesync("craft machines 2")
 stop("craft machines 2")
-
-;_tier += 1
-;gotoif(tierloop, _tier < 11)
-
-:global int tier_factor
-:global int exotic_producer
-:global int gem_producer
-
-:local double previous_amount
+executesync("craft producers 1")
+stop("craft producers 1")
+executesync("craft producers 2")
+stop("craft producers 2")
+executesync("craft producers 2")
+stop("craft producers 2")
+executesync("craft producers 3")
+stop("craft producers 3")
 
 previous_amount = count("producer.exoticgems", 1)
-craft("producer.exoticgems", 1, global.double.get("craft_queue_"    . i2s(1 * tier_factor + exotic_producer)))
-global.double.set("craft_queue_"    . i2s(1 * tier_factor + exotic_producer), global.double.get("craft_queue_"    . i2s(1 * tier_factor + exotic_producer)) - (count("producer.exoticgems", 1) - previous_amount))
-noexoprod:
-
+craft("producer.exoticgems", 1, gdg("craft_queue_" . i2s((1 * tier_factor) + exotic_producer)))
+gds("craft_queue_" . i2s((1 * tier_factor) + exotic_producer), gdg("craft_queue_" . i2s((1 * tier_factor) + exotic_producer)) - (count("producer.exoticgems", 1) - previous_amount))
 previous_amount = count("producer.gems", 1)
-craft("producer.gems", 1, global.double.get("craft_queue_"    . i2s(1 * tier_factor + gem_producer)))
-global.double.set("craft_queue_"    . i2s(1 * tier_factor + gem_producer), global.double.get("craft_queue_"    . i2s(1 * tier_factor + gem_producer)) - (count("producer.gems", 1) - previous_amount))
-nogemprod:
-
+craft("producer.gems", 1, gdg("craft_queue_" . i2s((1 * tier_factor) + gem_producer)))
+gds("craft_queue_" . i2s((1 * tier_factor) + gem_producer), gdg("craft_queue_" . i2s((1 * tier_factor) + gem_producer)) - (count("producer.gems", 1) - previous_amount))
 wait(0.0)

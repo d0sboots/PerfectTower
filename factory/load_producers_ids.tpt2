@@ -1,8 +1,33 @@
-
 :global int exotic_producer
 :global int gem_producer
-
+:global int white_producer
+:global int red_producer
+:global int orange_producer
+:global int blue_producer
+:global int brown_producer
+:global int green_producer
+:global int purple_producer
+:global int yellow_producer
+:global int pink_producer
+:global int lightblue_producer
+:global int cyan_producer
+:global int grey_producer
+:global int black_producer
 :global int producer
+
+white_producer = 1 + producer
+red_producer = 2 + producer
+orange_producer = 3 + producer
+blue_producer = 4 + producer
+brown_producer = 5 + producer
+green_producer = 6 + producer
+purple_producer = 7 + producer
+yellow_producer = 8 + producer
+pink_producer = 9 + producer
+lightblue_producer = 10 + producer
+cyan_producer = 11 + producer
+grey_producer = 12 + producer
+black_producer = 13 + producer
 
 gem_producer = 15 + producer
 exotic_producer = 16 + producer

@@ -1,8 +1,5 @@
 ; ++ Valid ids ++
 
-:global int exotic_producer
-:global int gem_producer
-
 
 :global int oven
 :global int presser
@@ -15,6 +12,22 @@
 :global int shaper
 :global int boiler
 
+
+:global int exotic_producer
+:global int gem_producer
+:global int white_producer
+:global int red_producer
+:global int orange_producer
+:global int blue_producer
+:global int brown_producer
+:global int green_producer
+:global int purple_producer
+:global int yellow_producer
+:global int pink_producer
+:global int lightblue_producer
+:global int cyan_producer
+:global int grey_producer
+:global int black_producer
 
 ;Transforms ore into dust
 :global int ore

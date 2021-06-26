@@ -1,0 +1,49 @@
+:global int yellow_producer
+:global int pink_producer
+:global int lightblue_producer
+:global int cyan_producer
+
+:global int chip
+:global int motor
+:global int insul_cable
+:global int block
+:global int pipe
+:global int plate
+:global int ring
+
+:global int tier_factor
+:local int tier
+
+tier = 5
+start:
+
+gotoif(skip, tier == 1)
+gds("craft_queue_" . i2s(((tier - 1) * tier_factor) + yellow_producer), gdg("craft_queue_" . i2s(((tier - 1) * tier_factor) + yellow_producer)) + double.max(0.0, gdg("craft_queue_" . i2s((tier * tier_factor) + yellow_producer))))
+gds("craft_queue_" . i2s(((tier - 1) * tier_factor) + pink_producer), gdg("craft_queue_" . i2s(((tier - 1) * tier_factor) + pink_producer)) + double.max(0.0, gdg("craft_queue_" . i2s((tier * tier_factor) + pink_producer))))
+gds("craft_queue_" . i2s(((tier - 1) * tier_factor) + lightblue_producer), gdg("craft_queue_" . i2s(((tier - 1) * tier_factor) + lightblue_producer)) + double.max(0.0, gdg("craft_queue_" . i2s((tier * tier_factor) + lightblue_producer))))
+gds("craft_queue_" . i2s(((tier - 1) * tier_factor) + cyan_producer), gdg("craft_queue_" . i2s(((tier - 1) * tier_factor) + cyan_producer)) + double.max(0.0, gdg("craft_queue_" . i2s((tier * tier_factor) + cyan_producer))))
+skip:
+
+;yellow_producer
+gds("craft_queue_" . i2s(((tier) * tier_factor) + chip), gdg("craft_queue_" . i2s(((tier) * tier_factor) + chip)) + double.max(0.0, gdg("craft_queue_" . i2s((tier * tier_factor) + yellow_producer)) * i2d((64423 / (10 ^ (tier - 1))) % 10)))
+gds("craft_queue_" . i2s(((tier * 2) * tier_factor) + motor), gdg("craft_queue_" . i2s(((tier * 2) * tier_factor) + motor)) + double.max(0.0, gdg("craft_queue_" . i2s((tier * tier_factor) + yellow_producer)) * i2d(1)))
+gds("craft_queue_" . i2s((((97531 / (10 ^ (tier - 1))) % 10) * tier_factor) + insul_cable), gdg("craft_queue_" . i2s((((97531 / (10 ^ (tier - 1))) % 10) * tier_factor) + insul_cable)) + double.max(0.0, gdg("craft_queue_" . i2s((tier * tier_factor) + yellow_producer)) * i2d((64422 / (10 ^ (tier - 1))) % 10)))
+gds("craft_queue_" . i2s((((97530 / (10 ^ (tier - 1))) % 10) * tier_factor) + block), gdg("craft_queue_" . i2s((((97530 / (10 ^ (tier - 1))) % 10) * tier_factor) + block)) + double.max(0.0, gdg("craft_queue_" . i2s((tier * tier_factor) + yellow_producer)) * i2d((939312 / (16 ^ (tier - 1))) % 16)))
+
+;pink_producer
+gds("craft_queue_" . i2s(((tier) * tier_factor) + chip), gdg("craft_queue_" . i2s(((tier) * tier_factor) + chip)) + double.max(0.0, gdg("craft_queue_" . i2s((tier * tier_factor) + pink_producer)) * i2d((64444 / (10 ^ (tier - 1))) % 10)))
+gds("craft_queue_" . i2s((((98642 / (10 ^ (tier - 1))) % 10) * tier_factor) + insul_cable), gdg("craft_queue_" . i2s((((98642 / (10 ^ (tier - 1))) % 10) * tier_factor) + insul_cable)) + double.max(0.0, gdg("craft_queue_" . i2s((tier * tier_factor) + pink_producer)) * i2d((66664 / (10 ^ (tier - 1))) % 10)))
+gds("craft_queue_" . i2s(((tier * 2) * tier_factor) + pipe), gdg("craft_queue_" . i2s(((tier * 2) * tier_factor) + pipe)) + double.max(0.0, gdg("craft_queue_" . i2s((tier * tier_factor) + pink_producer)) * i2d((84444 / (10 ^ (tier - 1))) % 10)))
+
+;lightblue_producer
+gds("craft_queue_" . i2s(((tier) * tier_factor) + chip), gdg("craft_queue_" . i2s(((tier) * tier_factor) + chip)) + double.max(0.0, gdg("craft_queue_" . i2s((tier * tier_factor) + lightblue_producer)) * i2d((42222 / (10 ^ (tier - 1))) % 10)))
+gds("craft_queue_" . i2s(((tier * 2) * tier_factor) + plate), gdg("craft_queue_" . i2s(((tier * 2) * tier_factor) + plate)) + double.max(0.0, gdg("craft_queue_" . i2s((tier * tier_factor) + lightblue_producer)) * i2d(4)))
+gds("craft_queue_" . i2s(((tier * 2) * tier_factor) + ring), gdg("craft_queue_" . i2s(((tier * 2) * tier_factor) + ring)) + double.max(0.0, gdg("craft_queue_" . i2s((tier * tier_factor) + lightblue_producer)) * i2d(2 * ((64443 / (10 ^ (tier - 1))) % 10))))
+
+;cyan_producer
+gds("craft_queue_" . i2s(((tier) * tier_factor) + chip), gdg("craft_queue_" . i2s(((tier) * tier_factor) + chip)) + double.max(0.0, gdg("craft_queue_" . i2s((tier * tier_factor) + cyan_producer)) * i2d((42222 / (10 ^ (tier - 1))) % 10)))
+gds("craft_queue_" . i2s(((tier * 2) * tier_factor) + insul_cable), gdg("craft_queue_" . i2s(((tier * 2) * tier_factor) + insul_cable)) + double.max(0.0, gdg("craft_queue_" . i2s((tier * tier_factor) + cyan_producer)) * i2d(2 * ((64443 / (10 ^ (tier - 1))) % 10))))
+gds("craft_queue_" . i2s((((97531 / (10 ^ (tier - 1))) % 10) * tier_factor) + block), gdg("craft_queue_" . i2s((((97531 / (10 ^ (tier - 1))) % 10) * tier_factor) + block)) + double.max(0.0, gdg("craft_queue_" . i2s((tier * tier_factor) + cyan_producer)) * i2d(4)))
+
+tier = tier - 1
+gotoif(start, tier > 0)
