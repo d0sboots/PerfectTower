@@ -1,0 +1,16 @@
+:global int producer_black
+
+:global int tier_factor
+:local double previous_amount
+:local int tier
+
+tier = 0
+tierloop:
+tier = tier + 1
+
+previous_amount = count("producer.statueofcubos", tier)
+craft("producer.statueofcubos", tier, gdg("craft_queue_" . i2s((tier * tier_factor) + producer_black)))
+gds("craft_queue_" . i2s((tier * tier_factor) + producer_black), gdg("craft_queue_" . i2s((tier * tier_factor) + producer_black)) - (count("producer.statueofcubos", tier) - previous_amount))
+
+
+gotoif(tierloop, tier < 5)

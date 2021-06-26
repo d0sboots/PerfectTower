@@ -1,0 +1,40 @@
+:global int producer_purple
+:global int producer_yellow
+:global int producer_pink
+:global int producer_lightblue
+:global int producer_cyan
+:global int producer_grey
+:global int tier_factor
+:local double previous_amount
+:local int tier
+
+tier = 0
+tierloop:
+tier = tier + 1
+
+previous_amount = count("producer.headquarters", tier)
+craft("producer.headquarters", tier, gdg("craft_queue_" . i2s((tier * tier_factor) + producer_purple)))
+gds("craft_queue_" . i2s((tier * tier_factor) + producer_purple), gdg("craft_queue_" . i2s((tier * tier_factor) + producer_purple)) - (count("producer.headquarters", tier) - previous_amount))
+
+previous_amount = count("producer.powerplant", tier)
+craft("producer.powerplant", tier, gdg("craft_queue_" . i2s((tier * tier_factor) + producer_yellow)))
+gds("craft_queue_" . i2s((tier * tier_factor) + producer_yellow), gdg("craft_queue_" . i2s((tier * tier_factor) + producer_yellow)) - (count("producer.powerplant", tier) - previous_amount))
+
+previous_amount = count("producer.arcade", tier)
+craft("producer.arcade", tier, gdg("craft_queue_" . i2s((tier * tier_factor) + producer_pink)))
+gds("craft_queue_" . i2s((tier * tier_factor) + producer_pink), gdg("craft_queue_" . i2s((tier * tier_factor) + producer_pink)) - (count("producer.arcade", tier) - previous_amount))
+
+previous_amount = count("producer.tradingpost", tier)
+craft("producer.tradingpost", tier, gdg("craft_queue_" . i2s((tier * tier_factor) + producer_lightblue)))
+gds("craft_queue_" . i2s((tier * tier_factor) + producer_lightblue), gdg("craft_queue_" . i2s((tier * tier_factor) + producer_lightblue)) - (count("producer.tradingpost", tier) - previous_amount))
+
+previous_amount = count("producer.shipyard", tier)
+craft("producer.shipyard", tier, gdg("craft_queue_" . i2s((tier * tier_factor) + producer_cyan)))
+gds("craft_queue_" . i2s((tier * tier_factor) + producer_cyan), gdg("craft_queue_" . i2s((tier * tier_factor) + producer_cyan)) - (count("producer.shipyard", tier) - previous_amount))
+
+previous_amount = count("producer.museum", tier)
+craft("producer.museum", tier, gdg("craft_queue_" . i2s((tier * tier_factor) + producer_grey)))
+gds("craft_queue_" . i2s((tier * tier_factor) + producer_grey), gdg("craft_queue_" . i2s((tier * tier_factor) + producer_grey)) - (count("producer.museum", tier) - previous_amount))
+
+
+gotoif(tierloop, tier < 5)

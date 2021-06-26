@@ -1,14 +1,19 @@
-
 executesync("recipe special producers")
 stop("recipe special producers")
-
 executesync("recipe machines 1")
 stop("recipe machines 1")
 executesync("recipe machines 2")
 stop("recipe machines 2")
 executesync("recipe machines 3")
 stop("recipe machines 3")
-
+executesync("recipe producers 1")
+stop("recipe producers 1")
+executesync("recipe producers 2")
+stop("recipe producers 2")
+executesync("recipe producers 3")
+stop("recipe producers 3")
+executesync("recipe producers 4")
+stop("recipe producers 4")
 executesync("recipe parts")
 stop("recipe parts")
 executesync("recipe ingredients")
