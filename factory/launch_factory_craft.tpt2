@@ -15,19 +15,19 @@
 
 :global int exotic_producer
 :global int gem_producer
-:global int producer_white
-:global int producer_red
-:global int producer_orange
-:global int producer_blue
-:global int producer_brown
-:global int producer_green
-:global int producer_purple
-:global int producer_yellow
-:global int producer_pink
-:global int producer_lightblue
-:global int producer_cyan
-:global int producer_grey
-:global int producer_black
+:global int white_producer
+:global int red_producer
+:global int orange_producer
+:global int blue_producer
+:global int brown_producer
+:global int green_producer
+:global int purple_producer
+:global int yellow_producer
+:global int pink_producer
+:global int lightblue_producer
+:global int cyan_producer
+:global int grey_producer
+:global int black_producer
 
 ;Transforms ore into dust
 :global int ore

@@ -1,0 +1,32 @@
+:global int white_producer
+:global int red_producer
+:global int orange_producer
+:global int blue_producer
+:global int brown_producer
+:global int green_producer
+:global int purple_producer
+:global int yellow_producer
+:global int pink_producer
+:global int lightblue_producer
+:global int cyan_producer
+:global int grey_producer
+:global int black_producer
+
+:global int tier_factor
+:global int _tier
+
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + white_producer), 0. - count("producer.town", _tier))
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + red_producer), 0. - count("producer.factory", _tier))
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + orange_producer), 0. - count("producer.mine", _tier))
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + blue_producer), 0. - count("producer.workshop", _tier))
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + brown_producer), 0. - count("producer.constructionFirm", _tier))
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + green_producer), 0. - count("producer.laboratory", _tier))
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + purple_producer), 0. - count("producer.headquarters", _tier))
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + yellow_producer), 0. - count("producer.powerplant", _tier))
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + pink_producer), 0. - count("producer.arcade", _tier))
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + lightblue_producer), 0. - count("producer.tradingpost", _tier))
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + cyan_producer), 0. - count("producer.shipyard", _tier))
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + grey_producer), 0. - count("producer.museum", _tier))
+global.double.set("craft_queue_" . i2s(_tier * tier_factor + black_producer), 0. - count("producer.statueofcubos", _tier))
+
+wait(0.0)
