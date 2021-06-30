@@ -10,6 +10,7 @@ execute(ternary.string(drillpos < 17, "DiggerHead", ""))
 ; drillpos is inc'd once by this script and once by the script we spawn
 ; before this line is executed.
 pos = drillpos - 2
+loop:
 dig(pos % 4, pos / 4)
-gotoif(4, isopen("mine"))
+gotoif(loop, isopen("mine"))
 gu("drillpos")
