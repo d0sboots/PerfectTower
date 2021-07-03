@@ -8,6 +8,7 @@
 :global int block
 :global int insul_cable
 :global int chip
+:global int hammer
 
 tierloop:
 tier += 1
@@ -39,3 +40,8 @@ global.double.set("craft_queue_"    . i2s(tier * tier_factor + chip), global.dou
 nochips:
 
 gotoif(tierloop, tier < 10)
+
+previous_amount = count("hammer", 1)
+craft("hammer", 1, gdg("craft_queue_" . i2s((1 * tier_factor) + hammer)))
+gds("craft_queue_" . i2s((1 * tier_factor) + hammer), gdg("craft_queue_" . i2s((1 * tier_factor) + hammer)) - (count("hammer", 1) - previous_amount))
+wait(0.0)

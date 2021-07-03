@@ -1,4 +1,5 @@
 :global int _tier
+:global int hammer
 :global int rubber
 :global int rubber_plate
 
@@ -24,6 +25,7 @@ global.double.set("craft_queue_" . i2s(_tier * tier_factor + lump), 0.)
 
 _tier += 1
 gotoif(loop, _tier < 11)
+global.double.set("craft_queue_" . i2s(1 * tier_factor + hammer), 0. - count("hammer", 1))
 global.double.set("craft_queue_" . i2s(1 * tier_factor + rubber), 0. - count("rubber", 1))
 global.double.set("craft_queue_" . i2s(1 * tier_factor + rubber_plate), 0. - count("plate.rubber", 1))
 global.double.set("craft_queue_" . i2s(1 * tier_factor + exotic_producer), 0. - count("producer.exoticgems", 1))

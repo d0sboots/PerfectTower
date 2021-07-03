@@ -22,3 +22,10 @@ belt = 7 + machine
 cutter = 8 + machine
 shaper = 9 + machine
 boiler = 10 + machine
+
+; Putting hammer id here because of lack of space in ingredients
+
+:global int hammer
+:global int ingredient
+
+hammer = 22 + ingredient

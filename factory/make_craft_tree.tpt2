@@ -16,5 +16,15 @@ executesync("recipe producers 4")
 stop("recipe producers 4")
 executesync("recipe parts")
 stop("recipe parts")
+; No space in parts so putting that here
+:global int hammer
+
+:global int ingot
+:global int rod
+
+:global int tier_factor
+
+global.double.set("craft_queue_" . i2s(2 * tier_factor + ingot), global.double.get("craft_queue_" . i2s(2 * tier_factor + ingot)) + max(0., global.double.get("craft_queue_" . i2s(1 * tier_factor + hammer)) * 6.))
+global.double.set("craft_queue_" . i2s(2 * tier_factor + rod), global.double.get("craft_queue_" . i2s(2 * tier_factor + rod)) + max(0., global.double.get("craft_queue_" . i2s(1 * tier_factor + hammer))))
 executesync("recipe ingredients")
 stop("recipe ingredients")
