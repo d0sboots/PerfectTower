@@ -1,4 +1,4 @@
-:global double dust_data
+:local int dust_tier
 :local string dust_multipliers
 :local double acc
 :local int i
@@ -56,41 +56,33 @@ i = {pos} + 1 + ({tier} + if({isspace} & {nextchar} != " ", 1, 0)) * 1000 + if({
 gotoif(init_multipliers, {tier} <= 9)
 
 ; The overall plan is to count down through the ores, so that the best ones
-; (with the least count) get processed first, but to count up through the
-; lumps, because that "sweeps" the wave forward up the tiers.
-top:
-; "dust_data" combines both the amount of dust we saw when we started
-; processing this tier, and the lump processing tier. We combine them into
-; one variable so it only takes one action to set them.
-; The scheme is that dust_data % 9 is the tier, and dust_data / 9 is the
-; amount of dust at (tier + 1). Because we're storing this in an double,
-; we need to take care to stay in the range where we have exact integer math,
-; but fortunately no one is likely to have that much dust (right?)
-; We keep the amount of dust at the start because if it's <= the safety
-; buffer, we'll only go 10 below it. This gives us 10 lumps to hand to the
-; mixer, but avoids destroying all the saved dust while we wait
-; for a large amount of lumps to process. As we process more lumps, the
-; amount of queued lumps will grow, since all the produced dust will get
-; turned back into lumps (until we run out of the base tier dust buffer).
+; (with the least count) get processed first, and to count down through
+; the lumps as well. We process lumps in "packets" that max out at
+; 5% of the destination's amount, which ensures that uptiering
+; doesn't consume too much dust while processing but also allows
+; for the chunks to process for a considerable time.
 
-; We put an extra ternary in here to handle initializing dust_data.
+; The tier variable is a local, so the process can be restarted from
+; the top if it's taking too long.
+top:
+
 ; We need the extra guard for isopen("factory"), otherwise there are
 ; spurious advances when the window is closed (because active() returns false).
 
 ; This seems like it's separated from the rest of the lump code, but it's
 ; actually not, it's just wrapped around on the other side of the goto.
-; It actually comes "after", but you see it here before so that dust_data
+; It actually comes "after", but you see it here before so that dust_tier
 ; is initialized if it's zero.
 
-#next_tier ((if(dust_data == 0., 0., dust_data + 1.)) % 9.)
+#next_tier if(dust_tier <= 1, 9, dust_tier - 1)
 
-dust_data = if(dust_data > 0. & (active("mixer") | isopen("factory") == false), dust_data, min(count("dust", d2i({next_tier}) + 2), 1000799917193442.) * 9. + {next_tier})
+dust_tier = if((active("mixer") | isopen("factory") == false), dust_tier, {next_tier})
 
 ; The core expression that determines if the produce action is dealing
 ; with ore or lumps. Unfortuantely, this has to get fanned out x4 across
 ; all the parameters.
 #orelump_nest(value, rest) count("ore", {value}) == 0. && {rest}
-#ore_or_lump(ore, lump) if(isopen("factory") && (active("crusher") || ({orelump_nest(1,{nest2_9(orelump_nest,count("ore", 10) == 0.)})})),{lump}, {ore})
+#ore_or_lump(ore, lump) if(active("crusher") || ({orelump_nest(1,{nest2_9(orelump_nest,count("ore", 10) == 0.)})}),{lump}, {ore})
 #ore_action(expr) {lua(\
   local expr = [[{expr}]];\
   local acc = {};\
@@ -107,8 +99,8 @@ dust_data = if(dust_data > 0. & (active("mixer") | isopen("factory") == false), 
   end\
   return table.concat(acc);\
 )}
-#ore_or_lump_tier {ore_or_lump({ore_action(val)}, {lump_tier(1)})}
-#ore_or_lump_count {ore_or_lump({ore_action(count("ore", val))}, count("lump", {lump_tier(1)}))}
+#ore_or_lump_tier {ore_or_lump({ore_action(val)}, {lump_tier(0)})}
+#ore_or_lump_count {ore_or_lump({ore_action(count("ore", val))}, count("lump", {lump_tier(0)}))}
 
 ; These expressions calculate how much dust to keep. #dust_value calculates
 ; the value of all your dust in T1-equivilant units (i.e. if you
@@ -125,17 +117,24 @@ dust_data = if(dust_data > 0. & (active("mixer") | isopen("factory") == false), 
 #dust_value {count_nest(1, {nest2_9(count_nest, count("dust", 10))})}
 #denom_nest(value, rest) if(count("dust", {value}) == 0., 0., 4.) * (ldg("buffer{value}") + {rest})
 #denominator (ldg("buffer1") + {nest2_9(denom_nest, if(count("dust", 10) == 0., 0., 4.) * ldg("buffer10"))})
-#lump_tier(offset) (d2i(dust_data % 9.) + {offset})
+#lump_tier(offset) (dust_tier {lua(if {offset} == 0 then return "" else return "+ " .. [[{offset}]] end)})
 #target(offset) (ldg("buffer" . {lump_tier({offset})}) * {dust_value} / {denominator})
 
 ; We always save one dust on the producing side, so that dust ordering doesn't
 ; get messed up in the inventory.
+; We produce lumps in chunks. We consume up to 5% of the destination;
+; this allows for large-ish mixing regardless of stack size, and
+; dynamically adjusts well.
+; Not adding more to the mixer when it's running greatly reduces
+; complications. We just move on to the next tier when it's done,
+; and come back around soon enough.
 ; The "- 4" on the consuming side is to adjust for Chemical Lumps.
 ; That way, in the terminal case it'll hit the safety target exactly. If you
 ; don't have lumps, you'll be up to 3 under the target. However, we always
 ; ensure that you'll leave one leftover no matter what.
 
-craft("lump", {lump_tier(1)}, min(count("dust", {lump_tier(2)}) - max(1., min({target(2)}, floor(dust_data/9.) - 100.)), (count("dust", {lump_tier(1)}) - max({target(1)} - 4., 1.)) / 8.))
+craft(if(active("mixer"), "", "lump"), {lump_tier(0)}, min(count("dust", {lump_tier(1)}) - max(1., min({target(1)}, 0.95 * count("dust", {lump_tier(1)}))), (count("dust", {lump_tier(0)}) - max({target(0)} - 4., 1.)) / 8.))
+produce_loop:
 produce({ore_or_lump("ore", "lump")}, {ore_or_lump_tier}, {ore_or_lump_count}, {ore_or_lump("crusher", "mixer")})
 
-gotoif(top, isopen("factory"))
+goto(if(isopen("factory"), if(active("mixer"), produce_loop, top), 99))
