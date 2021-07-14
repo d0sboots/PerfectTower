@@ -1,0 +1,32 @@
+key.d()
+
+; Credit to TECHTERROR731 for the idea.
+
+; In all ternaries, first expression is for tallscreen,
+; second is for widescreen.
+
+; Scroll the Scripts list to the top. (Horizontal is ignored.)
+scrollbar(vec(\
+  if(height.d()/width.d() >= 0.5625,\
+    0.85 * width.d(), width.d() - 0.278 * height.d()),\
+  0.2 * height.d()), -1., 1.)
+  
+loop:
+; Click the first script.
+; After deleting, no script is selected, so we need to do this.
+; If it was already selected, this will deselect it, but then the following
+; click will be no-ops and the next iteration will re-select it.
+click(if(height.d()/width.d() >= 0.5625,\
+  vec(0.85 * width.d(), height.d() - 0.214 * width.d()),\
+  vec(width.d() - 0.278 * height.d(), 0.62 * height.d())))
+
+; Click the Delete button.
+click(if(height.d()/width.d() >= 0.5625,\
+  vec(0.61 * width.d(), 0.038 * width.d()),\
+  vec(width.d() - 0.689 * height.d(), 0.064 * height.d())))
+
+; Click the "yes" confirmation button.
+click(if(height.d()/width.d() >= 0.5625,\
+  vec(0.444 * width.d(), 0.5 * height.d() - 0.045 * width.d()),\
+  vec(0.5 * width.d() - 0.098 * height.d(), 0.42 * height.d())))
+goto(loop)
