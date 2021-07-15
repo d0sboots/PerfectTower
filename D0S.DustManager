@@ -57,10 +57,13 @@ gotoif(init_multipliers, {tier} <= 9)
 
 ; The overall plan is to count down through the ores, so that the best ones
 ; (with the least count) get processed first, and to count down through
-; the lumps as well. We process lumps in "packets" that max out at
-; 5% of the destination's amount, which ensures that uptiering
+; the lumps as well. We process lumps in "packets" that are based on a
+; power of the stack size, which ensures that uptiering
 ; doesn't consume too much dust while processing but also allows
 ; for the chunks to process for a considerable time.
+; This also makes for a simple expression that equals 0 when the size
+; is 1 (so that we don't use the last dust), and 1 when the size is 2
+; (so that we do start immediately after that point.)
 
 ; The tier variable is a local, so the process can be restarted from
 ; the top if it's taking too long.
@@ -133,7 +136,7 @@ dust_tier = if((active("mixer") | isopen("factory") == false), dust_tier, {next_
 ; don't have lumps, you'll be up to 3 under the target. However, we always
 ; ensure that you'll leave one leftover no matter what.
 
-craft(if(active("mixer"), "", "lump"), {lump_tier(0)}, min(count("dust", {lump_tier(1)}) - max(1., min({target(1)}, 0.95 * count("dust", {lump_tier(1)}))), (count("dust", {lump_tier(0)}) - max({target(0)} - 4., 1.)) / 8.))
+craft(if(active("mixer"), "", "lump"), {lump_tier(0)}, min(max(count("dust", {lump_tier(1)}) - {target(1)}, 0.999 * count("dust", {lump_tier(1)})^ 0.84), (count("dust", {lump_tier(0)}) - max({target(0)} - 4., 1.)) / 8.))
 produce_loop:
 produce({ore_or_lump("ore", "lump")}, {ore_or_lump_tier}, {ore_or_lump_count}, {ore_or_lump("crusher", "mixer")})
 
