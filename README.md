@@ -1,4 +1,12 @@
 # AI Scripts and Utilities for Perfect Tower II
+
+#### Quick-Navigation
+- [Improved code editor](#improved-code-editor)
+- [Auto mining script V2](#auto-mining-script-v2)
+- [Autoclicker](#autoclicker)
+- [Factory management scripts](#factory-management-scripts)
+- [Other Utilities](#other-utilities)
+
 This is my collection of AI scripts and other useful things. I focus on low-RAM scripts (i.e. 14 actions or less), so that they'll be usable by everyone who has unlocked the AI.
 
 Almost all of these also work under `turbo exec` (https://github.com/Xenos6666/TPT2_scripts/tree/modular_V2/common/execution_stack), although with some quirks - for instance, the autominer will cause noticable lag on entering the mine, and mine everything before you can see it happen!
