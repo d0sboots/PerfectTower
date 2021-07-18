@@ -33,11 +33,11 @@ tab(pos - 32)
 digloop:
 dig((pos % 8) / 2, pos / 8)
 stall:
-goto(if(isopen("mine"), if(pos < 32, digloop, if(pos == 32, new_layer, if(hasLayers(), stall, setpos))), done))
+goto(if(isopen("mine") & diggerpos > 0, if(pos < 32, digloop, if(pos == 32, new_layer, if(hasLayers(), stall, if(pos > 43, done, setpos)))), done))
 
 new_layer:
 newlayer()
-gotoif(new_layer, isopen("mine"))
+gotoif(new_layer, isopen("mine") & diggerpos > 0)
 
 done:
 gu("diggerpos")
