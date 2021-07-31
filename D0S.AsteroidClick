@@ -1,0 +1,23 @@
+:global int asteroid_count
+:local double row
+:local double offset
+
+key.z()
+
+asteroid_count = asteroid_count + 1
+; This launches 6 copies, meaning 7 total. 2 will have the same number
+; at the end and double-click the last row.
+execute(if(asteroid_count < 7, "D0S.AsteroidClick", ""))
+
+; asteroid_count is incremented twice before we reach this line, once by
+; "our" script and once by the script we launch.
+row = i2d(asteroid_count - 2)
+offset = if(height.d() > width.d() * 0.5625, 0.0305 * width.d(), 0.0542 * height.d())
+
+click(vec(x(position()), y(position()) - row * offset))
+click(vec(x(position()) + offset, y(position()) - row * offset))
+click(vec(x(position()) + 2. * offset, y(position()) - row * offset))
+click(vec(x(position()) + 3. * offset, y(position()) - row * offset))
+click(vec(x(position()) + 4. * offset, y(position()) - row * offset))
+click(vec(x(position()) + 5. * offset, y(position()) - row * offset))
+gu("asteroid_count")
