@@ -1,23 +1,30 @@
 :global int asteroid_count
 :local double row
 :local double offset
+:local double x
+:local double y
+
+isopen("mine")
 
 key.z()
 
 asteroid_count = asteroid_count + 1
-; This launches 6 copies, meaning 7 total. 2 will have the same number
+; This launches 17 copies, meaning 18 total. 3 will have the same number
 ; at the end and double-click the last row.
-execute(if(asteroid_count < 7, "D0S.AsteroidClick", ""))
+execute(if(asteroid_count < 18, "D0S.AsteroidClick", ""))
 
-; asteroid_count is incremented twice before we reach this line, once by
-; "our" script and once by the script we launch.
-row = i2d(asteroid_count - 2)
 offset = if(height.d() > width.d() * 0.5625, 0.0305 * width.d(), 0.0542 * height.d())
+; asteroid_count is incremented 3 times before we reach this line, once by
+; "our" script and twice by launched scripts.
+x = i2d(asteroid_count - 2) * offset + if(height.d() > width.d() * 0.5625, 0.4254 * width.d(), 0.5 * width.d() - 0.1327 * height.d())
+y = if(height.d() > width.d() * 0.5625, 0.5 * height.d() - 0.2406 * width.d(), 0.0723 * height.d())
 
-click(vec(x(position()), y(position()) - row * offset))
-click(vec(x(position()) + offset, y(position()) - row * offset))
-click(vec(x(position()) + 2. * offset, y(position()) - row * offset))
-click(vec(x(position()) + 3. * offset, y(position()) - row * offset))
-click(vec(x(position()) + 4. * offset, y(position()) - row * offset))
-click(vec(x(position()) + 5. * offset, y(position()) - row * offset))
+loop:
+click(vec(x, y + row * offset))
+click(vec(x, y + (row + 1.) * offset))
+click(vec(x, y + (row + 2.) * offset))
+click(vec(x, y + (row + 3.) * offset))
+row = row + 4.
+gotoif(loop, row <= 8.)
+
 gu("asteroid_count")
