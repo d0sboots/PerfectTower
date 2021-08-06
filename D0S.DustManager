@@ -2,11 +2,19 @@
 :local string dust_multipliers
 :local double acc
 :local int i
+:local int state
+:local double ore_buffer
 
 wakeup()
 open.factory()
 
 isopen("factory")
+
+; Amount of ore to save at each tier. Ore will only be saved if there is
+; more dust than ore, otherwise it will be crushed anyway (so that saving
+; ore doesn't prevent you from progressing.) This function exists to allow
+; for scanning ore with the Crafter.
+ore_buffer = 1000.
 
 ; Initialize multipliers from a string. This is annoying because we don't
 ; have native string->double parsing, but we can pull it off in 3 lines
@@ -69,59 +77,43 @@ gotoif(init_multipliers, {tier} <= 9)
 ; the top if it's taking too long.
 top:
 
-; We need the extra guard for isopen("factory"), otherwise there are
-; spurious advances when the window is closed (because active() returns false).
+; Nested expressions for calculating the tier of ore to crush. This factors in
+; the need to save 1000 ore based on ore_buffer, and returns
+; 0 if there is no crushable ore.
+#orecount_cond(value) (count("ore", {value}) <= min(ore_buffer, count("dust", {value})))
+#orestate_nest(value, rest) if({orecount_cond(10 - {value})}, {rest}, 10 - {value})
+#dust_inc if(active("mixer"), 0, 11)
+#orestate if(active("crusher"), {dust_inc}, {orestate_nest(0,{orestate_nest(1,{nest2_9(orestate_nest,{dust_inc})})})})
 
-; This seems like it's separated from the rest of the lump code, but it's
-; actually not, it's just wrapped around on the other side of the goto.
-; It actually comes "after", but you see it here before so that dust_tier
-; is initialized if it's zero.
+; The main state calculation. We first calculate whether ore needs to be
+; crushed, and if it does not, we possibly increment the current dust that is
+; being mixed.
 
-#next_tier if(dust_tier <= 1, 9, dust_tier - 1)
+; The dust_tier for mixing and ore_tier for crushing are stored together in state.
+; Mixing will only occur if ore_tier is 0, since crushing takes priority.
+; (Generally the mixing will happen in the next iteration.)
 
-dust_tier = if((active("mixer") | isopen("factory") == false), dust_tier, {next_tier})
+#raw_dust_tier (state / 11)
+#curr_dust_tier ((({raw_dust_tier} + 8) % 9) + 1)
+#next_dust_tier (({raw_dust_tier} % 9) + 1)
+#ore_tier (state % 11)
+#has_ore ({ore_tier} != 0)
 
-; The core expression that determines if the produce action is dealing
-; with ore or lumps. Unfortuantely, this has to get fanned out x4 across
-; all the parameters.
-#orelump_nest(value, rest) count("ore", {value}) == 0. && {rest}
-#ore_or_lump(ore, lump) if(active("crusher") || ({orelump_nest(1,{nest2_9(orelump_nest,count("ore", 10) == 0.)})}),{lump}, {ore})
-#ore_action(expr) {lua(\
-  local expr = [[{expr}]];\
-  local acc = {};\
-  for i = 10, 1, -1 do\
-    local subbed = expr:gsub("val", i);\
-    if i ~= 1 then\
-      acc[#acc+1] = 'if(count("ore", ' .. i .. ') > 0., ' .. subbed .. ', ';\
-	else\
-	  acc[#acc+1] = subbed;\
-	end\
-  end\
-  for i = 9, 1, -1 do\
-    acc[#acc+1] = ')';\
-  end\
-  return table.concat(acc);\
-)}
-#ore_or_lump_tier {ore_or_lump({ore_action(val)}, {lump_tier(0)})}
-#ore_or_lump_count {ore_or_lump({ore_action(count("ore", val))}, count("lump", {lump_tier(0)}))}
+state = ({raw_dust_tier} * 11 + {orestate}) % 99
 
-; These expressions calculate how much dust to keep. #dust_value calculates
-; the value of all your dust in T1-equivilant units (i.e. if you
-; down-converted it all). This assumes you can upconvert at Chemical Lumps
-; prices (but it will adjust OK if you can't). #denominator is calculating
-; the same downconverted value for the sum of dust_multipliers, except it
-; cuts off the expression once it reaches a tier where you don't have dust.
-; This prevents the higher tiers from overwhelming the result when you don't
-; have access to them yet.
-; The ratio between them tells how to scale a particular entry of
-; dust_multipliers into a target value.
+; These expressions calculate how much dust to uptier. It used to be a more
+; complicated expression that calculated everything in T1-equivilant units,
+; (i.e. if you down-converted it all), but that isn't actually needed: Everything
+; works (better actually) if you just make local decisions based on the ratios
+; between the current and next tier.
+; In both cases, Ore Lumps are also counted as dust, so that unmixed lumps don't
+; throw off the calculations. We know that currently processing lumps won't be
+; an issue, because we only craft when the mixer is empty.
 
-#count_nest(value, rest) (count("dust", {value}) + 4. * {rest})
-#dust_value {count_nest(1, {nest2_9(count_nest, count("dust", 10))})}
-#denom_nest(value, rest) if(count("dust", {value}) == 0., 0., 4.) * (ldg("buffer{value}") + {rest})
-#denominator (ldg("buffer1") + {nest2_9(denom_nest, if(count("dust", 10) == 0., 0., 4.) * ldg("buffer10"))})
-#lump_tier(offset) (dust_tier {lua(if {offset} == 0 then return "" else return "+ " .. [[{offset}]] end)})
-#target(offset) (ldg("buffer" . {lump_tier({offset})}) * {dust_value} / {denominator})
+#count_dust_and_lumps(dust_tier) (count("lump", {dust_tier} - 1) + count("dust", {dust_tier}))
+#needed_by_ratio(dust_tier) (({count_dust_and_lumps({dust_tier})} * ldg("buffer" . ({dust_tier} + 1))\
+  - {count_dust_and_lumps({dust_tier} + 1)} * ldg("buffer" . {dust_tier}))\
+  / (ldg("buffer" . {dust_tier}) + 8. * ldg("buffer" . ({dust_tier} + 1))))
 
 ; We always save one dust on the producing side, so that dust ordering doesn't
 ; get messed up in the inventory.
@@ -131,13 +123,15 @@ dust_tier = if((active("mixer") | isopen("factory") == false), dust_tier, {next_
 ; Not adding more to the mixer when it's running greatly reduces
 ; complications. We just move on to the next tier when it's done,
 ; and come back around soon enough.
-; The "- 4" on the consuming side is to adjust for Chemical Lumps.
+; The "+ 0.5" on the consuming side is to adjust for Chemical Lumps.
 ; That way, in the terminal case it'll hit the safety target exactly. If you
 ; don't have lumps, you'll be up to 3 under the target. However, we always
 ; ensure that you'll leave one leftover no matter what.
 
-craft(if(active("mixer"), "", "lump"), {lump_tier(0)}, min(max(count("dust", {lump_tier(1)}) - {target(1)}, 0.999 * count("dust", {lump_tier(1)})^ 0.84), (count("dust", {lump_tier(0)}) - max({target(0)} - 4., 1.)) / 8.))
-produce_loop:
-produce({ore_or_lump("ore", "lump")}, {ore_or_lump_tier}, {ore_or_lump_count}, {ore_or_lump("crusher", "mixer")})
+craft(if({has_ore} || active("mixer"), "", "lump"), {curr_dust_tier}, min(0.999 * count("dust", {next_dust_tier})^ 0.84, {needed_by_ratio({curr_dust_tier})} + 0.5))
+produce(if({has_ore}, "ore", if(active("mixer"), "", "lump")),\
+  if({has_ore}, {ore_tier}, {curr_dust_tier}),\
+  if({has_ore}, count("ore", {ore_tier}) - min(ore_buffer, count("dust", {ore_tier})), count("lump", {curr_dust_tier})),\
+  if({has_ore}, "crusher", "mixer"))
 
-goto(if(isopen("factory"), if(active("mixer"), produce_loop, top), 99))
+gotoif(top, isopen("factory"))
