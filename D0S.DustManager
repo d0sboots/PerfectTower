@@ -95,7 +95,7 @@ top:
 
 #raw_dust_tier (state / 11)
 #curr_dust_tier ((({raw_dust_tier} + 8) % 9) + 1)
-#next_dust_tier (({raw_dust_tier} % 9) + 1)
+#next_dust_tier ((({raw_dust_tier} + 8 )% 9) + 2)
 #ore_tier (state % 11)
 #has_ore ({ore_tier} != 0)
 
@@ -131,7 +131,7 @@ state = ({raw_dust_tier} * 11 + {orestate}) % 99
 craft(if({has_ore} || active("mixer"), "", "lump"), {curr_dust_tier}, min(0.999 * count("dust", {next_dust_tier})^ 0.84, {needed_by_ratio({curr_dust_tier})} + 0.5))
 produce(if({has_ore}, "ore", if(active("mixer"), "", "lump")),\
   if({has_ore}, {ore_tier}, {curr_dust_tier}),\
-  if({has_ore}, count("ore", {ore_tier}) - min(ore_buffer, count("dust", {ore_tier})), count("lump", {curr_dust_tier})),\
+  if({has_ore}, max(count("ore", {ore_tier}) - ore_buffer, 1. + (count("ore", {ore_tier}) - count("dust", {ore_tier})) / 3.), count("lump", {curr_dust_tier})),\
   if({has_ore}, "crusher", "mixer"))
 
 gotoif(top, isopen("factory"))
