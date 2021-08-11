@@ -68,7 +68,7 @@
       end\
     end\
     acc[#acc + 1] = ")";\
-	return table.concat(acc);\
+    return table.concat(acc);\
   end\
 \
   function test_lib.error_expr(loop_counter)\
@@ -86,7 +86,7 @@
       acc[#acc + 1] = ")";\
     end\
     acc[#acc + 1] = ' . ")</color>", "<color=#4f4>OK</color>")))';\
-	return table.concat(acc);\
+    return table.concat(acc);\
   end\
 \
   return "";\
