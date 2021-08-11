@@ -1,0 +1,17 @@
+; Basic unit-tests for testlib. Serves as a smoke-test, as well as
+; a simple example of how to use the library.
+
+:import testlib
+
+wakeup()
+
+{EXPECT(1 == 1)}
+{EXPECT(3 < 5)}
+{EXPECT("foo" == "foo")}
+{EXPECT(sub('flump', 1, 4) == "lump")}
+
+:local int i
+
+testloop: i = i + 1
+gotoif(testloop, {test_loop_expr(i)})
+gss("<color=#fff>result</color>", {test_result(i)})
