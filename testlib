@@ -1,0 +1,93 @@
+; This is not a script, but a macro library. To use it, copy it into
+; your editor, and then ":import testlib" within your script.
+; The API comes first, with implementation below.
+
+; "testlib" - Unit testing library
+; v0.9.0 2021-08-11
+
+; Predeclaration of these functions so that the examples in the comments don't
+; fail to compile.
+{lua(\
+  test_lib = {};\
+  function test_lib.test_expr() return "" end\
+  function test_lib.error_expr() return "" end\
+  return "";\
+)}
+
+; Tests that "expr" is true. If it is false, the failure will be logged
+; and the remaining tests will be skipped.
+; Each test expression is used as part of a test runner loop. This means that
+; no matter how many tests are added, the line count will not grow - it just
+; adds some runtime and size to the script.
+#EXPECT(expr) {lua(return test_lib.expect([===[{expr}]===]))}
+
+; These macros evaluate to expressions that are used to form the main body
+; of the test loop. See usage instructions below.
+#test_loop_expr(loop_counter) {lua(return test_lib.test_expr([===[{loop_counter}]===]))}
+#test_result(loop_counter) {lua(return test_lib.error_expr([===[{loop_counter}]===]))}
+
+; An functioning test loop looks like this:
+; :local int i
+;
+; testloop: i = i + 1
+; gotoif(testloop, {test_loop_expr(i)})
+; gss("<color=#fff>result</color>", {test_result(i)})
+
+; ================= IMPLEMENTATION DETAILS BELOW =========================
+
+{lua(\
+  local tests = {};\
+  test_lib.tests = tests;\
+\
+  local function add_quoted(acc, str)\
+    acc[#acc + 1] = '"';\
+    for unquoted, quotes in string.gmatch(str, '([^"]*)("*)') do\
+      acc[#acc + 1] = unquoted;\
+      if quotes ~= "" then\
+        acc[#acc + 1] = [[" . ']] .. quotes .. [[' . "]]\
+      end\
+    end\
+    acc[#acc + 1] = '"';\
+  end\
+\
+  function test_lib.expect(expr)\
+    tests[#tests + 1] = expr;\
+    return "";\
+  end\
+\
+  function test_lib.test_expr(loop_counter)\
+    local acc = {};\
+    acc[1] = "(";\
+    for i = 1, #tests do\
+      acc[#acc + 1] = loop_counter;\
+      acc[#acc + 1] = " == " .. i .. " && (";\
+      acc[#acc + 1] = tests[i];\
+      acc[#acc + 1] = ")";\
+      if i ~= #tests then\
+        acc[#acc + 1] = " || ";\
+      end\
+    end\
+    acc[#acc + 1] = ")";\
+	return table.concat(acc);\
+  end\
+\
+  function test_lib.error_expr(loop_counter)\
+    local acc = {};\
+    acc[1] = "(if(" .. loop_counter .. ' <= 0, "<color=#f44>Bad test setup, ' .. loop_counter .. ' <= 0</color>", ';\
+    acc[2] = "if(" .. loop_counter .. " <= " .. #tests .. ', "<color=#f44>FAIL #" . ' .. loop_counter .. ' . ": !(" . ';\
+    for i = 1, #tests - 1 do\
+      acc[#acc + 1] = "if(" .. loop_counter;\
+      acc[#acc + 1] = " == " .. i .. ", ";\
+      add_quoted(acc, tests[i]);\
+      acc[#acc + 1] = ", ";\
+    end\
+    add_quoted(acc, tests[#tests]);\
+    for i = 1, #tests - 1 do\
+      acc[#acc + 1] = ")";\
+    end\
+    acc[#acc + 1] = ' . ")</color>", "<color=#4f4>OK</color>")))';\
+	return table.concat(acc);\
+  end\
+\
+  return "";\
+)}
