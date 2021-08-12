@@ -1,18 +1,5 @@
-:global int white_producer
-:global int red_producer
-:global int orange_producer
-:global int blue_producer
-:global int brown_producer
-:global int green_producer
-:global int purple_producer
-:global int yellow_producer
-:global int pink_producer
-:global int lightblue_producer
-:global int cyan_producer
-:global int grey_producer
-:global int black_producer
+:import factory constants
 
-:global int tier_factor
 :global int _tier
 
 global.double.set("craft_queue_" . i2s(_tier * tier_factor + white_producer), 0. - count("producer.town", _tier))

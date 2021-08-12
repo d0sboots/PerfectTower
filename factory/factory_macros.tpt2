@@ -1,0 +1,20 @@
+; Infrastructure for producing all the constants in the factory package.
+; Since this is :imported, it can't produce any instructions.
+
+{lua(\
+  factory = {};\
+  factory.items = {};\
+  factory.item_names = {};\
+  factory.name_max_size = 0;\
+)}
+
+; Define a new item with name "name". It will take the next available id,
+; starting from 1.
+#item(name) {lua(\
+  factory.items[#factory.items + 1] = "{name}";\
+  factory.item_names["{name}"] = #factory.items;\
+  if #"{name}" > factory.name_max_size then\
+    factory.name_max_size = #"{name}";\
+  end\
+  return ":const int {name} " .. #factory.items;\
+)}

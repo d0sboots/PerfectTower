@@ -1,36 +1,6 @@
+:import factory constants
 
 :local int tier
-
-:global int tier_factor
-
-:global int ore
-:global int lump
-:global int dust
-:global int ingot
-
-:global int plate
-:global int pipe
-:global int dense_plate
-:global int block
-:global int dense_block
-
-:global int cable
-:global int wire
-:global int insul_cable
-
-:global int rod
-:global int ring
-:global int screw
-
-:global int motor
-:global int pump
-
-:global int circuit
-:global int board
-:global int rubber
-:global int rubber_plate
-
-:global int chip
 
 tier = 10
 tierloop:

@@ -1,76 +1,8 @@
-; ++ Valid ids ++
-
-
-:global int oven
-:global int presser
-:global int assembly
-:global int refiner
-:global int mixer
-:global int crusher
-:global int belt
-:global int cutter
-:global int shaper
-:global int boiler
-
-
-:global int exotic_producer
-:global int gem_producer
-:global int white_producer
-:global int red_producer
-:global int orange_producer
-:global int blue_producer
-:global int brown_producer
-:global int green_producer
-:global int purple_producer
-:global int yellow_producer
-:global int pink_producer
-:global int lightblue_producer
-:global int cyan_producer
-:global int grey_producer
-:global int black_producer
-
-;Transforms ore into dust
-:global int ore
-
-;Tiers up dust
-:global int lump
-
-;Tries to make dust from ores and lower-tier dusts
-:global int dust
-
-:global int ingot
-
-:global int plate
-:global int pipe
-:global int dense_plate
-:global int block
-:global int dense_block
-
-:global int cable
-:global int wire
-:global int insul_cable
-
-:global int rod
-:global int ring
-:global int screw
-
-:global int motor
-:global int pump
-
-:global int board
-:global int circuit
-:global int rubber
-:global int rubber_plate
-:global int chip
-
-; -- Valid ids --
-
+:import factory constants
 
 :global int factory_target
 :global double factory_target_amount
 :global int factory_launch
-
-:global int tier_factor
 
 :local int target_tier
 :local int target_type
@@ -80,7 +12,7 @@ key.f()
 isopen("factory")
 
 target_tier = 1
-target_type = plate
+target_type = gig("plate")
 factory_target_amount = 8.
 waitwhile("You can edit previous lines, but don't the lines bellow" == "")
 factory_target = target_tier * tier_factor + target_type

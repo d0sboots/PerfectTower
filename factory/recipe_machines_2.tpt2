@@ -1,19 +1,6 @@
+:import factory constants
 
 :local int tier
-
-:global int tier_factor
-
-:global int assembly
-:global int refiner
-:global int mixer
-
-:global int chip
-:global int motor
-:global int pipe
-:global int pump
-:global int ring
-:global int block
-:global int dense_plate
 
 tier = 10
 tierloop:
@@ -48,4 +35,3 @@ global.double.set("craft_queue_" . i2s(tier * tier_factor + pump),   global.doub
 tier -= 1
 gotoif(tierloop, tier > 0)
 wait(0.0)
-

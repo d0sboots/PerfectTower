@@ -1,6 +1,5 @@
-:global int black_producer
+:import factory constants
 
-:global int tier_factor
 :local double previous_amount
 :local int tier
 

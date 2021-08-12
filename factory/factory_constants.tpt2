@@ -1,0 +1,87 @@
+:import factory macros
+
+; ===== VALID IDS =====
+
+; Everything in this list of the form "item(xx)" is a valid target for
+; automation, and can be assigned to the "target_type" variable in
+; "lanuch factory craft". For example, "item(oven)" indicates that
+; "oven" is a valid item, and you can enter that in the box
+; (without the quotes).
+
+; Producers, tiers 1-5
+{item(white_producer)}
+{item(red_producer)}
+{item(orange_producer)}
+{item(blue_producer)}
+{item(brown_producer)}
+{item(green_producer)}
+{item(purple_producer)}
+{item(yellow_producer)}
+{item(pink_producer)}
+{item(lightblue_producer)}
+{item(cyan_producer)}
+{item(grey_producer)}
+{item(black_producer)}
+
+; Special producers, tier 1 only
+{item(gem_producer)}
+{item(exotic_producer)}
+
+; Machines, tiers 1-10
+{item(oven)}
+{item(presser)}
+{item(assembly)}
+{item(refiner)}
+{item(mixer)}
+{item(crusher)}
+{item(belt)}
+{item(cutter)}
+{item(shaper)}
+{item(boiler)}
+
+;Transforms ore into dust, tiers 1-10
+{item(ore)}
+
+;Tiers up dust, tiers 1-9
+{item(lump)}
+
+;Tries to make dust from ores and lower-tier dusts, tiers 1-10
+{item(dust)}
+
+; Parts, tiers 1-10
+; These have to be in this specific order, various things depend on
+; the relationships between ingredients.
+{item(ingot)}
+
+{item(plate)}
+{item(dense_plate)}
+{item(block)}
+{item(dense_block)}
+{item(pipe)}
+
+{item(cable)}
+{item(wire)}
+{item(insul_cable)}
+
+{item(rod)}
+{item(ring)}
+{item(screw)}
+
+{item(motor)}
+{item(pump)}
+
+{item(board)}
+{item(circuit)}
+
+; Rubber and hammers, tier 1 only
+{item(rubber)}
+{item(rubber_plate)}
+{item(hammer)}
+
+; Chips, tier 1-5
+{item(chip)}
+
+; ===== END OF VALID IDS =====
+
+:const int machine {lua(return factory.item_names["oven"] - 1)}
+:const int tier_factor 1000
