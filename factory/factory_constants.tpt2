@@ -2,86 +2,88 @@
 
 ; ===== VALID IDS =====
 
-; Everything in this list of the form "item(xx)" is a valid target for
-; automation, and can be assigned to the "target_type" variable in
-; "lanuch factory craft". For example, "item(oven)" indicates that
-; "oven" is a valid item, and you can enter that in the box
-; (without the quotes).
+; Everything in this list of the form "item(xx)" or "make(xx)" is
+; a valid target for automation, and can be assigned to the "target_type"
+; variable in "lanuch factory craft".
+; For example, "make(oven, 10, "machine.oven")" indicates that "oven" is a valid
+; item, usable from tiers 1-10, with the internal game name of "machine.oven"
+; (which you don't need to worry about.)
+; Thus you can enter "oven" in the box in the in-game editor (without the quotes).
 
 ; Producers, tiers 1-5
-{item(white_producer)}
-{item(red_producer)}
-{item(orange_producer)}
-{item(blue_producer)}
-{item(brown_producer)}
-{item(green_producer)}
-{item(purple_producer)}
-{item(yellow_producer)}
-{item(pink_producer)}
-{item(lightblue_producer)}
-{item(cyan_producer)}
-{item(grey_producer)}
-{item(black_producer)}
+{make(white_producer, 5, "producer.town")}
+{make(red_producer, 5, "producer.factory")}
+{make(orange_producer, 5, "producer.mine")}
+{make(blue_producer, 5, "producer.workshop")}
+{make(brown_producer, 5, "producer.constructionFirm")}
+{make(green_producer, 5, "producer.laboratory")}
+{make(purple_producer, 5, "producer.headquarters")}
+{make(yellow_producer, 5, "producer.powerplant")}
+{make(pink_producer, 5, "producer.arcade")}
+{make(lightblue_producer, 5, "producer.tradingpost")}
+{make(cyan_producer, 5, "producer.shipyard")}
+{make(grey_producer, 5, "producer.museum")}
+{make(black_producer, 5, "producer.statueofcubos")}
 
 ; Special producers, tier 1 only
-{item(gem_producer)}
-{item(exotic_producer)}
+{make(gem_producer, 1, "producer.gems")}
+{make(exotic_producer, 1, "producer.exoticgems")}
 
 ; Machines, tiers 1-10
-{item(oven)}
-{item(presser)}
-{item(assembly)}
-{item(refiner)}
-{item(mixer)}
-{item(crusher)}
-{item(belt)}
-{item(cutter)}
-{item(shaper)}
-{item(boiler)}
+{make(oven, 10, "machine.oven")}
+{make(presser, 10, "machine.presser")}
+{make(assembly, 10, "machine.assembler")}
+{make(refiner, 10, "machine.refinery")}
+{make(mixer, 10, "machine.mixer")}
+{make(crusher, 10, "machine.crusher")}
+{make(belt, 10, "machine.transportbelt")}
+{make(cutter, 10, "machine.cutter")}
+{make(shaper, 10, "machine.shaper")}
+{make(boiler, 10, "machine.boiler")}
 
 ;Transforms ore into dust, tiers 1-10
-{item(ore)}
+{item(ore, 10, "ore")}
 
 ;Tiers up dust, tiers 1-9
-{item(lump)}
+{item(lump, 9, "lump")}
 
 ;Tries to make dust from ores and lower-tier dusts, tiers 1-10
-{item(dust)}
+{item(dust, 10, "dust")}
 
 ; Parts, tiers 1-10
 ; These have to be in this specific order, various things depend on
 ; the relationships between ingredients.
-{item(ingot)}
+{item(ingot, 10, "ingot")}
 
-{item(plate)}
-{item(dense_plate)}
-{item(block)}
-{item(dense_block)}
-{item(pipe)}
+{item(plate, 10, "plate")}
+{item(dense_plate, 10, "plate.dense")}
+{item(block, 10, "block")}
+{item(dense_block, 10, "block.dense")}
+{item(pipe, 10, "pipe")}
 
-{item(cable)}
-{item(wire)}
-{item(insul_cable)}
+{item(cable, 10, "cable")}
+{item(wire, 10, "wire")}
+{item(insul_cable, 10, "cable.insulated")}
 
-{item(rod)}
-{item(ring)}
-{item(screw)}
+{item(rod, 10, "rod")}
+{item(ring, 10, "ring")}
+{item(screw, 10, "screw")}
 
-{item(motor)}
-{item(pump)}
+{item(motor, 10, "motor")}
+{item(pump, 10, "pump")}
 
-{item(board)}
-{item(circuit)}
+{item(board, 10, "plate.circuit")}
+{item(circuit, 10, "circuit")}
 
 ; Rubber and hammers, tier 1 only
-{item(rubber)}
-{item(rubber_plate)}
-{item(hammer)}
+{item(rubber, 1, "rubber")}
+{item(rubber_plate, 1, "plate.rubber")}
+{make(hammer, 1, "hammer")}
 
 ; Chips, tier 1-5
-{item(chip)}
+{make(chip, 5, "chip")}
 
 ; ===== END OF VALID IDS =====
 
-:const int machine {lua(return factory.item_names["oven"] - 1)}
+:const int machine {lua(return factory.item_names["oven"].id - 1)}
 :const int tier_factor 1000

@@ -6,15 +6,60 @@
   factory.items = {};\
   factory.item_names = {};\
   factory.name_max_size = 0;\
+  factory.game_name_sizes = {};\
+  factory.game_name_sizes[false] = 0;\
+  factory.game_name_sizes[true] = 0;\
+\
+  function factory.add_item(name, tiers, game_name, is_craft)\
+    local item = {};\
+    item.id = #factory.items + 1;\
+    item.name = name;\
+    item.game_name = game_name;\
+    item.is_craft = is_craft;\
+    factory.items[item.id] = item;\
+    factory.item_names[name] = item;\
+    if #name > factory.name_max_size then\
+      factory.name_max_size = #name;\
+    end\
+	if #game_name > factory.game_name_sizes[is_craft] then\
+      factory.game_name_sizes[is_craft] = #game_name;\
+    end\
+    return ":const int " .. name .. " " .. #factory.items;\
+  end\
+\
+  function factory.composite_string(field, var, filter)\
+    local acc = {};\
+    local size = 0;\
+    if field == "name" then\
+      size = factory.name_max_size;\
+    else\
+      if filter == nil then\
+        size = math.max(factory.game_name_sizes[false], factory.game_name_sizes[true]);\
+      else\
+        size = factory.game_name_sizes[filter];\
+      end\
+    end\
+	size = size + 1;\
+    local fmt = "%-" .. size .. "s";\
+	acc[1] = 'sub("';\
+    for i = 1, #factory.items do\
+      acc[i + 1] = string.format(fmt, factory.items[i][field]);\
+    end\
+	acc[#acc + 1] = '", ' .. size .. " * (" .. var .. "), " .. size .. ')';\
+    return table.concat(acc);\
+  end\
 )}
 
-; Define a new item with name "name". It will take the next available id,
-; starting from 1.
-#item(name) {lua(\
-  factory.items[#factory.items + 1] = "{name}";\
-  factory.item_names["{name}"] = #factory.items;\
-  if #"{name}" > factory.name_max_size then\
-    factory.name_max_size = #"{name}";\
-  end\
-  return ":const int {name} " .. #factory.items;\
+; Define a new production item with name "name", craftable from tiers 1-"tiers".
+; The string passed to produce() is "game_name".
+; It will take the next available id, starting from 1.
+#item(name, tiers, game_name) {lua(\
+  return factory.add_item("{name}", {tiers}, {game_name}, false)\
+)}
+
+; Define a new production item with name "name", craftable from tiers 1-"tiers".
+; The string passed to craft() is "game_name".
+; It will take the next available id, starting from 1.
+#make(name, tiers, game_name) {lua(\
+  return factory.add_item("{name}", {tiers}, {game_name}, true)\
 )}

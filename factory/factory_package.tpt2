@@ -1,3 +1,4 @@
+:import factory constants
 
 :global int current_step
 :global int current_package
@@ -9,14 +10,41 @@
 :global int factory_target
 :global double factory_target_amount
 
+:local int tier
+:local int i
+:local string itemname
+
 begincycle:
 
 waituntil(current_step == 2 & current_package == factory_package_id)
 gotoif(skipcomputing, isopen("factory") == false | factory_launch == 0 | global.double.get("craft_queue_" . factory_target) > 0.)
 package_executing = 1
 factory_launch = 0
-executesync("count inventory")
-stop("count inventory")
+
+; Count all the items in the inventory. Since this only takes 5 lines,
+; we can cram it in here instead of needing a separate script.
+countitems_loop:
+itemname = {lua(return factory.composite_string("game_name", "i"))}
+i += 1
+
+loop:
+tier = (tier % 10) + 1
+
+; Special case a few items at the base of the hierarchy.
+; Dust starts at 1 instead of 0, because we want to always
+; craft 1 of it so that we don't use it all up.
+; Ore and lumps have special code in the produce section that dictate
+; zero-initialization.
+global.double.set("craft_queue_" . (tier * tier_factor + i),\
+  if(i == dust, 1., 0.) - \
+  if(i == ore || i == lump,\
+    0.,\
+	count(sub(itemname, 0, index(itemname, " ", 0)), tier)\
+  )\
+)
+goto(if(tier < 10, loop,\
+     if(i < {lua(return #factory.items)}, countitems_loop, counting_done)))
+counting_done:
 
 global.double.set("craft_queue_"   . factory_target, factory_target_amount)
 

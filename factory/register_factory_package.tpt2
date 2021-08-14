@@ -20,18 +20,8 @@ factory_package_id = package_ids
 :local string itemname
 
 setvar_loop:
+itemname = {lua(return factory.composite_string("name", "i"))}
 i += 1
-itemname = sub(\
-  "{lua(\
-    local acc = {};\
-    local fmt = "%-" .. (factory.name_max_size + 1) .. "s";\
-    for i = 1, #factory.items do\
-      acc[i] = string.format(fmt, factory.items[i]);\
-    end\
-    return table.concat(acc)\
-  )}",\
-  {lua(return factory.name_max_size + 1)} * (i - 1),\
-  {lua(return factory.name_max_size + 1)})
 gis(sub(itemname, 0, index(itemname, " ", 0)), i)
 gotoif(setvar_loop, i < {lua(return #factory.items)})
 
