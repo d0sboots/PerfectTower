@@ -7,7 +7,8 @@
 :global int turbo_counter
 
 :global int factory_launch
-:global int factory_target
+:global int factory_target_tier
+:global int factory_target_type
 :global double factory_target_amount
 
 :local int tier
@@ -17,7 +18,7 @@
 begincycle:
 
 waituntil(current_step == 2 & current_package == factory_package_id)
-gotoif(skipcomputing, isopen("factory") == false | factory_launch == 0 | global.double.get("craft_queue_" . factory_target) > 0.)
+gotoif(skipcomputing, isopen("factory") == false | factory_launch == 0 | {get_queue(factory_target_tier, factory_target_type)} > 0.)
 package_executing = 1
 factory_launch = 0
 
@@ -35,18 +36,18 @@ tier = (tier % 10) + 1
 ; craft 1 of it so that we don't use it all up.
 ; Ore and lumps have special code in the produce section that dictate
 ; zero-initialization.
-global.double.set("craft_queue_" . (tier * tier_factor + i),\
+{set_queue(tier, i,\
   if(i == dust, 1., 0.) - \
   if(i == ore || i == lump,\
     0.,\
-	count(sub(itemname, 0, index(itemname, " ", 0)), tier)\
+    count(sub(itemname, 0, index(itemname, " ", 0)), tier)\
   )\
-)
+)}
 goto(if(tier < 10, loop,\
      if(i < {lua(return #factory.items)}, countitems_loop, counting_done)))
 counting_done:
 
-global.double.set("craft_queue_"   . factory_target, factory_target_amount)
+{set_queue(factory_target_tier, factory_target_type, factory_target_amount)}
 
 executesync("make craft tree")
 stop("make craft tree")
@@ -54,7 +55,7 @@ package_executing = 0
 skipcomputing:
 
 waituntil(current_step == 3 & current_package == factory_package_id)
-gotoif(skipactions, isopen("factory") == false | global.double.get("craft_queue_" . factory_target) == 0.)
+gotoif(skipactions, isopen("factory") == false | {get_queue(factory_target_tier, factory_target_type)} == 0.)
 package_executing = 1
 executesync("produce")
 stop("produce")

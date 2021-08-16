@@ -1,6 +1,20 @@
 ; Infrastructure for producing all the constants in the factory package.
 ; Since this is :imported, it can't produce any instructions.
 
+; Produces the name of the queue variable for the given tier and item.
+#queue(tier, item) ("craft_queue_" . (({tier}) * tier_factor + {item}))
+
+; Helper macros for operating on the craft_queue. These should be
+; used instead of direct access whenever possible.
+#get_queue(tier, item) global.double.get({queue({tier},{item})})
+#set_queue(tier, item, value) global.double.set({queue({tier},{item})}, {value})
+
+; Add/subtract a value from the queue. Although it expands to the same thing,
+; it saves a lot of boilerplate in the source and makes it easier to understand
+; what's going on.
+#add_queue(tier, item, value) {set_queue({tier},{item},{get_queue({tier},{item})} + {value})}
+#subtract_queue(tier, item, value) {set_queue({tier},{item},{get_queue({tier},{item})} - ({value}))}
+
 {lua(\
   factory = {};\
   factory.items = {};\
@@ -21,7 +35,7 @@
     if #name > factory.name_max_size then\
       factory.name_max_size = #name;\
     end\
-	if #game_name > factory.game_name_sizes[is_craft] then\
+    if #game_name > factory.game_name_sizes[is_craft] then\
       factory.game_name_sizes[is_craft] = #game_name;\
     end\
     return ":const int " .. name .. " " .. #factory.items;\
@@ -39,13 +53,13 @@
         size = factory.game_name_sizes[filter];\
       end\
     end\
-	size = size + 1;\
+    size = size + 1;\
     local fmt = "%-" .. size .. "s";\
-	acc[1] = 'sub("';\
+    acc[1] = 'sub("';\
     for i = 1, #factory.items do\
       acc[i + 1] = string.format(fmt, factory.items[i][field]);\
     end\
-	acc[#acc + 1] = '", ' .. size .. " * (" .. var .. "), " .. size .. ')';\
+    acc[#acc + 1] = '", ' .. size .. " * (" .. var .. "), " .. size .. ')';\
     return table.concat(acc);\
   end\
 )}

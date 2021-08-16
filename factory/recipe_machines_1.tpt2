@@ -7,32 +7,32 @@ tierloop:
 
 gotoif(skipT1, tier == 1)
 ;tier recursivity
-global.double.set("craft_queue_" . i2s((tier - 1) * tier_factor + oven), global.double.get("craft_queue_" . i2s((tier - 1) * tier_factor + oven)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + oven))))
-global.double.set("craft_queue_" . i2s((tier - 1) * tier_factor + crusher), global.double.get("craft_queue_" . i2s((tier - 1) * tier_factor + crusher)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + crusher))))
-global.double.set("craft_queue_" . i2s((tier - 1) * tier_factor + cutter), global.double.get("craft_queue_" . i2s((tier - 1) * tier_factor + cutter)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + cutter))))
+{add_queue(tier - 1, oven, max(0., {get_queue(tier, oven)}))}
+{add_queue(tier - 1, crusher, max(0., {get_queue(tier, crusher)}))}
+{add_queue(tier - 1, cutter, max(0., {get_queue(tier, cutter)}))}
 skipT1:
 
 ;presser
-global.double.set("craft_queue_" . i2s(max(1, (tier - 1)) * tier_factor + if(tier == 1, hammer, presser)), global.double.get("craft_queue_" . i2s(max(1, (tier - 1)) * tier_factor + if(tier == 1, hammer, presser))) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + presser)) * if(tier == 1, 2., 1.)))
-global.double.set("craft_queue_" . i2s(((tier + 2 + tier / 9) / 3) * tier_factor + chip), global.double.get("craft_queue_" . i2s(((tier + 2 + tier / 9) / 3) * tier_factor + chip)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + presser)) * 2.))
-global.double.set("craft_queue_" . i2s(tier * tier_factor + plate),   global.double.get("craft_queue_" . i2s(tier * tier_factor + plate)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + presser)) * i2d(5 - max(0, 2 - tier) + 2 * min(1, tier / 3) + 2 * (tier / 6))))
-global.double.set("craft_queue_" . i2s(tier * tier_factor + wire),   global.double.get("craft_queue_" . i2s(tier * tier_factor + wire)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + presser)) * i2d(1 + min(1, tier / 3) + (tier / 6))))
-global.double.set("craft_queue_" . i2s(tier * tier_factor + block),   global.double.get("craft_queue_" . i2s(tier * tier_factor + block)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + presser)) * i2d(min(1, tier / 5) * (4 + tier / 6))))
+{add_queue(max(1, tier - 1), if(tier == 1, hammer, presser), max(0., {get_queue(tier, presser)} * if(tier == 1, 2., 1.)))}
+{add_queue((tier + 2 + tier / 9) / 3, chip, max(0., {get_queue(tier, presser)} * 2.))}
+{add_queue(tier, plate, max(0., {get_queue(tier, presser)} * i2d(5 - max(0, 2 - tier) + 2 * min(1, tier / 3) + 2 * (tier / 6))))}
+{add_queue(tier, wire, max(0., {get_queue(tier, presser)} * i2d(1 + min(1, tier / 3) + (tier / 6))))}
+{add_queue(tier, block, max(0., {get_queue(tier, presser)} * i2d(min(1, tier / 5) * (4 + tier / 6))))}
 
 ;oven
-global.double.set("craft_queue_" . i2s(tier * tier_factor + plate),   global.double.get("craft_queue_" . i2s(tier * tier_factor + plate)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + oven)) * i2d((1 + min(3, tier)) * 2)))
-global.double.set("craft_queue_" . i2s(tier * tier_factor + insul_cable),   global.double.get("craft_queue_" . i2s(tier * tier_factor + insul_cable)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + oven)) * i2d(2 + min(1, tier / 3) + tier / 6)))
-global.double.set("craft_queue_" . i2s(tier * tier_factor + block),   global.double.get("craft_queue_" . i2s(tier * tier_factor + block)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + oven)) * i2d((tier / 6) * 2)))
+{add_queue(tier, plate, max(0., {get_queue(tier, oven)} * i2d((1 + min(3, tier)) * 2)))}
+{add_queue(tier, insul_cable, max(0., {get_queue(tier, oven)} * i2d(2 + min(1, tier / 3) + tier / 6)))}
+{add_queue(tier, block, max(0., {get_queue(tier, oven)} * i2d((tier / 6) * 2)))}
 
 ;crusher
-global.double.set("craft_queue_" . i2s((1 + min(1, tier / 4) + 2 * (tier / 9)) * tier_factor + chip), global.double.get("craft_queue_" . i2s((1 + min(1, tier / 4) + 2 * (tier / 9)) * tier_factor + chip)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + crusher)) * i2d(min(2, tier) + tier / 8)))
-global.double.set("craft_queue_" . i2s(tier * tier_factor + motor),   global.double.get("craft_queue_" . i2s(tier * tier_factor + motor)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + crusher)) * i2d(1 + tier / 8)))
-global.double.set("craft_queue_" . i2s(tier * tier_factor + dense_plate),   global.double.get("craft_queue_" . i2s(tier * tier_factor + dense_plate)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + crusher)) * i2d(6 + min(2, tier) + tier / 8)))
+{add_queue(1 + min(1, tier / 4) + 2 * (tier / 9), chip, max(0., {get_queue(tier, crusher)} * i2d(min(2, tier) + tier / 8)))}
+{add_queue(tier, motor, max(0., {get_queue(tier, crusher)} * i2d(1 + tier / 8)))}
+{add_queue(tier, dense_plate, max(0., {get_queue(tier, crusher)} * i2d(6 + min(2, tier) + tier / 8)))}
 
 ;cutter
-global.double.set("craft_queue_" . i2s(tier * tier_factor + plate + tier / 8),   global.double.get("craft_queue_" . i2s(tier * tier_factor + plate + tier / 8)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + cutter)) * 2.))
-global.double.set("craft_queue_" . i2s(tier * tier_factor + dense_plate + tier / 8),   global.double.get("craft_queue_" . i2s(tier * tier_factor + dense_plate + tier / 8)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + cutter)) * i2d(3 + tier / 6 + 2 * (tier / 10))))
-global.double.set("craft_queue_" . i2s(tier * tier_factor + motor),   global.double.get("craft_queue_" . i2s(tier * tier_factor + motor)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + cutter)) * i2d(2 + min(2, tier) + tier / 6 + 2 * (tier / 10))))
+{add_queue(tier, plate + tier / 8, max(0., {get_queue(tier, cutter)} * 2.))}
+{add_queue(tier, dense_plate + tier / 8, max(0., {get_queue(tier, cutter)} * i2d(3 + tier / 6 + 2 * (tier / 10))))}
+{add_queue(tier, motor, max(0., {get_queue(tier, cutter)} * i2d(2 + min(2, tier) + tier / 6 + 2 * (tier / 10))))}
 
 tier -= 1
 gotoif(tierloop, tier > 0)

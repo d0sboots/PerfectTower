@@ -7,31 +7,31 @@ tierloop:
 
 gotoif(skipT1, tier == 1)
 ;tier recursivity
-global.double.set("craft_queue_" . i2s((tier - 1) * tier_factor + belt), global.double.get("craft_queue_" . i2s((tier - 1) * tier_factor + belt)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + belt))))
-global.double.set("craft_queue_" . i2s((tier - 1) * tier_factor + shaper), global.double.get("craft_queue_" . i2s((tier - 1) * tier_factor + shaper)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + shaper))))
-global.double.set("craft_queue_" . i2s((tier - 1) * tier_factor + boiler), global.double.get("craft_queue_" . i2s((tier - 1) * tier_factor + boiler)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + boiler))))
+{add_queue(tier - 1, belt, max(0., {get_queue(tier, belt)}))}
+{add_queue(tier - 1, shaper, max(0., {get_queue(tier, shaper)}))}
+{add_queue(tier - 1, boiler, max(0., {get_queue(tier, boiler)}))}
 skipT1:
 
 ;belt
-global.double.set("craft_queue_" . i2s(((tier - 1) / 2) *  tier_factor + chip),   global.double.get("craft_queue_" . i2s(((tier - 1) / 2) * tier_factor + chip)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + belt)) * i2d(min(1, tier / 4) * 4 + tier / 7)))
-global.double.set("craft_queue_" . i2s(tier * tier_factor + insul_cable),   global.double.get("craft_queue_" . i2s(tier * tier_factor + insul_cable)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + belt)) * i2d(3 + (tier + 3) / 5)))
-global.double.set("craft_queue_" . i2s(1 * tier_factor + rubber + tier / 6),   global.double.get("craft_queue_" . i2s(1 * tier_factor + rubber + tier / 6)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + belt)) * i2d(3 + (tier + 3) / 5)))
-global.double.set("craft_queue_" . i2s(tier * tier_factor + motor),   global.double.get("craft_queue_" . i2s(tier * tier_factor + motor)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + belt)) * i2d(3 + tier / 7)))
+{add_queue((tier - 1) / 2, chip, max(0., {get_queue(tier, belt)} * i2d(min(1, tier / 4) * 4 + tier / 7)))}
+{add_queue(tier, insul_cable, max(0., {get_queue(tier, belt)} * i2d(3 + (tier + 3) / 5)))}
+{add_queue(1, rubber + tier / 6, max(0., {get_queue(tier, belt)} * i2d(3 + (tier + 3) / 5)))}
+{add_queue(tier, motor, max(0., {get_queue(tier, belt)} * i2d(3 + tier / 7)))}
 
 ;shaper
-global.double.set("craft_queue_" . i2s(tier * tier_factor + plate + tier / 10),   global.double.get("craft_queue_" . i2s(tier * tier_factor + plate + tier / 10)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + shaper)) * 4.))
-global.double.set("craft_queue_" . i2s(tier * tier_factor + motor),   global.double.get("craft_queue_" . i2s(tier * tier_factor + motor)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + shaper)) * 2.))
-global.double.set("craft_queue_" . i2s(tier * tier_factor + screw),   global.double.get("craft_queue_" . i2s(tier * tier_factor + screw)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + shaper)) * i2d(min(2, tier) + tier / 6)))
-global.double.set("craft_queue_" . i2s(tier * tier_factor + insul_cable),   global.double.get("craft_queue_" . i2s(tier * tier_factor + insul_cable)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + shaper)) * i2d(1 + tier / 6 + 2 * (tier / 10))))
-global.double.set("craft_queue_" . i2s(tier * tier_factor + block + tier / 10),   global.double.get("craft_queue_" . i2s(tier * tier_factor + block + tier / 10)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + shaper)) * i2d(min(2, tier) + tier / 6 + 2 * (tier / 10))))
+{add_queue(tier, plate + tier / 10, max(0., {get_queue(tier, shaper)} * 4.))}
+{add_queue(tier, motor, max(0., {get_queue(tier, shaper)} * 2.))}
+{add_queue(tier, screw, max(0., {get_queue(tier, shaper)} * i2d(min(2, tier) + tier / 6)))}
+{add_queue(tier, insul_cable, max(0., {get_queue(tier, shaper)} * i2d(1 + tier / 6 + 2 * (tier / 10))))}
+{add_queue(tier, block + tier / 10, max(0., {get_queue(tier, shaper)} * i2d(min(2, tier) + tier / 6 + 2 * (tier / 10))))}
 
 ;boiler
-global.double.set("craft_queue_" . i2s(tier * tier_factor + pump),   global.double.get("craft_queue_" . i2s(tier * tier_factor + pump)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + boiler))))
-global.double.set("craft_queue_" . i2s(tier * tier_factor + screw),   global.double.get("craft_queue_" . i2s(tier * tier_factor + screw)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + boiler)) * 2.))
-global.double.set("craft_queue_" . i2s(tier * tier_factor + motor),   global.double.get("craft_queue_" . i2s(tier * tier_factor + motor)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + boiler)) * i2d(1 + (tier + 1) / 5 + tier / 10)))
-global.double.set("craft_queue_" . i2s(tier * tier_factor + dense_plate),   global.double.get("craft_queue_" . i2s(tier * tier_factor + dense_plate)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + boiler))) * i2d(2 + (tier + 1) / 5 + tier / 10))
-global.double.set("craft_queue_" . i2s(tier * tier_factor + wire),   global.double.get("craft_queue_" . i2s(tier * tier_factor + wire)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + boiler))) * i2d(2 + (tier + 1) / 5 + tier / 10))
-global.double.set("craft_queue_" . i2s(tier * tier_factor + block),   global.double.get("craft_queue_" . i2s(tier * tier_factor + block)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + boiler)) * i2d(4 + min(1, tier - 1) * (3 + (tier + 1) / 5 + tier / 10))))
+{add_queue(tier, pump, max(0., {get_queue(tier, boiler)}))}
+{add_queue(tier, screw, max(0., {get_queue(tier, boiler)} * 2.))}
+{add_queue(tier, motor, max(0., {get_queue(tier, boiler)} * i2d(1 + (tier + 1) / 5 + tier / 10)))}
+{add_queue(tier, dense_plate, max(0., {get_queue(tier, boiler)}) * i2d(2 + (tier + 1) / 5 + tier / 10))}
+{add_queue(tier, wire, max(0., {get_queue(tier, boiler)}) * i2d(2 + (tier + 1) / 5 + tier / 10))}
+{add_queue(tier, block, max(0., {get_queue(tier, boiler)} * i2d(4 + min(1, tier - 1) * (3 + (tier + 1) / 5 + tier / 10))))}
 
 tier -= 1
 gotoif(tierloop, tier > 0)

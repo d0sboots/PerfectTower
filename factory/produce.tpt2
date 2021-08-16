@@ -5,9 +5,9 @@
 :local double previous_amount
 
 previous_amount = count("rubber", 1)
-produce("rubber", 1, global.double.get("craft_queue_"    . (1 * tier_factor + rubber_plate)), "presser")
+produce("rubber", 1, {get_queue(1, rubber_plate)}, "presser")
 gotoif(noproduceplates, count("rubber", 1) == previous_amount)
-global.double.set("craft_queue_"    . (1 * tier_factor + rubber_plate), 0.)
+{set_queue(1, rubber_plate, 0.)}
 noproduceplates:
 
 _tier = 1
@@ -15,7 +15,7 @@ tierloop:
 
 executesync("produce dust")
 stop("produce dust")
-gotoif(nexttier, global.double.get("craft_queue_" . (((_tier - 2) / 2) * tier_factor + chip)) > 0. | global.double.get("craft_queue_" . ((_tier - 4) * tier_factor + motor)) > 0.)
+gotoif(nexttier, {get_queue((_tier - 2) / 2, chip)} > 0. | {get_queue(_tier - 4, motor)} > 0.)
 
 executesync("produce misc")
 stop("produce misc")

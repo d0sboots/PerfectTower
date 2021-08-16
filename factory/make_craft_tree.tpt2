@@ -20,7 +20,7 @@ executesync("recipe parts")
 stop("recipe parts")
 ; No space in parts so putting that here
 
-global.double.set("craft_queue_" . (2 * tier_factor + ingot), global.double.get("craft_queue_" . (2 * tier_factor + ingot)) + max(0., global.double.get("craft_queue_" . (1 * tier_factor + hammer)) * 6.))
-global.double.set("craft_queue_" . (2 * tier_factor + rod), global.double.get("craft_queue_" . (2 * tier_factor + rod)) + max(0., global.double.get("craft_queue_" . (1 * tier_factor + hammer))))
+{add_queue(2, ingot, max(0., {get_queue(1, hammer)} * 6.))}
+{add_queue(2, rod, max(0., {get_queue(1, hammer)}))}
 executesync("recipe ingredients")
 stop("recipe ingredients")

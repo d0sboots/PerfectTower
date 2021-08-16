@@ -5,28 +5,28 @@
 tier = 10
 tierloop:
 
-global.double.set("craft_queue_" . i2s(tier * tier_factor + cable), global.double.get("craft_queue_" . i2s(tier * tier_factor + cable)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + insul_cable)) * i2d((1 + tier / 8) * (max(1, tier - 2) - tier / 8 + tier / 10))))
-global.double.set("craft_queue_" . i2s(1 * tier_factor + rubber + min(1, tier / 3)), global.double.get("craft_queue_" . i2s(1 * tier_factor + rubber + min(1, tier / 3))) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + insul_cable)) * i2d(min(2, tier) * (max(1, tier - 2) - tier / 8 + tier / 10))))
+{add_queue(tier, cable, max(0., {get_queue(tier, insul_cable)} * i2d((1 + tier / 8) * (max(1, tier - 2) - tier / 8 + tier / 10))))}
+{add_queue(1, rubber + min(1, tier / 3), max(0., {get_queue(tier, insul_cable)} * i2d(min(2, tier) * (max(1, tier - 2) - tier / 8 + tier / 10))))}
 
-global.double.set("craft_queue_" . i2s(tier * tier_factor + plate), global.double.get("craft_queue_" . i2s(tier * tier_factor + plate)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + pump)) * 2.))
-global.double.set("craft_queue_" . i2s(tier * tier_factor + ring), global.double.get("craft_queue_" . i2s(tier * tier_factor + ring)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + pump)) * 2.))
-global.double.set("craft_queue_" . i2s(1 * tier_factor + rubber_plate), global.double.get("craft_queue_" . i2s(1 * tier_factor + rubber_plate)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + pump)) * 4.))
-global.double.set("craft_queue_" . i2s(tier * tier_factor + motor), global.double.get("craft_queue_" . i2s(tier * tier_factor + motor)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + pump))))
+{add_queue(tier, plate, max(0., {get_queue(tier, pump)} * 2.))}
+{add_queue(tier, ring, max(0., {get_queue(tier, pump)} * 2.))}
+{add_queue(1, rubber_plate, max(0., {get_queue(tier, pump)} * 4.))}
+{add_queue(tier, motor, max(0., {get_queue(tier, pump)}))}
 
-global.double.set("craft_queue_" . i2s(tier * tier_factor + plate), global.double.get("craft_queue_" . i2s(tier * tier_factor + plate)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + motor)) * 4.))
-global.double.set("craft_queue_" . i2s(tier * tier_factor + rod), global.double.get("craft_queue_" . i2s(tier * tier_factor + rod)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + motor)) * 2.))
-global.double.set("craft_queue_" . i2s(tier * tier_factor + screw), global.double.get("craft_queue_" . i2s(tier * tier_factor + screw)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + motor))))
-global.double.set("craft_queue_" . i2s(tier * tier_factor + wire), global.double.get("craft_queue_" . i2s(tier * tier_factor + wire)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + motor))))
-global.double.set("craft_queue_" . i2s(1 * tier_factor + rubber), global.double.get("craft_queue_" . i2s(1 * tier_factor + rubber)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + motor))))
+{add_queue(tier, plate, max(0., {get_queue(tier, motor)} * 4.))}
+{add_queue(tier, rod, max(0., {get_queue(tier, motor)} * 2.))}
+{add_queue(tier, screw, max(0., {get_queue(tier, motor)}))}
+{add_queue(tier, wire, max(0., {get_queue(tier, motor)}))}
+{add_queue(1, rubber, max(0., {get_queue(tier, motor)}))}
 
 gotoif(nochip, tier > 5)
 gotoif(noprevtier, tier == 1)
-global.double.set("craft_queue_" . i2s((tier - 1) * tier_factor + chip), global.double.get("craft_queue_" . i2s((tier - 1) * tier_factor + chip)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + chip))) * i2d(min(12, 4 * (tier - 1))))
+{add_queue(tier - 1, chip, max(0., {get_queue(tier, chip)}) * i2d(min(12, 4 * (tier - 1))))}
 noprevtier:
-global.double.set("craft_queue_" . i2s((tier * 2 - 1) * tier_factor + circuit), global.double.get("craft_queue_" . i2s((tier * 2 - 1) * tier_factor + circuit)) + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + chip))) * 2.)
-global.double.set("craft_queue_" . i2s((tier * 2 - 1) * tier_factor + board),   global.double.get("craft_queue_" . i2s((tier * 2 - 1) * tier_factor + board))   + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + chip))) * i2d(min(2, tier) * ( 1 + min(1, max(0, tier - 1)) + max(0, tier - 3) )))
-global.double.set("craft_queue_" . i2s((tier * 2) * tier_factor + circuit),     global.double.get("craft_queue_" . i2s((tier * 2) * tier_factor + circuit))     + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + chip))) * i2d(2 * ( 1 + min(tier - 1, max(0, 4 - tier)) )))
-global.double.set("craft_queue_" . i2s((tier * 2) * tier_factor + board),       global.double.get("craft_queue_" . i2s((tier * 2) * tier_factor + board))       + max(0., global.double.get("craft_queue_" . i2s(tier * tier_factor + chip))) * i2d(min(2, tier) * ( 1 + max(0, tier - 3) + min(1, max(0, tier - 3)))))
+{add_queue(tier * 2 - 1, circuit, max(0., {get_queue(tier, chip)}) * 2.)}
+{add_queue(tier * 2 - 1, board, max(0., {get_queue(tier, chip)}) * i2d(min(2, tier) * (1 + min(1, max(0, tier - 1)) + max(0, tier - 3))))}
+{add_queue(tier * 2, circuit, max(0., {get_queue(tier, chip)}) * i2d(2 * (1 + min(tier - 1, max(0, 4 - tier)))))}
+{add_queue(tier * 2, board, max(0., {get_queue(tier, chip)}) * i2d(min(2, tier) * (1 + max(0, tier - 3) + min(1, max(0, tier - 3)))))}
 nochip:
 
 tier -= 1

@@ -8,28 +8,28 @@ tierloop:
 tier = tier + 1
 
 previous_amount = count("producer.town", tier)
-craft("producer.town", tier, gdg("craft_queue_" . i2s((tier * tier_factor) + white_producer)))
-gds("craft_queue_" . i2s((tier * tier_factor) + white_producer), gdg("craft_queue_" . i2s((tier * tier_factor) + white_producer)) - (count("producer.town", tier) - previous_amount))
+craft("producer.town", tier, {get_queue(tier, white_producer)})
+{subtract_queue(tier, white_producer, count("producer.town", tier) - previous_amount)}
 
 previous_amount = count("producer.factory", tier)
-craft("producer.factory", tier, gdg("craft_queue_" . i2s((tier * tier_factor) + red_producer)))
-gds("craft_queue_" . i2s((tier * tier_factor) + red_producer), gdg("craft_queue_" . i2s((tier * tier_factor) + red_producer)) - (count("producer.factory", tier) - previous_amount))
+craft("producer.factory", tier, {get_queue(tier, red_producer)})
+{subtract_queue(tier, red_producer, count("producer.factory", tier) - previous_amount)}
 
 previous_amount = count("producer.mine", tier)
-craft("producer.mine", tier, gdg("craft_queue_" . i2s((tier * tier_factor) + orange_producer)))
-gds("craft_queue_" . i2s((tier * tier_factor) + orange_producer), gdg("craft_queue_" . i2s((tier * tier_factor) + orange_producer)) - (count("producer.mine", tier) - previous_amount))
+craft("producer.mine", tier, {get_queue(tier, orange_producer)})
+{subtract_queue(tier, orange_producer, count("producer.mine", tier) - previous_amount)}
 
 previous_amount = count("producer.workshop", tier)
-craft("producer.workshop", tier, gdg("craft_queue_" . i2s((tier * tier_factor) + blue_producer)))
-gds("craft_queue_" . i2s((tier * tier_factor) + blue_producer), gdg("craft_queue_" . i2s((tier * tier_factor) + blue_producer)) - (count("producer.workshop", tier) - previous_amount))
+craft("producer.workshop", tier, {get_queue(tier, blue_producer)})
+{subtract_queue(tier, blue_producer, count("producer.workshop", tier) - previous_amount)}
 
 previous_amount = count("producer.constructionFirm", tier)
-craft("producer.constructionFirm", tier, gdg("craft_queue_" . i2s((tier * tier_factor) + brown_producer)))
-gds("craft_queue_" . i2s((tier * tier_factor) + brown_producer), gdg("craft_queue_" . i2s((tier * tier_factor) + brown_producer)) - (count("producer.constructionFirm", tier) - previous_amount))
+craft("producer.constructionFirm", tier, {get_queue(tier, brown_producer)})
+{subtract_queue(tier, brown_producer, count("producer.constructionFirm", tier) - previous_amount)}
 
 previous_amount = count("producer.laboratory", tier)
-craft("producer.laboratory", tier, gdg("craft_queue_" . i2s((tier * tier_factor) + green_producer)))
-gds("craft_queue_" . i2s((tier * tier_factor) + green_producer), gdg("craft_queue_" . i2s((tier * tier_factor) + green_producer)) - (count("producer.laboratory", tier) - previous_amount))
+craft("producer.laboratory", tier, {get_queue(tier, green_producer)})
+{subtract_queue(tier, green_producer, count("producer.laboratory", tier) - previous_amount)}
 
 
 gotoif(tierloop, tier < 5)

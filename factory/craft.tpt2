@@ -18,9 +18,9 @@ executesync("craft producers 3")
 stop("craft producers 3")
 
 previous_amount = count("producer.exoticgems", 1)
-craft("producer.exoticgems", 1, gdg("craft_queue_" . ((1 * tier_factor) + exotic_producer)))
-gds("craft_queue_" . ((1 * tier_factor) + exotic_producer), gdg("craft_queue_" . ((1 * tier_factor) + exotic_producer)) - (count("producer.exoticgems", 1) - previous_amount))
+craft("producer.exoticgems", 1, {get_queue(1, exotic_producer)})
+{subtract_queue(1, exotic_producer, count("producer.exoticgems", 1) - previous_amount)}
 previous_amount = count("producer.gems", 1)
-craft("producer.gems", 1, gdg("craft_queue_" . ((1 * tier_factor) + gem_producer)))
-gds("craft_queue_" . ((1 * tier_factor) + gem_producer), gdg("craft_queue_" . ((1 * tier_factor) + gem_producer)) - (count("producer.gems", 1) - previous_amount))
+craft("producer.gems", 1, {get_queue(1, gem_producer)})
+{subtract_queue(1, gem_producer, count("producer.gems", 1) - previous_amount)}
 wait(0.0)
