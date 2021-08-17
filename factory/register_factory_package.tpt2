@@ -1,3 +1,4 @@
+:import factory constants
 
 wakeup()
 
@@ -15,24 +16,24 @@ gotoif(tryassign, package_uuid != 235)
 package_ids += 1
 factory_package_id = package_ids
 
-:global int producer
-:global int machine
-:global int ingredient
+:local int i
+:local string itemname
 
-:global int tier_factor
-
-producer = 0 * 100
-machine = 1 * 100
-ingredient = 2 * 100
-
-tier_factor = 1000
-
-executesync("load ingredients ids")
-stop("load ingredients ids")
-executesync("load machines ids")
-stop("load machines ids")
-executesync("load producers ids")
-stop("load producers ids")
+setvar_loop:
+i += 1
+itemname = sub(\
+  "{lua(\
+    local acc = {};\
+    local fmt = "%-" .. (factory.name_max_size + 1) .. "s";\
+    for i = 1, #factory.items do\
+      acc[i] = string.format(fmt, factory.items[i]);\
+    end\
+    return table.concat(acc)\
+  )}",\
+  {lua(return factory.name_max_size + 1)} * (i - 1),\
+  {lua(return factory.name_max_size + 1)})
+gis(sub(itemname, 0, index(itemname, " ", 0)), i)
+gotoif(setvar_loop, i < {lua(return #factory.items)})
 
 package_uuid = 0
 loading_packages -= 1

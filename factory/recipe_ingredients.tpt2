@@ -1,34 +1,6 @@
+:import factory constants
 
 :local int tier
-
-:global int tier_factor
-
-:global int ore
-:global int lump
-:global int dust
-:global int ingot
-
-:global int plate
-:global int pipe
-:global int dense_plate
-:global int block
-:global int dense_block
-
-:global int cable
-:global int wire
-:global int insul_cable
-
-:global int rod
-:global int ring
-:global int screw
-
-:global int motor
-:global int pump
-
-:global int board
-:global int circuit
-:global int rubber
-:global int rubber_plate
 
 tier = 10
 tierloop:
@@ -58,5 +30,5 @@ nolumps:
 
 tier -= 1
 gotoif(tierloop, tier > 0)
-global.double.set("craft_queue_" . i2s(1 * tier_factor + rubber), global.double.get("craft_queue_" . i2s(1 * tier_factor + rubber)) + max(0., global.double.get("craft_queue_" . i2s(1 * tier_factor + rubber_plate))))
+global.double.set("craft_queue_" . (1 * tier_factor + rubber), global.double.get("craft_queue_" . (1 * tier_factor + rubber)) + max(0., global.double.get("craft_queue_" . (1 * tier_factor + rubber_plate))))
 wait(0.0)

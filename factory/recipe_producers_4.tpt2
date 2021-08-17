@@ -1,16 +1,5 @@
-:global int grey_producer
-:global int black_producer
+:import factory constants
 
-:global int chip
-:global int insul_cable
-:global int block
-:global int motor
-:global int pump
-:global int pipe
-:global int dense_block
-
-
-:global int tier_factor
 :local int tier
 
 tier = 5

@@ -1,20 +1,8 @@
+:import factory constants
 
 :global int _tier
 :local double previous_amount
 :local double limit
-
-
-:global int tier_factor
-
-:global int circuit
-:global int board
-
-:global int cable
-:global int wire
-
-:global int rod
-:global int screw
-:global int ring
 
 previous_amount = count("ingot", _tier)
 produce("ingot", _tier, min(previous_amount, ceil(global.double.get("craft_queue_"    . i2s(_tier * tier_factor + cable)) / 2.)), "refinery")
@@ -52,4 +40,3 @@ global.double.set("craft_queue_"    . i2s(_tier * tier_factor + ring), global.do
 noproducerings:
 
 wait(0.0)
-

@@ -1,15 +1,5 @@
-:global int oven
-:global int presser
-:global int assembly
-:global int refiner
-:global int mixer
-:global int crusher
-:global int belt
-:global int cutter
-:global int shaper
-:global int boiler
+:import factory constants
 
-:global int tier_factor
 :global int _tier
 
 global.double.set("craft_queue_" . i2s(_tier * tier_factor + oven), 0. - count("machine.oven", _tier))

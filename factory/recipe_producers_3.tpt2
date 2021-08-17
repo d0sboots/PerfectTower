@@ -1,17 +1,5 @@
-:global int yellow_producer
-:global int pink_producer
-:global int lightblue_producer
-:global int cyan_producer
+:import factory constants
 
-:global int chip
-:global int motor
-:global int insul_cable
-:global int block
-:global int pipe
-:global int plate
-:global int ring
-
-:global int tier_factor
 :local int tier
 
 tier = 5
