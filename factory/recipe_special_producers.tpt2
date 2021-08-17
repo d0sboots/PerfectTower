@@ -9,10 +9,6 @@
 :global int dense_block
 :global int chip
 
-:global int hammer
-:global int ingot
-:global int rod
-
 :local int machine_id
 
 machineloop:
@@ -34,11 +30,6 @@ gotoif(tierloop, tier < 10)
 global.double.set("craft_queue_" . i2s(10 * tier_factor + insul_cable), global.double.get("craft_queue_" . i2s(10 * tier_factor + insul_cable)) + max(0., global.double.get("craft_queue_" . i2s(1 * tier_factor + gem_producer)) * 2.))
 global.double.set("craft_queue_" . i2s(5 * tier_factor + chip), global.double.get("craft_queue_" . i2s(5 * tier_factor + chip)) + max(0., global.double.get("craft_queue_" . i2s(1 * tier_factor + gem_producer)) * 10.))
 global.double.set("craft_queue_" . i2s(4 * tier_factor + chip), global.double.get("craft_queue_" . i2s(4 * tier_factor + chip)) + max(0., global.double.get("craft_queue_" . i2s(1 * tier_factor + gem_producer)) * 10.))
-
-; No space in ingredients so putting that here
-
-global.double.set("craft_queue_" . i2s(2 * tier_factor + ingot), global.double.get("craft_queue_" . i2s(2 * tier_factor + ingot)) + max(0., global.double.get("craft_queue_" . i2s(1 * tier_factor + hammer)) * 6.))
-global.double.set("craft_queue_" . i2s(2 * tier_factor + rod), global.double.get("craft_queue_" . i2s(2 * tier_factor + rod)) + max(0., global.double.get("craft_queue_" . i2s(1 * tier_factor + hammer))))
 
 wait(0.0)
 
