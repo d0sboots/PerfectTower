@@ -1,26 +1,34 @@
 :import factory constants
 
 :local double previous_amount
+:local int i
+:local string itemdata
 
-executesync("craft parts")
-stop("craft parts")
-executesync("craft machines 1")
-stop("craft machines 1")
-executesync("craft machines 2")
-stop("craft machines 2")
-executesync("craft producers 1")
-stop("craft producers 1")
-executesync("craft producers 2")
-stop("craft producers 2")
-executesync("craft producers 2")
-stop("craft producers 2")
-executesync("craft producers 3")
-stop("craft producers 3")
+; Craft all the items.
+craftitems_loop:
+itemdata = {lua(return factory.composite_string("game_name", "i/10", true))}
 
-previous_amount = count("producer.exoticgems", 1)
-craft("producer.exoticgems", 1, {get_queue(1, exotic_producer)})
-{subtract_queue(1, exotic_producer, count("producer.exoticgems", 1) - previous_amount)}
-previous_amount = count("producer.gems", 1)
-craft("producer.gems", 1, {get_queue(1, gem_producer)})
-{subtract_queue(1, gem_producer, count("producer.gems", 1) - previous_amount)}
-wait(0.0)
+do_craft:
+; Because tier and items start at 1, but i is zero-based, we have to add 1
+; (or subtract 1 from the other side) in all these expressions.
+previous_amount = count({get_name}, i%10 + 1)
+craft({get_name}, i%10 + 1, {get_queue(i%10 + 1, i/10 + 1)})
+{subtract_queue(i%10 + 1, i/10 + 1, count({get_name}, i%10 + 1) - previous_amount)}
+inc:
+; This skips over tiers that don't exist for the given item, by using the
+; tier data embedded in "itemdata".
+i = i + if(i2s(i%10) == {tiers_char}, 10 - i%10, 1)
+goto(if(i%10 != 0,\
+     if({get_queue(i%10 + 1, i/10 + 1)} > 0., do_craft, inc),\
+     if(i < {items_count} * 10, craftitems_loop, crafting_done)))
+crafting_done:
+
+; Have to craft blocks separately, because they are buried in among produced
+; items due to dependencies caused by certain recipes.
+i = 0
+block_loop:
+i += 1
+previous_amount = count("block", i)
+craft("block", i, {get_queue(i, block)})
+{subtract_queue(i, block, count("block", i) - previous_amount)}
+gotoif(block_loop, i < 10)

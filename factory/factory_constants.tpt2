@@ -1,7 +1,5 @@
 :import factory macros
 
-; ===== VALID IDS =====
-
 ; Everything in this list of the form "item(xx)" or "make(xx)" is
 ; a valid target for automation, and can be assigned to the "target_type"
 ; variable in "lanuch factory craft".
@@ -9,6 +7,15 @@
 ; item, usable from tiers 1-10, with the internal game name of "machine.oven"
 ; (which you don't need to worry about.)
 ; Thus you can enter "oven" in the box in the in-game editor (without the quotes).
+
+; If you add or change this list, mind these constraints:
+; * All the crafted items have to come before the rest of the items.
+; * The machines must be together, and "oven" is used as a marker for the 1st
+;   machine.
+; * There is specific ordering in the produced parts that is used by
+;   various recipes.
+
+; ===== VALID IDS =====
 
 ; Producers, tiers 1-5
 {make(white_producer, 5, "producer.town")}
@@ -41,6 +48,15 @@
 {make(shaper, 10, "machine.shaper")}
 {make(boiler, 10, "machine.boiler")}
 
+; Chips, tier 1-5
+{make(chip, 5, "chip")}
+
+; Various crafted parts
+{make(insul_cable, 10, "cable.insulated")}
+{make(motor, 10, "motor")}
+{make(pump, 10, "pump")}
+{make(hammer, 1, "hammer")}
+
 ;Transforms ore into dust, tiers 1-10
 {item(ore, 10, "ore")}
 
@@ -63,25 +79,17 @@
 
 {item(cable, 10, "cable")}
 {item(wire, 10, "wire")}
-{item(insul_cable, 10, "cable.insulated")}
 
 {item(rod, 10, "rod")}
 {item(ring, 10, "ring")}
 {item(screw, 10, "screw")}
 
-{item(motor, 10, "motor")}
-{item(pump, 10, "pump")}
-
 {item(board, 10, "plate.circuit")}
 {item(circuit, 10, "circuit")}
 
-; Rubber and hammers, tier 1 only
+; Rubber, tier 1 only
 {item(rubber, 1, "rubber")}
 {item(rubber_plate, 1, "plate.rubber")}
-{make(hammer, 1, "hammer")}
-
-; Chips, tier 1-5
-{make(chip, 5, "chip")}
 
 ; ===== END OF VALID IDS =====
 

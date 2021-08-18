@@ -17,13 +17,13 @@ package_ids += 1
 factory_package_id = package_ids
 
 :local int i
-:local string itemname
+:local string itemdata
 
 setvar_loop:
-itemname = {lua(return factory.composite_string("name", "i"))}
+itemdata = {lua(return factory.composite_string("name", "i"))}
 i += 1
-gis(sub(itemname, 0, index(itemname, " ", 0)), i)
-gotoif(setvar_loop, i < {lua(return #factory.items)})
+gis({get_name}, i)
+gotoif(setvar_loop, i < {items_count})
 
 package_uuid = 0
 loading_packages -= 1
