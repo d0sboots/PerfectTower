@@ -2,12 +2,18 @@
 ; Since this is :imported, it can't produce any instructions.
 
 ; Produces the name of the queue variable for the given tier and item.
-#queue(tier, item) ("craft_queue_" . (({tier}) * tier_factor + {item}))
+#queue_str "cq"
+#queue(tier, item) 10 * ({item}) + {tier}
+
+; Raw access to the queue. Not preferred, but better than using "queue"
+; directly. Use for low-level optimization.
+#get_raw(raw_item) global.double.get({queue_str} . (100 + {raw_item}))
+#set_raw(raw_item, value) global.double.set({queue_str} . (100 + {raw_item}), {value})
 
 ; Helper macros for operating on the craft_queue. These should be
 ; used instead of direct access whenever possible.
-#get_queue(tier, item) global.double.get({queue({tier},{item})})
-#set_queue(tier, item, value) global.double.set({queue({tier},{item})}, {value})
+#get_queue(tier, item) {get_raw({queue({tier},{item})})}
+#set_queue(tier, item, value) {set_raw({queue({tier},{item})},{value})}
 
 ; Add/subtract a value from the queue. Although it expands to the same thing,
 ; it saves a lot of boilerplate in the source and makes it easier to understand

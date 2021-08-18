@@ -15,7 +15,7 @@ tierloop:
 
 executesync("produce dust")
 stop("produce dust")
-gotoif(nexttier, {get_queue((_tier - 2) / 2, chip)} > 0. | {get_queue(_tier - 4, motor)} > 0.)
+gotoif(nexttier, _tier > 3 & {get_queue((_tier - 2) / 2, chip)} > 0. | _tier > 4 & {get_queue(_tier - 4, motor)} > 0.)
 
 executesync("produce misc")
 stop("produce misc")

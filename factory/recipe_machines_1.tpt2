@@ -7,9 +7,9 @@ tierloop:
 
 gotoif(skipT1, tier == 1)
 ;tier recursivity
-{add_queue(tier - 1, oven, max(0., {get_queue(tier, oven)}))}
-{add_queue(tier - 1, crusher, max(0., {get_queue(tier, crusher)}))}
-{add_queue(tier - 1, cutter, max(0., {get_queue(tier, cutter)}))}
+{add_queue(-1 + tier, oven, max(0., {get_queue(tier, oven)}))}
+{add_queue(-1 + tier, crusher, max(0., {get_queue(tier, crusher)}))}
+{add_queue(-1 + tier, cutter, max(0., {get_queue(tier, cutter)}))}
 skipT1:
 
 ;presser

@@ -7,9 +7,9 @@ tierloop:
 
 gotoif(skipT1, tier == 1)
 ;tier recursivity
-{add_queue(tier - 1, belt, max(0., {get_queue(tier, belt)}))}
-{add_queue(tier - 1, shaper, max(0., {get_queue(tier, shaper)}))}
-{add_queue(tier - 1, boiler, max(0., {get_queue(tier, boiler)}))}
+{add_queue(-1 + tier, belt, max(0., {get_queue(tier, belt)}))}
+{add_queue(-1 + tier, shaper, max(0., {get_queue(tier, shaper)}))}
+{add_queue(-1 + tier, boiler, max(0., {get_queue(tier, boiler)}))}
 skipT1:
 
 ;belt

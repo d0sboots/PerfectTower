@@ -6,31 +6,31 @@ tier = 5
 start:
 
 gotoif(skip, tier == 1)
-{add_queue(tier - 1, white_producer, max(0., {get_queue(tier, white_producer)}))}
-{add_queue(tier - 1, red_producer, max(0., {get_queue(tier, red_producer)}))}
-{add_queue(tier - 1, orange_producer, max(0., {get_queue(tier, orange_producer)}))}
+{add_queue(-1 + tier, white_producer, max(0., {get_queue(tier, white_producer)}))}
+{add_queue(-1 + tier, red_producer, max(0., {get_queue(tier, red_producer)}))}
+{add_queue(-1 + tier, orange_producer, max(0., {get_queue(tier, orange_producer)}))}
 skip:
 
 ;white_producer
-{add_queue(tier - 1, chip, max(0., {get_queue(tier, white_producer)} * i2d(((tier + 1) / 3) * 2)))}
-{add_queue((1 + tier) + int.max(0, tier - 2), screw, max(0., {get_queue(tier, white_producer)} * i2d(((tier + 8) / 5) * 2)))}
-{add_queue((1 + tier) + int.max(0, tier - 2), board, max(0., {get_queue(tier, white_producer)} * i2d(min((tier - 1) * 10, max(2, ((tier + 1)/6) * 6)))))}
+{add_queue(-1 + tier, chip, max(0., {get_queue(tier, white_producer)} * i2d(((tier + 1) / 3) * 2)))}
+{add_queue(1 + tier + int.max(0, tier - 2), screw, max(0., {get_queue(tier, white_producer)} * i2d(((tier + 8) / 5) * 2)))}
+{add_queue(1 + tier + int.max(0, tier - 2), board, max(0., {get_queue(tier, white_producer)} * i2d(min((tier - 1) * 10, max(2, ((tier + 1)/6) * 6)))))}
 {add_queue(2, plate, max(0., {get_queue(tier, white_producer)} * i2d(max(0, (2 - tier) * 2))))}
 
 ;red_producer
-{add_queue((43211 / (10 ^ (tier - 1))) % 10, chip, max(0., {get_queue(tier, red_producer)} * i2d((31112 / (10 ^ (tier - 1))) % 10 )))}
-{add_queue((00002 / (10 ^ (tier - 1))) % 10 , screw, max(0., {get_queue(tier, red_producer)} * i2d(max(0, (2 - tier)))))}
-{add_queue((97530 / (10 ^ (tier - 1))) % 10, board, max(0., {get_queue(tier, red_producer)} * i2d((31110 / (10 ^ (tier - 1))) % 10)))}
-{add_queue((00532 / (10 ^ (tier - 1))) % 10, plate, max(0., {get_queue(tier, red_producer)} * i2d((00222 / (10 ^ (tier - 1))) % 10)))}
-{add_queue((97000 / (10 ^ (tier - 1))) % 10, dense_plate, max(0., {get_queue(tier, red_producer)} * i2d((42000 / (10 ^ (tier - 1))) % 10)))}
-{add_queue(tier * 2 - 1, wire, max(0., {get_queue(tier, red_producer)} * i2d((44441 / (10 ^ (tier - 1))) % 10)))}
+{add_queue((432110 / (10 ^ tier)) % 10, chip, max(0., {get_queue(tier, red_producer)} * i2d((311120 / (10 ^ tier)) % 10)))}
+{add_queue((000020 / (10 ^ tier)) % 10, screw, max(0., {get_queue(tier, red_producer)} * i2d(max(0, (2 - tier)))))}
+{add_queue((975300 / (10 ^ tier)) % 10, board, max(0., {get_queue(tier, red_producer)} * i2d((311100 / (10 ^ tier)) % 10)))}
+{add_queue((005320 / (10 ^ tier)) % 10, plate, max(0., {get_queue(tier, red_producer)} * i2d((002220 / (10 ^ tier)) % 10)))}
+{add_queue((970000 / (10 ^ tier)) % 10, dense_plate, max(0., {get_queue(tier, red_producer)} * i2d((420000 / (10 ^ tier)) % 10)))}
+{add_queue(-1 + tier * 2, wire, max(0., {get_queue(tier, red_producer)} * i2d((44441 / (10 ^ (tier - 1))) % 10)))}
 
 ;orange_producer
-{add_queue((43211 / (10 ^ (tier - 1))) % 10, chip, max(0., {get_queue(tier, orange_producer)} * i2d(1)))}
-{add_queue((97532 / (10 ^ (tier - 1))) % 10, screw, max(0., {get_queue(tier, orange_producer)} * i2d((44222 / (10 ^ (tier - 1))) % 10)))}
-{add_queue((97502 / (10 ^ (tier - 1))) % 10, plate, max(0., {get_queue(tier, orange_producer)} * i2d((22101 / (10 ^ (tier - 1))) % 10)))}
-{add_queue((97530 / (10 ^ (tier - 1))) % 10, dense_plate, max(0., {get_queue(tier, orange_producer)} * i2d((22220 / (10 ^ (tier - 1))) % 10)))}
-{add_queue((86421 / (10 ^ (tier - 1))) % 10, wire, max(0., {get_queue(tier, orange_producer)} * i2d((55232 / (10 ^ (tier - 1))) % 10)))}
+{add_queue((432110 / (10 ^ tier)) % 10, chip, max(0., {get_queue(tier, orange_producer)}))}
+{add_queue((975320 / (10 ^ tier)) % 10, screw, max(0., {get_queue(tier, orange_producer)} * i2d((442220 / (10 ^ tier)) % 10)))}
+{add_queue((975020 / (10 ^ tier)) % 10, plate, max(0., {get_queue(tier, orange_producer)} * i2d((221010 / (10 ^ tier)) % 10)))}
+{add_queue((975300 / (10 ^ tier)) % 10, dense_plate, max(0., {get_queue(tier, orange_producer)} * i2d((222200 / (10 ^ tier)) % 10)))}
+{add_queue((864210 / (10 ^ tier)) % 10, wire, max(0., {get_queue(tier, orange_producer)} * i2d((552320 / (10 ^ tier)) % 10)))}
 
 tier = tier - 1
 gotoif(start, tier > 0)

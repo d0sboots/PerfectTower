@@ -34,7 +34,7 @@ loop:
 ; zero-initialization.
 ; Because tier and items start at 1, but i is zero-based, we have to add 1
 ; (or subtract 1 from the other side) in all these expressions.
-{set_queue(i%10 + 1, i/10 + 1,\
+{set_raw(10 + 1 + i,\
   if(i/10 == dust - 1, 1., 0.) - \
   if(i/10 == ore - 1 || i/10 == lump - 1, 0., count({get_name}, i%10 + 1))\
 )}

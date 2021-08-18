@@ -7,9 +7,9 @@ tierloop:
 
 gotoif(skipT1, tier == 1)
 ;tier recursivity
-{add_queue(tier - 1, assembly, max(0., {get_queue(tier, assembly)}))}
-{add_queue(tier - 1, refiner, max(0., {get_queue(tier, refiner)}))}
-{add_queue(tier - 1, mixer, max(0., {get_queue(tier, mixer)}))}
+{add_queue(-1 + tier, assembly, max(0., {get_queue(tier, assembly)}))}
+{add_queue(-1 + tier, refiner, max(0., {get_queue(tier, refiner)}))}
+{add_queue(-1 + tier, mixer, max(0., {get_queue(tier, mixer)}))}
 skipT1:
 
 ;assembly
