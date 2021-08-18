@@ -1,15 +1,5 @@
-:global int plate
-:global int screw
-:global int chip
-:global int board
-:global int dense_plate
-:global int wire
+:import factory constants
 
-:global int white_producer
-:global int red_producer
-:global int orange_producer
-
-:global int tier_factor
 :local int tier
 
 tier = 5

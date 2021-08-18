@@ -1,35 +1,25 @@
-
-:global int tier_factor
-
-:global int machine
-:global int exotic_producer
-:global int gem_producer
-
-:global int insul_cable
-:global int dense_block
-:global int chip
+:import factory constants
 
 :local int machine_id
 
 machineloop:
 machine_id += 1
-global.double.set("craft_queue_" . i2s(10 * tier_factor + machine + machine_id), global.double.get("craft_queue_" . i2s(10 * tier_factor + machine + machine_id)) + max(0., global.double.get("craft_queue_" . i2s(1 * tier_factor + exotic_producer))))
+global.double.set("craft_queue_" . (10 * tier_factor + machine + machine_id), global.double.get("craft_queue_" . (10 * tier_factor + machine + machine_id)) + max(0., global.double.get("craft_queue_" . (1 * tier_factor + exotic_producer))))
 gotoif(machineloop, machine_id < 10)
 
-global.double.set("craft_queue_" . i2s(10 * tier_factor + insul_cable), global.double.get("craft_queue_" . i2s(10 * tier_factor + insul_cable)) + max(0., global.double.get("craft_queue_" . i2s(1 * tier_factor + exotic_producer)) * 2.))
-global.double.set("craft_queue_" . i2s(10 * tier_factor + dense_block), global.double.get("craft_queue_" . i2s(10 * tier_factor + dense_block)) + max(0., global.double.get("craft_queue_" . i2s(1 * tier_factor + exotic_producer)) * 10.))
-global.double.set("craft_queue_" . i2s(5 * tier_factor + chip), global.double.get("craft_queue_" . i2s(5 * tier_factor + chip)) + max(0., global.double.get("craft_queue_" . i2s(1 * tier_factor + exotic_producer)) * 10.))
+global.double.set("craft_queue_" . (10 * tier_factor + insul_cable), global.double.get("craft_queue_" . (10 * tier_factor + insul_cable)) + max(0., global.double.get("craft_queue_" . (1 * tier_factor + exotic_producer)) * 2.))
+global.double.set("craft_queue_" . (10 * tier_factor + dense_block), global.double.get("craft_queue_" . (10 * tier_factor + dense_block)) + max(0., global.double.get("craft_queue_" . (1 * tier_factor + exotic_producer)) * 10.))
+global.double.set("craft_queue_" . (5 * tier_factor + chip), global.double.get("craft_queue_" . (5 * tier_factor + chip)) + max(0., global.double.get("craft_queue_" . (1 * tier_factor + exotic_producer)) * 10.))
 
 :local int tier
 
 tierloop:
 tier += 1
-global.double.set("craft_queue_" . i2s(tier * tier_factor + dense_block), global.double.get("craft_queue_" . i2s(tier * tier_factor + dense_block)) + max(0., global.double.get("craft_queue_" . i2s(1 * tier_factor + gem_producer))))
+global.double.set("craft_queue_" . (tier * tier_factor + dense_block), global.double.get("craft_queue_" . (tier * tier_factor + dense_block)) + max(0., global.double.get("craft_queue_" . (1 * tier_factor + gem_producer))))
 gotoif(tierloop, tier < 10)
 
-global.double.set("craft_queue_" . i2s(10 * tier_factor + insul_cable), global.double.get("craft_queue_" . i2s(10 * tier_factor + insul_cable)) + max(0., global.double.get("craft_queue_" . i2s(1 * tier_factor + gem_producer)) * 2.))
-global.double.set("craft_queue_" . i2s(5 * tier_factor + chip), global.double.get("craft_queue_" . i2s(5 * tier_factor + chip)) + max(0., global.double.get("craft_queue_" . i2s(1 * tier_factor + gem_producer)) * 10.))
-global.double.set("craft_queue_" . i2s(4 * tier_factor + chip), global.double.get("craft_queue_" . i2s(4 * tier_factor + chip)) + max(0., global.double.get("craft_queue_" . i2s(1 * tier_factor + gem_producer)) * 10.))
+global.double.set("craft_queue_" . (10 * tier_factor + insul_cable), global.double.get("craft_queue_" . (10 * tier_factor + insul_cable)) + max(0., global.double.get("craft_queue_" . (1 * tier_factor + gem_producer)) * 2.))
+global.double.set("craft_queue_" . (5 * tier_factor + chip), global.double.get("craft_queue_" . (5 * tier_factor + chip)) + max(0., global.double.get("craft_queue_" . (1 * tier_factor + gem_producer)) * 10.))
+global.double.set("craft_queue_" . (4 * tier_factor + chip), global.double.get("craft_queue_" . (4 * tier_factor + chip)) + max(0., global.double.get("craft_queue_" . (1 * tier_factor + gem_producer)) * 10.))
 
 wait(0.0)
-

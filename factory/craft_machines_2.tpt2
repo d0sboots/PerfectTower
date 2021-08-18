@@ -1,13 +1,7 @@
+:import factory constants
+
 :local int tier
 :local double previous_amount
-
-:global int tier_factor
-
-:global int mixer
-:global int crusher
-:global int belt
-:global int shaper
-:global int boiler
 
 tierloop:
 tier += 1

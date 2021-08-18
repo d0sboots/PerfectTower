@@ -1,15 +1,8 @@
+:import factory constants
 
 :global int _tier
 :local double previous_amount
 :local double limit
-
-
-:global int tier_factor
-
-:global int plate
-:global int dense_plate
-:global int pipe
-:global int dense_block
 
 previous_amount = count("ingot", _tier)
 produce("ingot", _tier, min(previous_amount, global.double.get("craft_queue_"    . i2s(_tier * tier_factor + plate))), "presser")
@@ -34,4 +27,3 @@ global.double.set("craft_queue_"    . i2s(_tier * tier_factor + dense_block), gl
 noproducedenseblocks:
 
 wait(0.0)
-

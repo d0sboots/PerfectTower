@@ -1,10 +1,5 @@
-:global int purple_producer
-:global int yellow_producer
-:global int pink_producer
-:global int lightblue_producer
-:global int cyan_producer
-:global int grey_producer
-:global int tier_factor
+:import factory constants
+
 :local double previous_amount
 :local int tier
 

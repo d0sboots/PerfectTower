@@ -1,16 +1,8 @@
-
+:import factory constants
 
 :global int _tier
 :local double previous_amount
 :local double limit
-
-
-:global int tier_factor
-
-:global int ore
-:global int lump
-:global int dust
-:global int ingot
 
 gotoif(noprocessores, active("crusher"))
 previous_amount = count("ore", _tier)
@@ -37,4 +29,3 @@ global.double.set("craft_queue_"    . i2s(_tier * tier_factor + ingot), global.d
 noproduceingot:
 
 wait(0.0)
-
