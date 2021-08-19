@@ -94,10 +94,15 @@ top:
 ; (Generally the mixing will happen in the next iteration.)
 
 #raw_dust_tier (state / 11)
-#curr_dust_tier ((({raw_dust_tier} + 8) % 9) + 1)
-#next_dust_tier ((({raw_dust_tier} + 8 )% 9) + 2)
-#ore_tier (state % 11)
-#has_ore ({ore_tier} != 0)
+#curr_dust_tier 1 + (({raw_dust_tier} + 8) % 9)
+#next_dust_tier 2 + (({raw_dust_tier} + 8) % 9)
+; The reason for the max() here is so that ore_tier never returns 0.
+; That way, we never try to count() something with a tier of 0, even in
+; if() branches that aren't used. This is because counting invalid tiers
+; has a side-effect of logging a warning, which can fill the hard drive with
+; spammy messages.
+#ore_tier max(1, state % 11)
+#has_ore (state % 11 != 0)
 
 state = ({raw_dust_tier} * 11 + {orestate}) % 99
 
@@ -110,10 +115,10 @@ state = ({raw_dust_tier} * 11 + {orestate}) % 99
 ; throw off the calculations. We know that currently processing lumps won't be
 ; an issue, because we only craft when the mixer is empty.
 
-#count_dust_and_lumps(dust_tier) (count("lump", {dust_tier} - 1) + count("dust", {dust_tier}))
-#needed_by_ratio(dust_tier) (({count_dust_and_lumps({dust_tier})} * ldg("buffer" . ({dust_tier} + 1))\
-  - {count_dust_and_lumps({dust_tier} + 1)} * ldg("buffer" . {dust_tier}))\
-  / (ldg("buffer" . {dust_tier}) + 8. * ldg("buffer" . ({dust_tier} + 1))))
+#count_dust_and_lumps(dust_tier) (if({dust_tier} == 1, 0., count("lump", max(1, -1 + {dust_tier}))) + count("dust", {dust_tier}))
+#needed_by_ratio(dust_tier) (({count_dust_and_lumps({dust_tier})} * ldg("buffer" . (1 + {dust_tier}))\
+  - {count_dust_and_lumps(1 + {dust_tier})} * ldg("buffer" . {dust_tier}))\
+  / (ldg("buffer" . {dust_tier}) + 8. * ldg("buffer" . (1 + {dust_tier}))))
 
 ; We always save one dust on the producing side, so that dust ordering doesn't
 ; get messed up in the inventory.
@@ -128,8 +133,8 @@ state = ({raw_dust_tier} * 11 + {orestate}) % 99
 ; don't have lumps, you'll be up to 3 under the target. However, we always
 ; ensure that you'll leave one leftover no matter what.
 
-craft(if({has_ore} || active("mixer"), "", "lump"), {curr_dust_tier}, min(0.999 * count("dust", {next_dust_tier})^ 0.84, {needed_by_ratio({curr_dust_tier})} + 0.5))
-produce(if({has_ore}, "ore", if(active("mixer"), "", "lump")),\
+craft("lump", {curr_dust_tier}, if({has_ore} || active("mixer"), 0., min(0.999 * count("dust", {next_dust_tier})^ 0.84, {needed_by_ratio({curr_dust_tier})} + 0.5)))
+produce(if({has_ore}, "ore", "lump"),\
   if({has_ore}, {ore_tier}, {curr_dust_tier}),\
   if({has_ore}, max(count("ore", {ore_tier}) - ore_buffer, 1. + (count("ore", {ore_tier}) - count("dust", {ore_tier})) / 3.), count("lump", {curr_dust_tier})),\
   if({has_ore}, "crusher", "mixer"))
