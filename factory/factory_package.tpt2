@@ -21,8 +21,9 @@ gotoif(skipcomputing, isopen("factory") == false | factory_launch == 0 | {get_qu
 package_executing = 1
 factory_launch = 0
 
-; Count all the items in the inventory. Since this only takes 4 lines,
+; Count all the items in the inventory. Since this only takes 5 lines,
 ; we can cram it in here instead of needing a separate script.
+i = 0
 countitems_loop:
 itemdata = {lua(return factory.composite_string("game_name", "i/10"))}
 
