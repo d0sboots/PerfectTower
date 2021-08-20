@@ -94,4 +94,3 @@
 ; ===== END OF VALID IDS =====
 
 :const int machine {lua(return factory.item_names["oven"].id - 1)}
-:const int tier_factor 1000

@@ -1,5 +1,3 @@
-:import factory constants
-
 wakeup()
 
 :global int factory_package_id
@@ -15,15 +13,6 @@ package_uuid = max(package_uuid, 235)
 gotoif(tryassign, package_uuid != 235)
 package_ids += 1
 factory_package_id = package_ids
-
-:local int i
-:local string itemdata
-
-setvar_loop:
-itemdata = {lua(return factory.composite_string("name", "i"))}
-i += 1
-gis({get_name}, i)
-gotoif(setvar_loop, i < {items_count})
 
 package_uuid = 0
 loading_packages -= 1

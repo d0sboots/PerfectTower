@@ -7,8 +7,7 @@
 :global int turbo_counter
 
 :global int factory_launch
-:global int factory_target_tier
-:global int factory_target_type
+:global int factory_target
 :global double factory_target_amount
 
 :local int i
@@ -17,7 +16,7 @@
 begincycle:
 
 waituntil(current_step == 2 & current_package == factory_package_id)
-gotoif(skipcomputing, isopen("factory") == false | factory_launch == 0 | {get_queue(factory_target_tier, factory_target_type)} > 0.)
+gotoif(skipcomputing, isopen("factory") == false | factory_launch == 0 | {get_raw(factory_target)} > 0.)
 package_executing = 1
 factory_launch = 0
 
@@ -25,7 +24,7 @@ factory_launch = 0
 ; we can cram it in here instead of needing a separate script.
 i = 0
 countitems_loop:
-itemdata = {lua(return factory.composite_string("game_name", "i/10"))}
+itemdata = {lua(return factory.composite_string("i/10"))}
 
 loop:
 ; Special case a few items at the base of the hierarchy.
@@ -46,7 +45,7 @@ goto(if(i%10 != 0, loop,\
      if(i < {items_count} * 10, countitems_loop, counting_done)))
 counting_done:
 
-{set_queue(factory_target_tier, factory_target_type, factory_target_amount)}
+{set_raw(factory_target, factory_target_amount)}
 
 executesync("make craft tree")
 stop("make craft tree")
@@ -54,7 +53,7 @@ package_executing = 0
 skipcomputing:
 
 waituntil(current_step == 3 & current_package == factory_package_id)
-gotoif(skipactions, isopen("factory") == false | {get_queue(factory_target_tier, factory_target_type)} == 0.)
+gotoif(skipactions, isopen("factory") == false | {get_raw(factory_target)} == 0.)
 package_executing = 1
 executesync("produce")
 stop("produce")

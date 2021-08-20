@@ -57,26 +57,22 @@
     return ":const int " .. name .. " " .. #factory.items;\
   end\
 \
-  function factory.composite_string(field, var, filter)\
+  function factory.composite_string(var, filter)\
     local acc = {};\
     local size = 0;\
     local first = #factory.items;\
     local last = 0;\
-    if field == "name" then\
-      size = factory.name_max_size;\
+    if filter == nil then\
+      size = math.max(factory.game_name_sizes[false], factory.game_name_sizes[true]);\
     else\
-      if filter == nil then\
-        size = math.max(factory.game_name_sizes[false], factory.game_name_sizes[true]);\
-      else\
-        size = factory.game_name_sizes[filter];\
-      end\
+      size = factory.game_name_sizes[filter];\
     end\
     size = size + 1;\
     local fmt = "%-" .. size .. "s%d";\
     size = size + 1;\
     acc[1] = 'sub("';\
     for i = 1, #factory.items do\
-      item = factory.items[i];\
+      local item = factory.items[i];\
       if filter == nil or item.is_craft == filter then\
         acc[#acc + 1] = string.format(fmt, item[field], item.tier - 1);\
         if i < first then first = i end\
@@ -84,7 +80,6 @@
       end\
     end\
     acc[#acc + 1] = '", ' .. size .. " * (" .. var .. "), " .. size .. ')';\
-    factory.items_offset = first - 1;\
     factory.items_count = last - first + 1;\
     factory.entry_size = size;\
     return table.concat(acc);\

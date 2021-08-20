@@ -1,18 +1,71 @@
 :import factory constants
 
+:global int factory_target
 :global double factory_target_amount
 :global int factory_launch
 
-:global int factory_target_tier
-:global int factory_target_type
+:local int target_tier
+:local string target_type
 
 key.f()
 
 isopen("factory")
 
-factory_target_tier = 1
-factory_target_type = gig("plate")
+; Concatenates the names of all the items, in brackets to ensure that
+; searching for them finds the correct unique result. Also throws in the
+; in-game names so that you can refer to items that way if you want.
+#item_names {lua(\
+  local acc = {};\
+  local size = math.max(factory.name_max_size,\
+    factory.game_name_sizes[false],\
+    factory.game_name_sizes[true]) + 2;\
+  local fmt = "%-" .. size .. "s";\
+  acc[1] = '"';\
+  for i = 1, #factory.items do\
+    acc[#acc + 1] = string.format(fmt, "[" .. factory.items[i].game_name .. "]");\
+  end\
+  for i = 1, #factory.items do\
+    acc[#acc + 1] = string.format(fmt, "[" .. factory.items[i].name .. "]");\
+  end\
+  acc[#acc + 1] = '"';\
+  factory.entry_size = size;\
+  return table.concat(acc);\
+)}
+#tier_data {lua(\
+  local acc = {};\
+  acc[1] = '"';\
+  for i = 1, #factory.items do\
+    acc[#acc + 1] = string.format("%d", factory.items[i].tier - 1);\
+  end\
+  acc[#acc + 1] = '"';\
+  return table.concat(acc);\
+)}
+#error "<size=16><color=white>error"
+#entry_size {lua(return factory.entry_size)}
+
+target_tier = 1
+target_type = "set item type here"
 factory_target_amount = 8.
 waitwhile("You can edit previous lines, but don't the lines bellow" == "")
-factory_launch = 1
-wait(0.0)
+; This sets the target, i.e. the combined item/tier expression, by finding
+; the appropriate string in the item_names data table. Because the names
+; repeate twice (once for the "Xenos" name, once with the in-game name),
+; we use % to put it in the proper range. Mod is truncating in this game, which
+; means that a -1 result from "not found" will remain as -1.
+; The remainder of this expression multiplies the item by 10 and adds in the
+; tier. The odd ordering is so that a -1 result will cause the item to
+; round down, instead of truncating to zero.
+factory_target = ((index({item_names}, "[" . target_type . "]", 0)\
+  % ({lua(return #factory.items)} * {entry_size}) + {entry_size}) * 10) / {entry_size} + target_tier
+global.string.set({error},\
+  if(factory_target - target_tier < 10, "Invalid item '" . target_type . "'</color></size>",\
+    if(target_tier < 1, "Tier " . target_tier . " < 1</color></size>",\
+	  if(target_tier > index(" 0123456789", sub(" " . {tier_data}, (factory_target - target_tier) / 10, 1), 0),\
+        "Tier " . target_tier . " too big</color></size>",\
+        ""\
+      )\
+	)\
+  )\
+)
+factory_launch = if(gsg({error}) == "", 1, 0)
+global.unset(if(gsg({error}) == "", {error}, ""))
