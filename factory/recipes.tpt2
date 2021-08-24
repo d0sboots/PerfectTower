@@ -1,0 +1,697 @@
+:import factory constants
+
+{lua(\
+  factory.recipes = {};\
+)}
+
+; Infrastructure for defining the recipe list.
+{lua(\
+  function factory.recipe(item)\
+    local recipe_item = factory.item_names[item];\
+    if not recipe_item then\
+      return "Unknown item '" .. item .. "'";\
+    end\
+    factory.recipe_item = recipe_item;\
+    local offset = 10 * recipe_item.id;\
+    for i = offset + 1, offset + recipe_item.tier do\
+      if not factory.recipes[i] then\
+        factory.recipes[i] = {};\
+      end\
+    end\
+  end\
+\
+  function factory.component(tiers, item_name, counts)\
+    local recipe_item = factory.recipe_item;\
+    local item_name = item_name:gsub(" ", "");\
+    local item = factory.item_names[item_name];\
+    if not item then\
+      return "Unknown item '" .. item_name .. "'";\
+    end\
+    local tier_tmp = {};\
+    for word in tiers:gmatch("%S+") do\
+      local tier = tonumber(word);\
+      if not tier then\
+        return "Bad tier " .. word\
+      end\
+      tier_tmp[#tier_tmp + 1] = tier;\
+    end\
+    if #tier_tmp ~= 1 and #tier_tmp ~= recipe_item.tier then\
+      return "Tiers list has wrong size, item " ..\
+        recipe_item.name .. " has " .. recipe_item.tier .. " tiers";\
+    end\
+    \
+    local base_tier;\
+    for i = 1, recipe_item.tier do\
+      base_tier = tier_tmp[i] or base_tier;\
+      local tier = base_tier;\
+      if tier < 1 then\
+        tier = tier + i;\
+      end\
+      --[[Tiers less than 1 can happen naturally, due to the negative tier\
+          convention, so they are silently dropped. Tiers greater than the\
+          the maximum number of tiers are an error.]]\
+      if tier > item.tier then\
+        return "Tier " .. tier .. " > item max tier " .. item.tier;\
+      end\
+      tier_tmp[i] = tier;\
+    end\
+    \
+    local counts_tmp = {};\
+    for word in counts:gmatch("%S+") do\
+      local count = tonumber(word);\
+      if not count then\
+        return "Bad count " .. word\
+      end\
+      counts_tmp[#counts_tmp + 1] = count;\
+    end\
+    if #counts_tmp ~= 1 and #counts_tmp ~= recipe_item.tier then\
+      return "Counts list has wrong size, item " ..\
+        recipe_item.name .. " has " .. recipe_item.tier .. " tiers";\
+    end\
+    for i = #counts_tmp + 1, recipe_item.tier do\
+      counts_tmp[i] = counts_tmp[i-1];\
+    end\
+    --[[Finally, merge the two expanded lists and distribute the results\
+        across the recipes for each tier. These recipes are "reversed,"\
+        in the sense that they don't describe how to make each item, but\
+        rather all the items that this one can be used to help make.\
+        It's this reversed list that is needed for computing the material\
+        needs when crafting.]]\
+    local recipes = factory.recipes;\
+    local offset = recipe_item.id * 10;\
+    for i = 1, recipe_item.tier do\
+      if counts_tmp[i] > 0 and tier_tmp[i] > 0 then\
+        local idx = item.id * 10 + tier_tmp[i];\
+        local comp = recipes[idx];\
+        if comp == nil then\
+          comp = {};\
+          recipes[idx] = comp;\
+        end\
+        comp[#comp + 1] = offset + i;\
+        comp[#comp + 1] = counts_tmp[i];\
+      end\
+    end\
+  end\
+)}
+
+; Every recipe begins with this line. There must be one (and only one)
+; recipe declaration for each item, even if there is no way to make it
+; (like for rubber).
+#recipe(item) {lua(return factory.recipe([[{item}]]))}
+
+; After starting a recipe, list its components with this. A component
+; declares a single item that is used, and the the tiers and counts of that
+; item for each tier of the recipe_item that's being made.
+; The list on the left side is the tiers, the list on the right is the counts.
+;
+; For instance:
+;  recipe(white_producer)
+;  component(2 3 5 7 9, screw, 2 4 4 4 4)
+; Means that a T1 white_producer needs 2 T2 screws, a T2 white_producer needs
+; 4 T3 screws, T3 requires 4 T5 screws, etc.
+; 
+; There are additional space-saving wrinkles. Instead of repeating a number
+; for every tier or every count when it's always the same, you can list it
+; once. This is all-or-nothing: It must be exactly once, or listed once for
+; every tier in the recipe.
+; Also, in the tier list you can use numbers less than 1. This means that
+; the position in the list will be added to the number. I.e. a value of
+; 0 becomes equal to "current_tier", -1 becomes "current_tier - 1", etc.
+#component(tiers, item, counts) {lua(\
+  return factory.component([[{tiers}]],[[{item}]],[[{counts}]]);\
+)}
+
+; ===== BEGIN RECIPES =====
+
+{recipe(white_producer)}
+{component(2 3 5 7 9, screw, 2 4 4 4 4)}
+{component(2 0 0 0 0, plate, 2 0 0 0 0)}
+{component(0 3 5 7 9, board, 0 2 2 2 6)}
+{component(-1, chip, 0 2 2 2 4)}
+{component(-1, white_producer, 1)}
+
+{recipe(red_producer)}
+{component(1 3 5 7 9, wire, 1 4 4 4 4)}
+{component(2 0 0 0 0, screw, 1 0 0 0 0)}
+{component(0 3 5 7 9, board, 0 1 1 1 3)}
+{component(2 3 5 0 0, plate, 2 2 2 0 0)}
+{component(0 0 0 7 9, dense_plate, 0 0 0 2 4)}
+{component(1 1 2 3 4, chip, 2 1 1 1 3)}
+{component(-1, red_producer, 1)}
+
+{recipe(orange_producer)}
+{component(2 3 5 7 9, screw, 2 2 2 4 4)}
+{component(1 2 4 6 8, wire, 2 3 2 5 5)}
+{component(2 0 5 7 9, plate, 1 0 1 2 2)}
+{component(0 3 5 7 9, dense_plate, 0 2 2 2 2)}
+{component(1 1 2 3 4, chip, 1)}
+{component(-1, orange_producer, 1)}
+
+{recipe(blue_producer)}
+{component(0 2 4 6 8, wire, 0 4 2 8 8)}
+{component(1 3 5 7 9, wire, 4 2 2 2 2)}
+{component(2 3 5 7 9, plate, 1 2 2 2 2)}
+{component(1 0 2 3 4, chip, 1 0 2 2 2)}
+{component(-1, blue_producer, 1)}
+
+{recipe(brown_producer)}
+{component(2 4 6 8 10, rod, 3 4 10 10 10)}
+{component(2 4 6 8 10, plate, 2)}
+{component(1 1 2 3 4, chip, 1 2 2 2 2)}
+{component(-1, brown_producer, 1)}
+
+{recipe(green_producer)}
+{component(0 3 5 7 9, pipe, 0 3 5 10 14)}
+{component(2 4 6 8 10, motor, 1)}
+{component(1 3 5 7 9, dense_plate, 2 2 4 4 6)}
+{component(0, chip, 3 2 4 4 6)}
+{component(-1, green_producer, 1)}
+
+{recipe(purple_producer)}
+{component(1 3 5 7 9, wire, 2 4 8 8 12)}
+{component(2 4 6 8 10, motor, 1 2 2 2 2)}
+{component(0, chip, 3 2 4 4 6)}
+{component(-1, purple_producer, 1)}
+
+{recipe(yellow_producer)}
+{component(1 3 5 7 9, insul_cable, 2 2 4 4 6)}
+{component(2 4 6 8 10, motor, 1)}
+{component(0 3 5 7 9, block, 0 3 5 5 14)}
+{component(0, chip, 3 2 4 4 6)}
+{component(-1, yellow_producer, 1)}
+
+{recipe(pink_producer)}
+{component(2 4 6 8 9, insul_cable, 4 6 6 6 6)}
+{component(2 4 6 8 10, pipe, 4 4 4 4 8)}
+{component(0, chip, 4 4 4 4 6)}
+{component(-1, pink_producer, 1)}
+
+{recipe(lightblue_producer)}
+{component(2 4 6 8 10, ring, 6 8 8 8 12)}
+{component(2 4 6 8 10, plate, 4)}
+{component(0, chip, 2 2 2 2 4)}
+{component(-1, lightblue_producer, 1)}
+
+{recipe(cyan_producer)}
+{component(2 4 6 8 10, insul_cable, 6 8 8 8 12)}
+{component(1 3 5 7 9, block, 4)}
+{component(0, chip, 2 2 2 2 4)}
+{component(-1, cyan_producer, 1)}
+
+{recipe(grey_producer)}
+{component(3 5 7 9 10, insul_cable, 6 7 7 7 9)}
+{component(2 4 6 8 10, block, 4 5 5 5 7)}
+{component(0, chip, 2 2 2 2 4)}
+{component(-1, grey_producer, 1)}
+
+{recipe(black_producer)}
+{component(1 3 5 7 9, dense_block, 4 5 5 5 7)}
+{component(2 4 6 8 10, motor, 2)}
+{component(2 4 6 8 10, pipe, 2)}
+{component(2 4 6 8 10, pump, 2 3 3 3 5)}
+{component(0, chip, 2 2 2 2 4)}
+{component(-1, black_producer, 1)}
+
+{recipe(gem_producer)}
+{component(5, chip, 10)}
+{component(4, chip, 10)}
+{component(10, insul_cable, 2)}
+{component(1, dense_block, 1)}
+{component(2, dense_block, 1)}
+{component(3, dense_block, 1)}
+{component(4, dense_block, 1)}
+{component(5, dense_block, 1)}
+{component(6, dense_block, 1)}
+{component(7, dense_block, 1)}
+{component(8, dense_block, 1)}
+{component(9, dense_block, 1)}
+{component(10, dense_block, 1)}
+
+{recipe(exotic_producer)}
+{component(5, chip, 10)}
+{component(10, insul_cable, 2)}
+{component(10, dense_block, 10)}
+{component(10, assembly, 1)}
+{component(10, boiler, 1)}
+{component(10, crusher, 1)}
+{component(10, cutter, 1)}
+{component(10, mixer, 1)}
+{component(10, oven, 1)}
+{component(10, presser, 1)}
+{component(10, refiner, 1)}
+{component(10, shaper, 1)}
+{component(10, belt, 1)}
+
+{recipe(oven)}
+{component(0, plate, 4 6 8 8 8 8 8 8 8 8)}
+{component(0, insul_cable, 2 2 3 3 3 4 4 4 4 4)}
+{component(0, block, 0 0 0 0 0 2 2 2 2 2)}
+{component(-1, oven, 1)}
+
+{recipe(presser)}
+{component(1, hammer, 2 0 0 0 0 0 0 0 0 0)}
+{component(0, plate, 4 5 7 7 7 9 9 9 9 9)}
+{component(0, wire, 1 1 2 2 2 3 3 3 3 3)}
+{component(0, block, 0 0 0 0 4 5 5 5 5 5)}
+{component(1 1 1 2 2 2 3 3 4 4, chip, 2)}
+{component(-1, presser, 1)}
+
+{recipe(assembly)}
+{component(0, pipe, 1 1 1 1 1 2 2 2 2 2)}
+{component(0, dense_plate, 6 5 8 8 8 10 10 10 12 12)}
+{component(0, motor, 1 1 1 1 1 1 1 1 2 2)}
+{component(1 1 1 2 2 2 3 3 4 4, chip, 1 1 1 1 1 1 1 1 1 2)}
+{component(-1, assembly, 1)}
+
+{recipe(refiner)}
+{component(0, block, 0 0 0 0 0 0 5 5 5 7)}
+{component(0, dense_plate, 4)}
+{component(0, motor, 1 1 1 1 2 2 2 2 2 4)}
+{component(0, ring, 1 2 2 2 3 3 3 3 3 5)}
+{component(0, pump, 1 2 2 2 3 3 3 3 3 5)}
+{component(1 1 2 2 2 2 3 4 4 5, chip, 2)}
+{component(-1, refiner, 1)}
+
+{recipe(mixer)}
+{component(0, dense_plate, 5 4 4 5 5 6 6 6 6 6)}
+{component(0, motor, 2)}
+{component(0, pump, 1 1 1 2 2 3 3 3 3 3)}
+{component(1 1 1 2 2 2 2 3 4 4, chip, 1 1 1 2 2 3 3 3 3 3)}
+{component(-1, mixer, 1)}
+
+{recipe(crusher)}
+{component(0, dense_plate, 7 8 8 8 8 8 8 9 9 9)}
+{component(0, motor, 1 1 1 1 1 1 1 2 2 2)}
+{component(1 1 1 2 2 2 2 2 4 4, chip, 1 2 2 2 2 2 2 3 3 3)}
+{component(-1, crusher, 1)}
+
+{recipe(belt)}
+{component(1, rubber, 3 4 4 4 4 0 0 0 0 0)}
+{component(1, rubber_plate, 0 0 0 0 0 4 5 5 5 5)}
+{component(0, motor, 3 3 3 3 3 3 4 4 4 4)}
+{component(0, insul_cable, 3 4 4 4 4 4 5 5 5 5)}
+{component(0 0 0 1 2 2 3 3 4 4, chip, 0 0 0 4 4 4 5 5 5 5)}
+{component(-1, belt, 1)}
+
+{recipe(cutter)}
+{component(0, plate, 2 2 2 2 2 2 2 0 0 0)}
+{component(0, dense_plate, 3 3 3 3 3 4 4 2 2 2)}
+{component(0, block, 0 0 0 0 0 0 0 4 4 6)}
+{component(0, motor, 3 4 4 4 4 5 5 5 5 7)}
+{component(-1, cutter, 1)}
+
+{recipe(shaper)}
+{component(0, plate, 4 4 4 4 4 4 4 4 4 0)}
+{component(0, dense_plate, 0 0 0 0 0 0 0 0 0 4)}
+{component(0, screw, 1 2 2 2 2 3 3 3 3 3)}
+{component(0, block, 1 2 2 2 2 3 3 3 3 0)}
+{component(0, dense_block, 0 0 0 0 0 0 0 0 0 5)}
+{component(0, motor, 2)}
+{component(0, insul_cable, 1 1 1 1 1 2 2 2 2 4)}
+{component(-1, shaper, 1)}
+
+{recipe(boiler)}
+{component(0, wire, 2 2 2 3 3 3 3 3 4 5)}
+{component(0, dense_plate, 2 2 2 3 3 3 3 3 4 5)}
+{component(0, block, 4 7 7 8 8 8 8 8 9 10)}
+{component(0, motor, 1 1 1 2 2 2 2 2 3 4)}
+{component(0, screw, 2)}
+{component(0, pump, 1)}
+{component(-1, boiler, 1)}
+
+{recipe(chip)}
+{component(1 3 5 7 9, circuit, 2)}
+{component(2 4 6 8 10, circuit, 2 4 4 2 2)}
+{component(1 3 5 7 9, board, 1 4 4 6 8)}
+{component(2 4 6 8 10, board, 1 2 2 6 8)}
+{component(-1, chip, 0 4 8 12 12)}
+
+{recipe(insul_cable)}
+{component(0, cable, 1 1 1 2 3 4 5 10 12 16)}
+{component(1, rubber, 1 2 0 0 0 0 0 0 0 0)}
+{component(1, rubber_plate, 0 0 2 4 6 8 10 10 12 16)}
+
+{recipe(stacked_plate)}
+{component(0, plate, 9)}
+
+{recipe(motor)}
+{component(0, plate, 4)}
+{component(0, screw, 1)}
+{component(0, rod, 2)}
+{component(0, wire, 1)}
+{component(1, rubber, 1)}
+
+{recipe(pump)}
+{component(0, plate, 2)}
+{component(0, motor, 1)}
+{component(0, ring, 2)}
+{component(1, rubber_plate, 4)}
+
+{recipe(hammer)}
+{component(2, ingot, 6)}
+{component(2, rod, 1)}
+
+{recipe(block)}
+{component(0, dense_plate, 8 8 8 8 8 8 12 12 12 12)}
+
+; Ore is a terminal, unable to be crafted.
+{recipe(ore)}
+
+; These recipes have special-case code to handle them, because of the
+; complexities involved with choosing between ore and lumps for making dust.
+{recipe(lump)}
+{recipe(dust)}
+
+{recipe(ingot)}
+{component(0, dust, 1)}
+
+{recipe(plate)}
+{component(0, ingot, 1)}
+
+{recipe(dense_plate)}
+{component(0, stacked_plate, 1)}
+
+{recipe(dense_block)}
+{component(0, block, 1)}
+
+{recipe(pipe)}
+{component(0, plate, 1)}
+
+{recipe(cable)}
+{component(0, ingot, 0.5)}
+
+{recipe(wire)}
+{component(0, cable, 1)}
+
+{recipe(rod)}
+{component(0, ingot, 0.5)}
+
+{recipe(ring)}
+{component(0, rod, 1)}
+
+{recipe(screw)}
+{component(0, rod, 0.25)}
+
+{recipe(board)}
+{component(0, plate, 1)}
+
+{recipe(circuit)}
+{component(0, cable, 1)}
+
+; Rubber is a terminal, unable to be crafted.
+{recipe(rubber)}
+
+{recipe(rubber_plate)}
+{component(0, rubber, 1)}
+
+; ===== END RECIPES =====
+
+; Debugging function, kept in case of future problems.
+#debug_dump_recipes {lua(\
+  acc = {};\
+  for i = 1, #factory.items do\
+    local item = factory.items[i];\
+    acc[#acc+1] = string.format("%02d %-18s [", i, item.name);\
+    for j = 1, item.tier do\
+      if j ~= 1 then acc[#acc+1] = string.format("\n%23s", "") end\
+      acc[#acc+1] = "(";\
+      local recipe = factory.recipes[i * 10 + j];\
+      for k = 1, #recipe do\
+        if k ~= 1 then acc[#acc+1] = " " end\
+        acc[#acc+1] = recipe[k];\
+      end\
+      acc[#acc+1] = ")";\
+    end\
+    acc[#acc+1] = "]\n";\
+  end\
+  return table.concat(acc);\
+)}
+
+;{debug_dump_recipes}
+
+; Now that all the recipes are defined, we have to put them in a valid order.
+; We do this with a modified breadth-first-search, optimized around the
+; structure of our data.
+; Each item (which in this context is a type-tier pair, identified by
+; the formula type * 10 + tier) is sequentially checked against a graph
+; that is incrementally being formed. If all its recipe-items have already been
+; satisfied (or it has none), then it is also satisfied, and (as long
+; as it has recipe-items) it's put on a queue to be output. Otherwise, a count
+; is kept of how many unsatisfied recipes it has, and an entry is made in each
+; blocking recipe pointing back to this item.
+; After each item, the queue is processed. The head of the queue is popped
+; and gets the next sequential id; this is how the recipes get their order.
+; Also, any items blocked on it will have their tallies decremented by one.
+; If these go to zero, they are now satisfied and will be added to the queue
+; to be output, as well.
+{lua(\
+  local recipes_list = {};\
+  factory.recipes_list = recipes_list;\
+  local items = factory.items;\
+  local recipes = factory.recipes;\
+  local graph = {};\
+  local queue = {};\
+  for tier = 10, 1, -1 do\
+    for item_id = 1, #items do\
+      local item = items[item_id];\
+      local id = 10 * item_id + tier;\
+      local recipe = recipes[id];\
+      if not recipe then\
+        goto continue;\
+      end\
+      local entry = graph[id];\
+      if not entry then\
+        entry = {};\
+        entry.blocking = {};\
+        graph[id] = entry;\
+      end\
+      local blockers = 0;\
+      if recipe then\
+        for i = 1, #recipe, 2 do\
+          local other = graph[recipe[i]];\
+          if not other then\
+            other = {};\
+            other.blocking = {};\
+            other.blockers = -1;\
+            graph[recipe[i]] = other;\
+          end\
+          if other.blockers ~= 0 then\
+            blockers = blockers + 1;\
+            other.blocking[#other.blocking + 1] = id;\
+          end\
+        end\
+      end\
+      entry.blockers = blockers;\
+      \
+      if blockers == 0 then\
+        queue[#queue + 1] = id;\
+      end\
+      \
+      local q_front = 1;\
+      while q_front <= #queue do\
+        id = queue[q_front];\
+        entry = graph[id];\
+        recipes_list[#recipes_list + 1] = id;\
+        for i = 1, #entry.blocking do\
+          local other = graph[entry.blocking[i]];\
+          other.blockers = other.blockers - 1;\
+          if other.blockers == 0 then;\
+            queue[#queue + 1] = entry.blocking[i];\
+          end;\
+        end\
+        q_front = q_front + 1\
+      end\
+      queue = {};\
+      ::continue::\
+    end\
+  end\
+)}
+
+; Debugging function, kept in case of future problems.
+#debug_dump_recipes_list {lua(\
+  acc = {};\
+  for i = 1, #factory.recipes_list do\
+    local id = factory.recipes_list[i];\
+    acc[#acc+1] = string.format("%03d:", id);\
+    local recipe = factory.recipes[id];\
+    for j = 1, #recipe do\
+      acc[#acc+1] = string.format(" %3s", recipe[j]);\
+    end\
+    acc[#acc+1] = "\n";\
+  end\
+  return table.concat(acc);\
+)}
+
+;{debug_dump_recipes_list}
+
+; Evaluates to an expression that results in an string containing encoded data
+; for this recipe. The first entry_size-1 characters are the in-game item name,
+; space-padded. Then comes the item tier, 0-9 encoded. (So T1 is 0.) After that
+; is a series of 3-number strings, each of which is a craft-queue index.
+; The first is the index for the previous item, which is used to determine if
+; this is a continuation from a previous line. The next `num_terms`
+; terms are index values for queue values to add. After each term is a single
+; character which is a multiplier value. Following that is an index for the
+; current item, which is used as the index to set, and possibly also as an
+; index to read from.
+; In the implementation, this is split into two: There is a single character
+; which is used to look up in an index table to get the item name/tier string,
+; and then this is concatenated with the rest of the string, for space-saving
+; reasons. The previous item/next item data is positioned so that it's
+; actually only stored once, and the sub() read window is expanded to overlap
+; consequetive sections to pick up the previous item when reading the next.
+#get_recipe_data(num_terms) {lua(\
+  local num_terms = {num_terms};\
+  local num_terms_2 = num_terms * 2;\
+  local recipe_limit = 0;\
+  local acc_count = {};\
+  local acc_main = {};\
+  local sub = string.sub;\
+  \
+  --[[Note that there can't be uppercase letters in this, since index() is\
+      annoyingly case-insensitive!]]\
+  local base62 = "0123456789abcdefghijklmnopqrstuvwxyz!@#$%^&*()[]/=?+-<>_|~`':.";\
+  assert(#factory.items <= 62, "Must have 62 or fewer items, or add to item string");\
+  local multipliers = "0123a   b   c   d   e   f   g   h   i   j   k   l   m   n   o   p   q   r   s   t   u   v   w   x   y   z";\
+  local mult_max = {};\
+  for i = 1, num_terms do\
+    mult_max[i] = 0;\
+  end\
+  acc_count[1] = string.format([[index("%s", sub("]], sub(base62, 1, #factory.items));\
+  acc_main[1] = [[ . sub("___]];\
+  for i = 1, #factory.recipes_list do\
+    local id = factory.recipes_list[i];\
+    local recipe = factory.recipes[id];\
+    local item_id = (id - 1) // 10;\
+    local limit = (#recipe - 1) // num_terms_2;\
+    if limit < 0 then limit = 0 end;\
+    for j = 1, (limit + 1) * num_terms_2, 2 do\
+      acc_main[#acc_main + 1] = (j < #recipe) and recipe[j] + 100 or "   ";\
+      local mod = (j // 2) % num_terms + 1;\
+      local mult = (j < #recipe) and recipe[j+1] * 4 or 0;\
+      if mult > mult_max[mod] then\
+        mult_max[mod] = mult;\
+      end\
+      acc_main[#acc_main + 1] = sub(multipliers, mult + 1, mult + 1);\
+      if mod == num_terms then\
+        acc_count[#acc_count + 1] = sub(base62, item_id, item_id);\
+        acc_main[#acc_main + 1] = id + 100;\
+        recipe_limit = recipe_limit + 1;\
+      end\
+    end\
+  end\
+  acc_count[#acc_count + 1] = [[", i, 1), 0)]];\
+  factory.main_size = 4 * num_terms + 3;\
+  acc_main[#acc_main + 1] = string.format(\
+    [[", i * %d, %d)]],\
+    factory.main_size, factory.main_size + 3\
+  );\
+  \
+  factory.multipliers = {};\
+  for i = 1, num_terms do\
+    factory.multipliers[i] = sub(multipliers, 1, mult_max[i] + 1);\
+  end;\
+  factory.num_terms = num_terms;\
+  factory.recipe_limit = recipe_limit;\
+  return factory.composite_string(table.concat(acc_count)) .. table.concat(acc_main);\
+)}
+
+; Returns the set of lookup/multiplier terms that will be added in to form
+; the base of the value. Most of the data for this is pre-comupted by
+; get_recipe_data().
+#recipe_terms {lua(\
+  acc = {};\
+  for i = 1, factory.num_terms do\
+    if i ~= 1 then\
+      acc[#acc + 1] = " + ";\
+    end\
+    acc[#acc + 1] = string.format(\
+      [[max(0., ceil(gdg({queue_str} . sub(recipe_data, %d, 3)) *\
+        i2d(index("%s", sub(recipe_data, %d, 1), 0)) * 0.25))]],\
+      factory.entry_size + 4 * i - 1,\
+      factory.multipliers[i],\
+      factory.entry_size + 4 * i + 2\
+    );\
+  end\
+  return table.concat(acc);\
+)}
+
+; These macros are used to test if the item is an ore or lump, in order to
+; efficiently disable the count. Ore and lumps have no terms, so the net result
+; is to simply zero the fields (unless they are selected as the factory_target).
+; These items require special processing, later.
+; We are taking advantage of the fact that lumps follows directly after ore
+; and that lumps only has 9 tiers to test only the first two digits of the
+; item's id, since the wraparound effect from tier 10 is otherwise annoying.
+#recipe_item_trunc sub(recipe_data, {lua(\
+  return factory.entry_size + factory.main_size;\
+)}, 2)
+#ore_trunc "{lua(return factory.item_names["ore"].id + 10)}"
+#ore_prev_t10 ({ore_trunc} . "0")
+#lump_trunc "{lua(return factory.item_names["lump"].id + 10)}"
+
+#prev_item sub(recipe_data, {lua(return factory.entry_size)}, 3)
+#recipe_item sub(recipe_data, {lua(\
+  return factory.entry_size + factory.main_size;\
+)}, 3)
+; The tier value is just the last digit of recipe_item
+#tier_value sub(recipe_data, {lua(\
+  return factory.entry_size + factory.main_size + 2;\
+)}, 1)
+#recipe_item_name sub(recipe_data, 0, index(recipe_data, " ", 0))
+#recipe_limit {lua(return factory.recipe_limit)}
+
+:global int factory_target
+:global double factory_target_amount
+
+:local int i
+:local string recipe_data
+
+loop:
+recipe_data = {get_recipe_data(4)}
+; The core expression that does all the work. If this item is the target item,
+; then set the queue value to factory_target_amount - this ensures that the
+; target is always made, even if it already exists.
+; Otherwise, we set it to the sum of all of its recipe terms, minus the existing
+; count. This core value is the "queue value", and equals how many must be
+; crafted (if positive) or how many extra we have (if negative).
+; Since we are hardcoding the number of recipe terms that are handled in each
+; loop iteration to a small constant (4), there are additional wrinkles because
+; we may need to process the same item multiple times to get all the recipe
+; terms in. This means that if we're seeing the same item again, we add the
+; previous value of the variable and skip subtracting the count.
+; In this way, we efficiently encode a sum that requires multiple passes.
+global.double.set({queue_str} . {recipe_item},\
+  if({recipe_item} == i2s(factory_target + 100),\
+    factory_target_amount,\
+    (\
+      if({prev_item} == {recipe_item}, global.double.get({queue_str} . {recipe_item}), 0.) +\
+      {recipe_terms} -\
+      if(\
+        {prev_item} == {recipe_item} || (\
+          ({recipe_item_trunc} == {ore_trunc} || {recipe_item_trunc} == {lump_trunc})\
+          && {recipe_item} != {ore_prev_t10}\
+        ),\
+        0.,\
+        count({recipe_item_name}, index(" 1234567890", {tier_value}, 0))\
+      )\
+    )\
+  )\
+)
+i = i + 1 ;+ d2i(count({recipe_item} . " " . gdg({queue_str} . {recipe_item}), 1))
+gotoif(loop, i < {recipe_limit})
+
+:local int tier
+
+tier = 10
+tierloop:
+
+{add_queue(tier, dust, max(0., ({get_queue(tier, lump)} - if(tier == 10, 0., count("lump", min(9, tier)))) * 4.0))}
+{add_queue(tier, ore, max(0., min(count("ore", tier), ceil({get_queue(tier, dust)} / 2.))))}
+
+gotoif(nolumps, tier == 1 | count("ore", tier) + count("dust", tier) == 0.)
+{add_queue(-1 + tier, lump, max(0., {get_queue(tier, dust)} - {get_queue(tier, ore)} * 2.))}
+nolumps:
+
+tier -= 1
+gotoif(tierloop, tier > 0)

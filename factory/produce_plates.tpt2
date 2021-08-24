@@ -15,7 +15,6 @@ produce("plate", _tier, min(previous_amount, {get_queue(_tier, pipe)}), "shaper"
 noproducepipes:
 
 gotoif(noproducedenseplates, active("presser"))
-craft("plate.stack", _tier, min(floor(count("plate", _tier) / 9.), {get_queue(_tier, dense_plate)} - count("plate.stack", _tier)))
 previous_amount = count("plate.stack", _tier)
 produce("plate.stack", _tier, min(previous_amount, {get_queue(_tier, dense_plate)}), "presser")
 {subtract_queue(_tier, dense_plate, (previous_amount - count("plate.stack", _tier)))}

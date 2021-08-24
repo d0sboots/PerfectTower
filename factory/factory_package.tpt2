@@ -20,35 +20,8 @@ gotoif(skipcomputing, isopen("factory") == false | factory_launch == 0 | {get_ra
 package_executing = 1
 factory_launch = 0
 
-; Count all the items in the inventory. Since this only takes 5 lines,
-; we can cram it in here instead of needing a separate script.
-i = 0
-countitems_loop:
-itemdata = {lua(return factory.composite_string("i/10"))}
-
-loop:
-; Special case a few items at the base of the hierarchy.
-; Dust starts at 1 instead of 0, because we want to always
-; craft 1 of it so that we don't use it all up.
-; Ore and lumps have special code in the produce section that dictate
-; zero-initialization.
-; Because tier and items start at 1, but i is zero-based, we have to add 1
-; (or subtract 1 from the other side) in all these expressions.
-{set_raw(10 + 1 + i,\
-  if(i/10 == dust - 1, 1., 0.) - \
-  if(i/10 == ore - 1 || i/10 == lump - 1, 0., count({get_name}, i%10 + 1))\
-)}
-; This skips over tiers that don't exist for the given item, by using the
-; tier data embedded in "itemdata".
-i = i + if(i2s(i%10) == {tiers_char}, 10 - i%10, 1)
-goto(if(i%10 != 0, loop,\
-     if(i < {items_count} * 10, countitems_loop, counting_done)))
-counting_done:
-
-{set_raw(factory_target, factory_target_amount)}
-
-executesync("make craft tree")
-stop("make craft tree")
+executesync("recipes")
+stop("recipes")
 package_executing = 0
 skipcomputing:
 

@@ -8,12 +8,9 @@
 ; (which you don't need to worry about.)
 ; Thus you can enter "oven" in the box in the in-game editor (without the quotes).
 
-; If you add or change this list, mind these constraints:
+; If you add or change this list, mind this constraint:
 ; * All the crafted items have to come before the rest of the items.
-; * The machines must be together, and "oven" is used as a marker for the 1st
-;   machine.
-; * There is specific ordering in the produced parts that is used by
-;   various recipes.
+; * Ore and lump must be next to each other, with ore first.
 
 ; ===== VALID IDS =====
 
@@ -53,9 +50,11 @@
 
 ; Various crafted parts
 {make(insul_cable, 10, "cable.insulated")}
+{make(stacked_plate, 10, "plate.stack")}
 {make(motor, 10, "motor")}
 {make(pump, 10, "pump")}
 {make(hammer, 1, "hammer")}
+{make(block, 10, "block")}
 
 ;Transforms ore into dust, tiers 1-10
 {item(ore, 10, "ore")}
@@ -67,13 +66,10 @@
 {item(dust, 10, "dust")}
 
 ; Parts, tiers 1-10
-; These have to be in this specific order, various things depend on
-; the relationships between ingredients.
 {item(ingot, 10, "ingot")}
 
 {item(plate, 10, "plate")}
 {item(dense_plate, 10, "plate.dense")}
-{item(block, 10, "block")}
 {item(dense_block, 10, "block.dense")}
 {item(pipe, 10, "pipe")}
 
@@ -92,5 +88,3 @@
 {item(rubber_plate, 1, "plate.rubber")}
 
 ; ===== END OF VALID IDS =====
-
-:const int machine {lua(return factory.item_names["oven"].id - 1)}

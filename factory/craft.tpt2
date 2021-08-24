@@ -22,13 +22,3 @@ goto(if(i%10 != 0,\
      if({get_raw(10 + 1 + i)} > 0., do_craft, inc),\
      if(i < {items_count} * 10, craftitems_loop, crafting_done)))
 crafting_done:
-
-; Have to craft blocks separately, because they are buried in among produced
-; items due to dependencies caused by certain recipes.
-i = 0
-block_loop:
-i += 1
-previous_amount = count("block", i)
-craft("block", i, {get_queue(i, block)})
-{subtract_queue(i, block, count("block", i) - previous_amount)}
-gotoif(block_loop, i < 10)
