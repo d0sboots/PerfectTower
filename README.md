@@ -50,7 +50,7 @@ Edit the first line which sets the variable "ore_buffer". The default of 1000 me
 
 You can edit the second line which sets the variable "dust_multipliers" to customize the ratios; this sets the shape of the target distribution as a space-separated list. Each number is a multiple of the T1 dust amount, so the first entry should be 1. The default of "1 1 .625 .5 .07872 .06312 .01 .01 .0021 .0021" is based on making high-level producers and should reasonable for everyone.
 
-![The script in action](https://raw.githubusercontent.com/d0sboots/PerfectTower/main/crushing_in_progress.png)
+![The script in action](/crushing_in_progress.png)
 This shows what you can expect after the script has run for a while. There's only 2.75K of the low-tier dusts, but 138 of the higest-tier dusts. This matches the ratios from a previous version (138 is 1/20th of 2750.) When you first start it, you might have millions of T1 dust - don't be alarmed if it drops this to just a few thousand.
 
 You also might notice that when you first get a new tier (say, the first time you get T10 dust), your dust levels will drop suddenly. This is expected: the script cuts off the tiers you don't have (since you can't uptier to them yet), and once you gain access to a new tier the rebalancing will give you a bunch more dust of the new, higest tier, but ~1/4 as much dust in the other tiers.
