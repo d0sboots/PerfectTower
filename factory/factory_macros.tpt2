@@ -29,7 +29,6 @@
 ; i.e. later on in the script.
 #items_count {lua(return factory.items_count)}
 #tiers_char sub(itemdata, {lua(return factory.entry_size - 1)}, 1)
-
 {lua(\
   factory = {};\
   factory.items = {};\
@@ -74,7 +73,7 @@
     for i = 1, #factory.items do\
       local item = factory.items[i];\
       if filter == nil or item.is_craft == filter then\
-        acc[#acc + 1] = string.format(fmt, item[field], item.tier - 1);\
+        acc[#acc + 1] = string.format(fmt, item.game_name, item.tier - 1);\
         if i < first then first = i end\
         if i > last then last = i end\
       end\
