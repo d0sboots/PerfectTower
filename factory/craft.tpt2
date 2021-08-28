@@ -9,16 +9,18 @@ craftitems_loop:
 itemdata = {lua(return factory.composite_string("i/10", true))}
 
 do_craft:
-; Because tier and items start at 1, but i is zero-based, we have to add 1
-; (or subtract 1 from the other side) in all these expressions.
+; Because items and tiers start at 1, but i is zero-based, we have to add 1
+; or (pre-multiplying, 10) in these expressions.
+; However, tier is zero-based inside our indexing representation, so we don't
+; add it there.
 previous_amount = count({get_name}, i%10 + 1)
-craft({get_name}, i%10 + 1, {get_raw(10 + 1 + i)})
-{set_raw(10 + 1 + i, {get_raw(10 + 1 + i)} - (count({get_name}, i%10 + 1) - previous_amount))}
+craft({get_name}, i%10 + 1, {get_raw(10 + i)})
+{set_raw(10 + i, {get_raw(10 + i)} - (count({get_name}, i%10 + 1) - previous_amount))}
 inc:
 ; This skips over tiers that don't exist for the given item, by using the
 ; tier data embedded in "itemdata".
 i = i + if(i2s(i%10) == {tiers_char}, 10 - i%10, 1)
 goto(if(i%10 != 0,\
-     if({get_raw(10 + 1 + i)} > 0., do_craft, inc),\
+     if({get_raw(10 + i)} > 0., do_craft, inc),\
      if(i < {items_count} * 10, craftitems_loop, crafting_done)))
 crafting_done:

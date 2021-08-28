@@ -10,7 +10,6 @@
 
 ; If you add or change this list, mind this constraint:
 ; * All the crafted items have to come before the rest of the items.
-; * Ore and lump must be next to each other, with ore first.
 
 ; ===== VALID IDS =====
 

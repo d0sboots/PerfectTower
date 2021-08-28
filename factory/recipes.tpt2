@@ -13,7 +13,7 @@
     end\
     factory.recipe_item = recipe_item;\
     local offset = 10 * recipe_item.id;\
-    for i = offset + 1, offset + recipe_item.tier do\
+    for i = offset, offset + recipe_item.tier - 1 do\
       if not factory.recipes[i] then\
         factory.recipes[i] = {};\
       end\
@@ -78,10 +78,10 @@
         It's this reversed list that is needed for computing the material\
         needs when crafting.]]\
     local recipes = factory.recipes;\
-    local offset = recipe_item.id * 10;\
+    local offset = recipe_item.id * 10 - 1;\
     for i = 1, recipe_item.tier do\
       if counts_tmp[i] > 0 and tier_tmp[i] > 0 then\
-        local idx = item.id * 10 + tier_tmp[i];\
+        local idx = item.id * 10 + tier_tmp[i] - 1;\
         local comp = recipes[idx];\
         if comp == nil then\
           comp = {};\
@@ -415,7 +415,7 @@
     for j = 1, item.tier do\
       if j ~= 1 then acc[#acc+1] = string.format("\n%23s", "") end\
       acc[#acc+1] = "(";\
-      local recipe = factory.recipes[i * 10 + j];\
+      local recipe = factory.recipes[i * 10 + j - 1];\
       for k = 1, #recipe do\
         if k ~= 1 then acc[#acc+1] = " " end\
         acc[#acc+1] = recipe[k];\
@@ -454,7 +454,7 @@
   for tier = 10, 1, -1 do\
     for item_id = 1, #items do\
       local item = items[item_id];\
-      local id = 10 * item_id + tier;\
+      local id = 10 * item_id + tier - 1;\
       local recipe = recipes[id];\
       if not recipe then\
         goto continue;\
@@ -524,45 +524,29 @@
 
 ;{debug_dump_recipes_list}
 
-; Evaluates to an expression that results in an string containing encoded data
-; for this recipe. The first entry_size-1 characters are the in-game item name,
-; space-padded. Then comes the item tier, 0-9 encoded. (So T1 is 0.) After that
-; is a series of 3-number strings, each of which is a craft-queue index.
-; The first is the index for the previous item, which is used to determine if
-; this is a continuation from a previous line. The next `num_terms`
-; terms are index values for queue values to add. After each term is a single
-; character which is a multiplier value. Following that is an index for the
-; current item, which is used as the index to set, and possibly also as an
-; index to read from.
-; In the implementation, this is split into two: There is a single character
-; which is used to look up in an index table to get the item name/tier string,
-; and then this is concatenated with the rest of the string, for space-saving
-; reasons. The previous item/next item data is positioned so that it's
-; actually only stored once, and the sub() read window is expanded to overlap
-; consequetive sections to pick up the previous item when reading the next.
-#get_recipe_data(num_terms) {lua(\
+; Constructs the data table that is used to create loop_data. See below
+; for the format of this string. One difference is that in loop_data, 
+; the previous item/current item index data is at the beginning and end of the
+; string. Here, that is actually only stored once, and the sub() read window is
+; expanded to overlap consequetive sections to pick up the previous item when
+; reading the next.
+#get_data(num_terms) {lua(\
   local num_terms = {num_terms};\
   local num_terms_2 = num_terms * 2;\
   local recipe_limit = 0;\
-  local acc_count = {};\
   local acc_main = {};\
   local sub = string.sub;\
   \
-  --[[Note that there can't be uppercase letters in this, since index() is\
-      annoyingly case-insensitive!]]\
-  local base62 = "0123456789abcdefghijklmnopqrstuvwxyz!@#$%^&*()[]/=?+-<>_|~`':.";\
-  assert(#factory.items <= 62, "Must have 62 or fewer items, or add to item string");\
   local multipliers = "0123a   b   c   d   e   f   g   h   i   j   k   l   m   n   o   p   q   r   s   t   u   v   w   x   y   z";\
   local mult_max = {};\
   for i = 1, num_terms do\
     mult_max[i] = 0;\
   end\
-  acc_count[1] = string.format([[index("%s", sub("]], sub(base62, 1, #factory.items));\
-  acc_main[1] = [[ . sub("___]];\
+  acc_main[1] = [["___]];\
   for i = 1, #factory.recipes_list do\
     local id = factory.recipes_list[i];\
     local recipe = factory.recipes[id];\
-    local item_id = (id - 1) // 10;\
+    local item_id = id // 10;\
     local limit = (#recipe - 1) // num_terms_2;\
     if limit < 0 then limit = 0 end;\
     for j = 1, (limit + 1) * num_terms_2, 2 do\
@@ -574,31 +558,40 @@
       end\
       acc_main[#acc_main + 1] = sub(multipliers, mult + 1, mult + 1);\
       if mod == num_terms then\
-        acc_count[#acc_count + 1] = sub(base62, item_id, item_id);\
         acc_main[#acc_main + 1] = id + 100;\
         recipe_limit = recipe_limit + 1;\
       end\
     end\
   end\
-  acc_count[#acc_count + 1] = [[", i, 1), 0)]];\
-  factory.main_size = 4 * num_terms + 3;\
-  acc_main[#acc_main + 1] = string.format(\
-    [[", i * %d, %d)]],\
-    factory.main_size, factory.main_size + 3\
-  );\
   \
+  factory.main_size = 4 * num_terms + 3;\
+  acc_main[#acc_main + 1] = '"';\
   factory.multipliers = {};\
   for i = 1, num_terms do\
     factory.multipliers[i] = sub(multipliers, 1, mult_max[i] + 1);\
   end;\
   factory.num_terms = num_terms;\
   factory.recipe_limit = recipe_limit;\
-  return factory.composite_string(table.concat(acc_count)) .. table.concat(acc_main);\
+  return table.concat(acc_main);\
+)}
+
+#lookup_item {lua(\
+  acc = {};\
+  for i = 1, #factory.items do\
+    acc[i] = "|" .. (i + 10);\
+  end\
+  return factory.composite_string(\
+    string.format(\
+      [[index("%s", "|" . sub(data, %d * (i + 1), 2), 0) / 3]],\
+      table.concat(acc),\
+      factory.main_size\
+    )\
+  );\
 )}
 
 ; Returns the set of lookup/multiplier terms that will be added in to form
 ; the base of the value. Most of the data for this is pre-comupted by
-; get_recipe_data().
+; get_data().
 #recipe_terms {lua(\
   acc = {};\
   for i = 1, factory.num_terms do\
@@ -606,8 +599,8 @@
       acc[#acc + 1] = " + ";\
     end\
     acc[#acc + 1] = string.format(\
-      [[max(0., ceil(gdg({queue_str} . sub(recipe_data, %d, 3)) *\
-        i2d(index("%s", sub(recipe_data, %d, 1), 0)) * 0.25))]],\
+      [[max(0., ceil(gdg({queue_str} . sub(loop_data, %d, 3)) *\
+        i2d(index("%s", sub(loop_data, %d, 1), 0)) * 0.25))]],\
       factory.entry_size + 4 * i - 1,\
       factory.multipliers[i],\
       factory.entry_size + 4 * i + 2\
@@ -620,35 +613,53 @@
 ; efficiently disable the count. Ore and lumps have no terms, so the net result
 ; is to simply zero the fields (unless they are selected as the factory_target).
 ; These items require special processing, later.
-; We are taking advantage of the fact that lumps follows directly after ore
-; and that lumps only has 9 tiers to test only the first two digits of the
-; item's id, since the wraparound effect from tier 10 is otherwise annoying.
-#recipe_item_trunc sub(recipe_data, {lua(\
+; We are taking advantage of the fact that the item id is simply the first
+; two characters of the overall id.
+#recipe_item_trunc sub(loop_data, {lua(\
   return factory.entry_size + factory.main_size;\
 )}, 2)
-#ore_trunc "{lua(return factory.item_names["ore"].id + 10)}"
-#ore_prev_t10 ({ore_trunc} . "0")
-#lump_trunc "{lua(return factory.item_names["lump"].id + 10)}"
+#item_trunc(item) "{lua(return factory.item_names["{item}"].id + 10)}"
 
-#prev_item sub(recipe_data, {lua(return factory.entry_size)}, 3)
-#recipe_item sub(recipe_data, {lua(\
+#prev_item sub(loop_data, {lua(return factory.entry_size)}, 3)
+#recipe_item sub(loop_data, {lua(\
   return factory.entry_size + factory.main_size;\
 )}, 3)
 ; The tier value is just the last digit of recipe_item
-#tier_value sub(recipe_data, {lua(\
+#tier_value sub(loop_data, {lua(\
   return factory.entry_size + factory.main_size + 2;\
 )}, 1)
-#recipe_item_name sub(recipe_data, 0, index(recipe_data, " ", 0))
+#recipe_item_name sub(loop_data, 0, index(loop_data, " ", 0))
 #recipe_limit {lua(return factory.recipe_limit)}
 
 :global int factory_target
 :global double factory_target_amount
 
 :local int i
-:local string recipe_data
+:local string data
+:local string loop_data
 
+data = {get_data(4)}
 loop:
-recipe_data = {get_recipe_data(4)}
+
+; Evaluates to an expression that results in an string containing encoded data
+; for this recipe. The first entry_size-1 characters are the in-game item name,
+; space-padded. Then comes the item tier, 0-9 encoded. (So T1 is 0.) After that
+; is a series of 3-number strings, each of which is a craft-queue index.
+; The first is the index for the previous item, which is used to determine if
+; this is a continuation from a previous line. The next `num_terms`
+; terms are index values for queue values to add. After each term is a single
+; character which is a multiplier value. Following that is an index for the
+; current item, which is used as the index to set, and possibly also as an
+; index to read from.
+;
+; All of this is pulled from reading the appropriate sections of "data", mostly
+; as-is. However, there is a secondary lookup for the item name.
+loop_data = {lookup_item} . sub(\
+  data,\
+  i * {lua(return factory.main_size)},\
+  {lua(return factory.main_size + 3)}\
+)
+
 ; The core expression that does all the work. If this item is the target item,
 ; then set the queue value to factory_target_amount - this ensures that the
 ; target is always made, even if it already exists.
@@ -668,12 +679,9 @@ global.double.set({queue_str} . {recipe_item},\
       if({prev_item} == {recipe_item}, global.double.get({queue_str} . {recipe_item}), 0.) +\
       {recipe_terms} -\
       if(\
-        {prev_item} == {recipe_item} || (\
-          ({recipe_item_trunc} == {ore_trunc} || {recipe_item_trunc} == {lump_trunc})\
-          && {recipe_item} != {ore_prev_t10}\
-        ),\
+        {prev_item} == {recipe_item} || {recipe_item_trunc} == {item_trunc(ore)} || {recipe_item_trunc} == {item_trunc(lump)},\
         0.,\
-        count({recipe_item_name}, index(" 1234567890", {tier_value}, 0))\
+        if({recipe_item_trunc} == {item_trunc(dust)}, -1., 0.) + count({recipe_item_name}, index(" 0123456789", {tier_value}, 0))\
       )\
     )\
   )\

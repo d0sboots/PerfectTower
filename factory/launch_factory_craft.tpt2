@@ -16,6 +16,7 @@ isopen("factory")
 ; in-game names so that you can refer to items that way if you want.
 #item_names {lua(\
   local acc = {};\
+  --[[Save two space for the surrounding brackets]]\
   local size = math.max(factory.name_max_size,\
     factory.game_name_sizes[false],\
     factory.game_name_sizes[true]) + 2;\
@@ -56,11 +57,11 @@ waitwhile("You can edit previous lines, but don't the lines bellow" == "")
 ; tier. The odd ordering is so that a -1 result will cause the item to
 ; round down, instead of truncating to zero.
 factory_target = ((index({item_names}, "[" . target_type . "]", 0)\
-  % ({lua(return #factory.items)} * {entry_size}) + {entry_size}) * 10) / {entry_size} + target_tier
+  % ({lua(return #factory.items)} * {entry_size}) + {entry_size}) * 10) / {entry_size} + target_tier - 1
 global.string.set({error},\
-  if(factory_target - target_tier < 10, "Invalid item '" . target_type . "'</color></size>",\
+  if(factory_target - target_tier < 9, "Invalid item '" . target_type . "'</color></size>",\
     if(target_tier < 1, "Tier " . target_tier . " < 1</color></size>",\
-	  if(target_tier > index(" 0123456789", sub(" " . {tier_data}, (factory_target - target_tier) / 10, 1), 0),\
+	  if(target_tier > index(" 0123456789", sub(" " . {tier_data}, factory_target / 10, 1), 0),\
         "Tier " . target_tier . " too big</color></size>",\
         ""\
       )\

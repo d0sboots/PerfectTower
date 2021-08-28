@@ -3,7 +3,7 @@
 
 ; Produces the name of the queue variable for the given tier and item.
 #queue_str "cq"
-#queue(tier, item) 10 * ({item}) + {tier}
+#queue(tier, item) -1 + 10 * ({item}) + {tier}
 
 ; Raw access to the queue. Not preferred, but better than using "queue"
 ; directly. Use for low-level optimization.
@@ -29,6 +29,7 @@
 ; i.e. later on in the script.
 #items_count {lua(return factory.items_count)}
 #tiers_char sub(itemdata, {lua(return factory.entry_size - 1)}, 1)
+
 {lua(\
   factory = {};\
   factory.items = {};\
@@ -41,6 +42,9 @@
   function factory.add_item(name, tiers, game_name, is_craft)\
     local item = {};\
     item.id = #factory.items + 1;\
+    if item.id > 89 then\
+      return "Too many items: Over the limit while adding " .. name;\
+    end\
     item.name = name;\
     item.game_name = game_name;\
     item.tier = tiers;\
