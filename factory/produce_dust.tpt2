@@ -2,24 +2,26 @@
 
 :global int _tier
 :local double previous_amount
-:local double limit
 
 gotoif(noprocessores, active("crusher"))
 previous_amount = count("ore", _tier)
 produce("ore", _tier, {get_queue(_tier, ore)}, "crusher")
-gotoif(noprocessores, count("ore", _tier) == previous_amount)
-{subtract_queue(_tier, dust, {get_queue(_tier, ore)} * 2.)}
-{set_queue(_tier, ore, 0.)}
+{subtract_queue(_tier, dust, (previous_amount - count("ore", _tier)) * 2.)}
+{set_queue(_tier, ore, previous_amount - count("ore", _tier))}
 noprocessores:
 
 gotoif(notierupdust, _tier == 10 | active("mixer"))
-limit = (count("dust", _tier) - 1.) / 4.
-craft("lump", _tier, min(min(limit, count("dust", _tier + 1)), {get_queue(_tier, lump)} - count("lump", _tier)))
+craft("lump", _tier, min(\
+  min(\
+    (count("dust", _tier) - 1.) / 4.,\
+    count("dust", _tier + 1)\
+  ),\
+  {get_queue(_tier, lump)} - count("lump", _tier)\
+))
 previous_amount = count("lump", _tier)
 produce("lump", _tier, min(previous_amount, {get_queue(_tier, lump)}), "mixer")
-gotoif(notierupdust, count("lump", _tier ) == previous_amount)
-{subtract_queue(_tier, dust, min(previous_amount, {get_queue(_tier, lump)}))}
-{set_queue(_tier, lump, max(0., {get_queue(_tier, lump)} - previous_amount))}
+{subtract_queue(_tier, dust, min(previous_amount, {get_queue(_tier, lump)}) - count("lump", _tier))}
+{set_queue(_tier, lump, max(0., {get_queue(_tier, lump)} - (previous_amount - count("lump", _tier))))}
 notierupdust:
 
 gotoif(noproduceingot, active("oven") | (if(_tier == 10, 0., ({get_queue(_tier, lump)} - count("lump", min(_tier, 9)))) * 4. > 2. * min(0., count("dust", _tier) - ({get_queue(_tier, ingot)})) & count("dust", _tier) < 2. * ({get_queue(_tier, ingot)})))

@@ -2,41 +2,21 @@
 
 :global int _tier
 :local double previous_amount
-:local double limit
-
-previous_amount = count("ingot", _tier)
-produce("ingot", _tier, min(previous_amount, ceil({get_queue(_tier, cable)} / 2.)), "refinery")
-{subtract_queue(_tier, cable, 2. * (previous_amount - count("ingot", _tier)))}
-noproducecables:
 
 previous_amount = count("cable", _tier)
 produce("cable", _tier, min(previous_amount, {get_queue(_tier, wire)}), "refinery")
 {subtract_queue(_tier, wire, (previous_amount - count("cable", _tier)))}
-noproducewire:
-
-previous_amount = count("cable", _tier)
-produce("cable", _tier, min(previous_amount, {get_queue(_tier, circuit)}), "assembler")
-{subtract_queue(_tier, circuit, (previous_amount - count("cable", _tier)))}
-noproducecircuits:
-
-previous_amount = count("plate", _tier)
-produce("plate", _tier, min(previous_amount, {get_queue(_tier, board)}), "refinery")
-{subtract_queue(_tier, board, (previous_amount - count("plate", _tier)))}
-noproduceboards:
 
 previous_amount = count("ingot", _tier)
 produce("ingot", _tier, min(previous_amount, ceil({get_queue(_tier, rod)} / 2.)), "shaper")
 {subtract_queue(_tier, rod, 2. * (previous_amount - count("ingot", _tier)))}
-noproducerods:
 
 previous_amount = count("rod", _tier)
 produce("rod", _tier, min(previous_amount, ceil({get_queue(_tier, screw)} / 4.)), "cutter")
 {subtract_queue(_tier, screw, 4. * (previous_amount - count("rod", _tier)))}
-noproducescrews:
 
 previous_amount = count("rod", _tier)
 produce("rod", _tier, min(previous_amount, {get_queue(_tier, ring)}), "shaper")
 {subtract_queue(_tier, ring, (previous_amount - count("rod", _tier)))}
-noproducerings:
 
 wait(0.0)
