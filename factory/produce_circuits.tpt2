@@ -1,0 +1,18 @@
+:import factory constants
+
+:global int _tier
+:local double previous_amount
+
+previous_amount = count("ingot", _tier)
+produce("ingot", _tier, min(previous_amount, ceil({get_queue(_tier, cable)} / 2.)), "refinery")
+{subtract_queue(_tier, cable, 2. * (previous_amount - count("ingot", _tier)))}
+
+previous_amount = count("cable", _tier)
+produce("cable", _tier, min(previous_amount, {get_queue(_tier, circuit)}), "assembler")
+{subtract_queue(_tier, circuit, (previous_amount - count("cable", _tier)))}
+
+previous_amount = count("plate", _tier)
+produce("plate", _tier, min(previous_amount, {get_queue(_tier, board)}), "refinery")
+{subtract_queue(_tier, board, (previous_amount - count("plate", _tier)))}
+
+wait(0.0)

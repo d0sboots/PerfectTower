@@ -1,0 +1,89 @@
+:import factory macros
+
+; Everything in this list of the form "item(xx)" or "make(xx)" is
+; a valid target for automation, and can be assigned to the "target_type"
+; variable in "lanuch factory craft".
+; For example, "make(oven, 10, "machine.oven")" indicates that "oven" is a valid
+; item, usable from tiers 1-10, with the internal game name of "machine.oven"
+; (which you don't need to worry about.)
+; Thus you can enter "oven" in the box in the in-game editor (without the quotes).
+
+; If you add or change this list, mind this constraint:
+; * All the crafted items have to come before the rest of the items.
+
+; ===== VALID IDS =====
+
+; Producers, tiers 1-5
+{make(white_producer, 5, "producer.town")}
+{make(red_producer, 5, "producer.factory")}
+{make(orange_producer, 5, "producer.mine")}
+{make(blue_producer, 5, "producer.workshop")}
+{make(brown_producer, 5, "producer.constructionFirm")}
+{make(green_producer, 5, "producer.laboratory")}
+{make(purple_producer, 5, "producer.headquarters")}
+{make(yellow_producer, 5, "producer.powerplant")}
+{make(pink_producer, 5, "producer.arcade")}
+{make(lightblue_producer, 5, "producer.tradingpost")}
+{make(cyan_producer, 5, "producer.shipyard")}
+{make(grey_producer, 5, "producer.museum")}
+{make(black_producer, 5, "producer.statueofcubos")}
+
+; Special producers, tier 1 only
+{make(gem_producer, 1, "producer.gems")}
+{make(exotic_producer, 1, "producer.exoticgems")}
+
+; Machines, tiers 1-10
+{make(oven, 10, "machine.oven")}
+{make(presser, 10, "machine.presser")}
+{make(assembly, 10, "machine.assembler")}
+{make(refiner, 10, "machine.refinery")}
+{make(mixer, 10, "machine.mixer")}
+{make(crusher, 10, "machine.crusher")}
+{make(belt, 10, "machine.transportbelt")}
+{make(cutter, 10, "machine.cutter")}
+{make(shaper, 10, "machine.shaper")}
+{make(boiler, 10, "machine.boiler")}
+
+; Chips, tier 1-5
+{make(chip, 5, "chip")}
+
+; Various crafted parts
+{make(insul_cable, 10, "cable.insulated")}
+{make(stacked_plate, 10, "plate.stack")}
+{make(motor, 10, "motor")}
+{make(pump, 10, "pump")}
+{make(hammer, 1, "hammer")}
+{make(block, 10, "block")}
+
+;Transforms ore into dust, tiers 1-10
+{item(ore, 10, "ore")}
+
+;Tiers up dust, tiers 1-9
+{item(lump, 9, "lump")}
+
+;Tries to make dust from ores and lower-tier dusts, tiers 1-10
+{item(dust, 10, "dust")}
+
+; Parts, tiers 1-10
+{item(ingot, 10, "ingot")}
+
+{item(plate, 10, "plate")}
+{item(dense_plate, 10, "plate.dense")}
+{item(dense_block, 10, "block.dense")}
+{item(pipe, 10, "pipe")}
+
+{item(cable, 10, "cable")}
+{item(wire, 10, "wire")}
+
+{item(rod, 10, "rod")}
+{item(ring, 10, "ring")}
+{item(screw, 10, "screw")}
+
+{item(board, 10, "plate.circuit")}
+{item(circuit, 10, "circuit")}
+
+; Rubber, tier 1 only
+{item(rubber, 1, "rubber")}
+{item(rubber_plate, 1, "plate.rubber")}
+
+; ===== END OF VALID IDS =====

@@ -1,0 +1,29 @@
+:import factory constants
+
+:global int _tier
+
+:local double previous_amount
+
+previous_amount = count("rubber", 1)
+produce("rubber", 1, {get_queue(1, rubber_plate)}, "presser")
+{subtract_queue(1, rubber_plate, (previous_amount - count("rubber", 1)))}
+
+_tier = 1
+tierloop:
+
+executesync("produce dust")
+stop("produce dust")
+gotoif(nexttier, _tier > 3 & {get_queue((_tier - 2) / 2, chip)} > 0. | _tier > 4 & {get_queue(_tier - 4, motor)} > 0.)
+
+executesync("produce circuits")
+stop("produce circuits")
+executesync("produce misc")
+stop("produce misc")
+executesync("produce plates")
+stop("produce plates")
+
+nexttier:
+_tier += 1
+gotoif(tierloop, _tier < 11)
+
+wait(0.0)
