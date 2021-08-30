@@ -4,13 +4,13 @@
 - [Improved code editor](#improved-code-editor)
 - [Auto mining script V2](#auto-mining-script-v2)
 - [Autoclicker](#autoclicker)
-- [Factory management scripts](#factory-management-scripts)
+- [Dust Up-tierer](#dust-up-tierer)
 - [Button coordinate finder](#button-coordinate-finder)
 - [Other Utilities](#other-utilities)
 
 This is my collection of AI scripts and other useful things. I focus on low-RAM scripts (i.e. 14 actions or less), so that they'll be usable by everyone who has unlocked the AI.
 
-Almost all of these also work under `turbo exec` (https://github.com/Xenos6666/TPT2_scripts/tree/modular_V2/common/execution_stack), although with some quirks - for instance, the autominer will cause noticable lag on entering the mine, and mine everything before you can see it happen!
+Almost all of these also work under `turbo exec` (https://github.com/Xenos6666/TPT2_scripts/tree/main/common/execution_stack), although with some quirks - for instance, the autominer will cause noticable lag on entering the mine, and mine everything before you can see it happen!
 
 ## Improved code editor
 I maintain a fork of the external editor at https://d0sboots.github.io/perfect-tower. It has several enhancements, such as improved loading speed, better responsiveness when editing complicated scripts, and support for enhanced macros and syntax. You can see the full list of features at https://github.com/d0sboots/perfect-tower.
@@ -37,8 +37,8 @@ DkQwUy5TdXBlckNsaWNrAQAAAAVrZXkuYwAAAAAHAAAADmdsb2JhbC5pbnQuc2V0CGNvbnN0YW50BA9j
 
 ```
 
-## Factory management scripts
-The first one is a <s>simple</s> ore crushing/dust up-tiering combo. This works stand-alone, but pairs nicely with other factory automation that expects dust to be available. At __9__ actions, this should also work for everyone. It tries to crush any un-crushed ores, and up-tiers dust while trying to make the dust distribution match its built-in target ratios.
+## Dust Up-tierer
+This is a <s>simple</s> ore crushing/dust up-tiering combo. It works stand-alone, but pairs nicely with other factory automation that expects dust to be available. At __9__ actions, this should also work for everyone. It tries to crush any un-crushed ores, and up-tiers dust while trying to make the dust distribution match its built-in target ratios.
 
 `D0S.DustManager 2 1 9`
 ```
