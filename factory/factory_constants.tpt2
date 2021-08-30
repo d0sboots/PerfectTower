@@ -99,6 +99,8 @@
 {group(machines_and_parts, 10)}
 
 ; Makes *everything* (expect special producers and lumps) of the given tier.
+; Requires x10 and high processing speed to have a hope of completing in a
+; reasonable amount of time for T5 and T10.
 ; You need Quantum Warehouse to have enough space for this at higher tiers!
 {group(all, 10)}
 

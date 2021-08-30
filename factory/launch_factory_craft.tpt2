@@ -18,8 +18,8 @@ isopen("factory")
   local acc = {};\
   --[[Save two space for the surrounding brackets]]\
   local size = math.max(factory.name_max_size,\
-    factory.game_name_sizes[false],\
-    factory.game_name_sizes[true]) + 2;\
+    factory.game_name_sizes.item,\
+    factory.game_name_sizes.craft) + 2;\
   local fmt = "%-" .. size .. "s";\
   acc[1] = '"';\
   for i = 1, #factory.items do\
