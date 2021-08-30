@@ -17,5 +17,5 @@ factory_package_id = package_ids
 package_uuid = 0
 loading_packages -= 1
 
-execute("factory package")
+execute("d0s.factory package")
 wait(0.0)

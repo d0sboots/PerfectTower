@@ -20,8 +20,8 @@ gotoif(skipcomputing, isopen("factory") == false | factory_launch == 0 | {get_ra
 package_executing = 1
 factory_launch = 0
 
-executesync("recipes")
-stop("recipes")
+executesync("run_recipes")
+stop("run_recipes")
 package_executing = 0
 skipcomputing:
 

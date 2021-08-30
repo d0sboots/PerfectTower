@@ -36,10 +36,17 @@
   factory.item_names = {};\
   factory.name_max_size = 0;\
   factory.game_name_sizes = {};\
-  factory.game_name_sizes[false] = 0;\
-  factory.game_name_sizes[true] = 0;\
+  factory.game_name_sizes.item = 0;\
+  factory.game_name_sizes.craft = 0;\
+  factory.game_name_sizes.group = 0;\
+  factory.game_name_sizes.special = 0;\
+  factory.group_map = {};\
+  factory.group_map.item = 0;\
+  factory.group_map.craft = 1;\
+  factory.group_map.group = 2;\
+  factory.group_map.special = 2; --[[Intentionally the same]]\
 \
-  function factory.add_item(name, tiers, game_name, is_craft)\
+  function factory.add_item(name, tiers, game_name, craft_type)\
     local item = {};\
     item.id = #factory.items + 1;\
     if item.id > 89 then\
@@ -48,25 +55,27 @@
     item.name = name;\
     item.game_name = game_name;\
     item.tier = tiers;\
-    item.is_craft = is_craft;\
+    item.craft_type = craft_type;\
     factory.items[item.id] = item;\
     factory.item_names[name] = item;\
     if #name > factory.name_max_size then\
       factory.name_max_size = #name;\
     end\
-    if #game_name > factory.game_name_sizes[is_craft] then\
-      factory.game_name_sizes[is_craft] = #game_name;\
+    if #game_name > factory.game_name_sizes[craft_type] then\
+      factory.game_name_sizes[craft_type] = #game_name;\
     end\
     return ":const int " .. name .. " " .. #factory.items;\
   end\
 \
-  function factory.composite_string(var, filter)\
+  function factory.composite_string(var, filter, use_group_info)\
     local acc = {};\
     local size = 0;\
     local first = #factory.items;\
     local last = 0;\
+    local group_map = factory.group_map;\
+    \
     if filter == nil then\
-      size = math.max(factory.game_name_sizes[false], factory.game_name_sizes[true]);\
+      size = math.max(factory.game_name_sizes["item"], factory.game_name_sizes["craft"]);\
     else\
       size = factory.game_name_sizes[filter];\
     end\
@@ -76,8 +85,12 @@
     acc[1] = 'sub("';\
     for i = 1, #factory.items do\
       local item = factory.items[i];\
-      if filter == nil or item.is_craft == filter then\
-        acc[#acc + 1] = string.format(fmt, item.game_name, item.tier - 1);\
+      if filter == nil or item.craft_type == filter then\
+        if use_group_info then\
+          acc[#acc + 1] = string.format(fmt, item.game_name, group_map[item.craft_type]);\
+        else\
+          acc[#acc + 1] = string.format(fmt, item.game_name, item.tier - 1);\
+        end\
         if i < first then first = i end\
         if i > last then last = i end\
       end\
@@ -93,12 +106,27 @@
 ; The string passed to produce() is "game_name".
 ; It will take the next available id, starting from 1.
 #item(name, tiers, game_name) {lua(\
-  return factory.add_item("{name}", {tiers}, {game_name}, false)\
+  return factory.add_item("{name}", {tiers}, {game_name}, "item")\
 )}
 
 ; Define a new production item with name "name", craftable from tiers 1-"tiers".
 ; The string passed to craft() is "game_name".
 ; It will take the next available id, starting from 1.
 #make(name, tiers, game_name) {lua(\
-  return factory.add_item("{name}", {tiers}, {game_name}, true)\
+  return factory.add_item("{name}", {tiers}, {game_name}, "craft")\
+)}
+
+; Define a new item group, i.e. a set of items designed to be scanned in the
+; crafter. Because items need a valid game_name to be passed to count() in
+; various places (or else there will be spurious logging), we use "ore".
+; (The value returned from count() will always be ignored.)
+#group(name, tiers) {lua(\
+  return factory.add_item("{name}", {tiers}, "ore", "group")\
+)}
+
+; Defines a "special" item. This has a real name, like an item, but acts
+; like an item-group in other ways. This is used for lumps and ore, which
+; require special-case handling.
+#special(name, tiers, game_name) {lua(\
+  return factory.add_item("{name}", {tiers}, {game_name}, "special")\
 )}

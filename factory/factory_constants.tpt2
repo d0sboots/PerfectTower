@@ -1,8 +1,7 @@
 :import factory macros
 
-; Everything in this list of the form "item(xx)" or "make(xx)" is
-; a valid target for automation, and can be assigned to the "target_type"
-; variable in "lanuch factory craft".
+; Everything in the list below is a valid target for automation, and can be
+; assigned to the "target_type" variable in "lanuch factory craft".
 ; For example, "make(oven, 10, "machine.oven")" indicates that "oven" is a valid
 ; item, usable from tiers 1-10, with the internal game name of "machine.oven"
 ; (which you don't need to worry about.)
@@ -10,8 +9,10 @@
 
 ; If you add or change this list, mind this constraint:
 ; * All the crafted items have to come before the rest of the items.
+; * All the item-groups must be in a single block.
 
 ; ===== VALID IDS =====
+; ----- CRAFTED ITEMS -----
 
 ; Producers, tiers 1-5
 {make(white_producer, 5, "producer.town")}
@@ -55,11 +56,59 @@
 {make(hammer, 1, "hammer")}
 {make(block, 10, "block")}
 
+; ----- SCANNABLE ITEM GROUPS -----
+; These are not real items, but rather groups of items that will be made together
+; if you select one of these names. They are meant for use with the Crafter, to
+; crank out sets of items to scan quickly. You will want to set the quantity to 1000.
+
+; Notes on using item groups:
+; * SCAN YOUR ORES FIRST! The factory can and will consume your ore to make stuff,
+;     and it takes a long time to get 1000 T10 ore.
+; * The quantity works a little differently than normal items. Instead of making
+;     1000 items each time, running it again will top off everything to be
+;     *at* the quantity of 1000 items.
+; * If you craft a higher tier after a lower tier, it will consume the results
+;     of the first craft to make the higher tier. Scan all the items first, before
+;     moving on to the next tier!
+; * None of these groups include Gem Producers or Exotic Producers. They are too
+;     expensive in comparison to other things, craft them on your own when you
+;     judge the time is right.
+
+
+; All producers, except for special producers. Tiers 1-5
+{group(producers, 5)}
+
+; All machines. Tiers 1-10
+{group(machines, 10)}
+
+; All ingredients and parts. Tiers 1-10. Doesn't include ore (scan that before
+; starting) or lumps (due to technical limitations). Lumps aren't required
+; for anything currently though.
+; Includes hammers + rubber plates at tier 1.
+{group(parts, 10)}
+
+; All the tiers of chips. Warning: Expensive. Input this as tier 1.
+{group(chips, 1)}
+
+; Producers + the chip of the corresponding tier. This is everything that
+; exists in tier range 1-5, for convenience.
+{group(chip_and_prods, 5)}
+
+; Machines + parts. This is everything that exists in tier range 1-10
+; (plus a few oddballs), for convenience.
+{group(machines_and_parts, 10)}
+
+; Makes *everything* (expect special producers and lumps) of the given tier.
+; You need Quantum Warehouse to have enough space for this at higher tiers!
+{group(all, 10)}
+
+; ----- INGREDIENTS AND PRODUCED PARTS -----
+
 ;Transforms ore into dust, tiers 1-10
-{item(ore, 10, "ore")}
+{special(ore, 10, "ore")}
 
 ;Tiers up dust, tiers 1-9
-{item(lump, 9, "lump")}
+{special(lump, 9, "lump")}
 
 ;Tries to make dust from ores and lower-tier dusts, tiers 1-10
 {item(dust, 10, "dust")}
