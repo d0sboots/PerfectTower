@@ -27,6 +27,16 @@ Import the main files in this order, so that the eventual bundle export is consi
 
 ## Changelog
 
+### V1.0.1
+
+This moves hammers and T1 pressers to tier 2, so that when you craft the item groups you can
+immediately scan the entire group, instead of needing to wait on items in the next group.
+
+Also, implement a versioning scheme that shows up in the script names.
+```
+Bundle size: 69146   Scripts: 10   Max lines: 16
+```
+
 ### V1.0.0
 
 Initial release. This release is identifiable with plain names, because I hadn't thought to do versioning yet.
@@ -36,7 +46,6 @@ Xenos' bundle is 309696 bytes, taking more than a minute to import and often cau
 It is also 32 scripts big, and requires 22 lines.
 
 The other feature is built-in item groups, instead of needing them added as a separate download.
-
 ```
 Bundle size: 69142   Scripts: 10   Max lines: 16
 ```
