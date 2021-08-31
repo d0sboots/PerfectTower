@@ -395,18 +395,16 @@
 {recipe_producers(1)}
 
 {recipe(machines)}
-#recipe_machines \
-{component(0, oven, 1)}\
-{component(0, presser, 1)}\
-{component(0, assembly, 1)}\
-{component(0, refiner, 1)}\
-{component(0, mixer, 1)}\
-{component(0, crusher, 1)}\
-{component(0, belt, 1)}\
-{component(0, cutter, 1)}\
-{component(0, shaper, 1)}\
+{component(0, oven, 1)}
+{component(0, presser, 1)}
+{component(0, assembly, 1)}
+{component(0, refiner, 1)}
+{component(0, mixer, 1)}
+{component(0, crusher, 1)}
+{component(0, belt, 1)}
+{component(0, cutter, 1)}
+{component(0, shaper, 1)}
 {component(0, boiler, 1)}
-{recipe_machines}
 
 {recipe(parts)}
 #recipe_parts \
@@ -414,7 +412,7 @@
 {component(0, stacked_plate, 1)}\
 {component(0, motor, 1)}\
 {component(0, pump, 1)}\
-{component(0, hammer, 1 0 0 0 0 0 0 0 0 0)}\
+{component(1, hammer, 0 1 0 0 0 0 0 0 0 0)}\
 {component(0, block, 1)}\
 {component(0, ingot, 1)}\
 {component(0, plate, 1)}\
@@ -443,14 +441,25 @@
 {recipe_producers(1)}
 
 {recipe(machines_and_parts)}
-{recipe_machines}
+#recipe_machines_and_parts \
+{component(0, oven, 1)}\
+{component(1, presser, 0 1 0 0 0 0 0 0 0 0)}\
+{component(0, presser, 0 1 1 1 1 1 1 1 1 1)}\
+{component(0, assembly, 1)}\
+{component(0, refiner, 1)}\
+{component(0, mixer, 1)}\
+{component(0, crusher, 1)}\
+{component(0, belt, 1)}\
+{component(0, cutter, 1)}\
+{component(0, shaper, 1)}\
+{component(0, boiler, 1)}\
 {recipe_parts}
+{recipe_machines_and_parts}
 
 {recipe(all)}
 {component(0, chip, 1 1 1 1 1 0 0 0 0 0)}
 {recipe_producers(1 1 1 1 1 0 0 0 0 0)}
-{recipe_machines}
-{recipe_parts}
+{recipe_machines_and_parts}
 
 ; Ore is a terminal, unable to be crafted.
 {recipe(ore)}

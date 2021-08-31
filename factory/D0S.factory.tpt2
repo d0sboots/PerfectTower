@@ -1,5 +1,7 @@
 :import factory constants
 
+:name D0S.factory {version}
+
 :global int current_step
 :global int current_package
 :global int factory_package_id

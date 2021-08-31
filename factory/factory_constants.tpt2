@@ -1,5 +1,7 @@
 :import factory macros
 
+#version v1.0.1
+
 ; Everything in the list below is a valid target for automation, and can be
 ; assigned to the "target_type" variable in "lanuch factory craft".
 ; For example, "make(oven, 10, "machine.oven")" indicates that "oven" is a valid
@@ -84,7 +86,7 @@
 ; All ingredients and parts. Tiers 1-10. Doesn't include ore (scan that before
 ; starting) or lumps (due to technical limitations). Lumps aren't required
 ; for anything currently though.
-; Includes hammers + rubber plates at tier 1.
+; Includes rubber plates at tier 1 and hammers at tier *2*.
 {group(parts, 10)}
 
 ; All the tiers of chips. Warning: Expensive. Input this as tier 1.
@@ -95,10 +97,13 @@
 {group(chip_and_prods, 5)}
 
 ; Machines + parts. This is everything that exists in tier range 1-10
-; (plus a few oddballs), for convenience.
+; (plus a few oddballs), for convenience. T1 Pressers are bumped up to
+; tier 2, so that they can be scanned immediately instead of being stuck
+; waiting for hammers.
 {group(machines_and_parts, 10)}
 
 ; Makes *everything* (expect special producers and lumps) of the given tier.
+; This is the combination of "chips_and_prods" and "machines_and_parts".
 ; Requires x10 and high processing speed to have a hope of completing in a
 ; reasonable amount of time for T5 and T10.
 ; You need Quantum Warehouse to have enough space for this at higher tiers!

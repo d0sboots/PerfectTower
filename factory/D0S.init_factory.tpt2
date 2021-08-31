@@ -1,3 +1,7 @@
+:import factory constants
+
+:name D0S.init factory {version}
+
 wakeup()
 
 :global int factory_package_id
@@ -17,5 +21,5 @@ factory_package_id = package_ids
 package_uuid = 0
 loading_packages -= 1
 
-execute("d0s.factory package")
+execute("D0S.factory {version}")
 wait(0.0)
