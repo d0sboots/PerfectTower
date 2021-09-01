@@ -14,6 +14,9 @@
 ; * All the item-groups must be in a single block.
 
 ; ===== VALID IDS =====
+
+; *** To reiterate, just use the name part (i.e. "white_producer"), not the whole thing! ***
+
 ; ----- CRAFTED ITEMS -----
 
 ; Producers, tiers 1-5
