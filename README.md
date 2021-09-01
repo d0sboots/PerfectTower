@@ -27,9 +27,11 @@ FGxhdW5jaCBmYWN0b3J5IGNyYWZ0AQAAAAVrZXkuZgEAAAASdG93bi53aW5kb3cuaXNvcGVuCGNvbnN0
 ```
 **This requires `turbo exec` to function, found here: https://github.com/Xenos6666/TPT2_scripts/tree/main/common/execution_stack**
 
+**The list of all valid types can be found in the source code of [factory_constants](factory/factory_constants.tpt2).**
+
 ### Details
 
-To use this, import and enable all the scripts in both this package and `turbo exec`, and then edit `launch factory craft`. Modify the variables `target_tier`, `target_type` and `factory_target_amount` to reflect the tier, type, and amount you wish to produce. The list of all valid types can be found in the source code of [factory_constants](factory/factory_constants.tpt2).
+To use this, import and enable all the scripts in both this package and `turbo exec`, and then edit `launch factory craft`. Modify the variables `target_tier`, `target_type` and `factory_target_amount` to reflect the tier, type, and amount you wish to produce. 
 ![How to edit launch factory craft](factory/factory_launch_guide.png)
 #### Basic Features
 
