@@ -67,7 +67,7 @@ DUQwUy5BdXRvbWluZXICAAAABndha2V1cAlvcGVuLm1pbmUBAAAAEnRvd24ud2luZG93Lmlzb3Blbghj
 ```
 
 ## Asteroid Collection
-This is designed to supplement workers assigned to the Asteroid Mine on floor 2. It collects all rewards across all asteroids when you press "a". Works for any resolution, *does not work with Dynamic UI Scaling*.
+This is designed to supplement workers assigned to the Asteroid Mine on floor 2. It collects all rewards across all asteroids when you press "a". Works for any resolution, *does not work with Dynamic UI Scaling*. **This one does not work with Turbo Exec**, the transitions apparently require a frame paint in order to function.
 
 Unfortunately it can't delete completed asteroids yet, because the AI can't right click :(
 
