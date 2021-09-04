@@ -1,0 +1,55 @@
+; Claim all rewards in the asteroid mine. Can't delete finished asteroids
+; yet, because that requires right-clicking.
+
+isopen("mine")
+
+key.a()
+
+; All layouts have two modes: "Widescreen" and "tallscreen". The dividing
+; line between them is 16:9 aspect ratio.
+#wide_or_tall(wide, tall) if(width.d() * 0.5625 > height.d(), {wide}, {tall})
+
+#click_clusters click({wide_or_tall(\
+  vec(width.d() * 0.5 + height.d() * 0.365, height.d() * 0.78),\
+  vec(width.d() * 0.7, width.d() * -0.123 + height.d())\
+)})
+
+#claim_rewards click({wide_or_tall(\
+  vec(width.d() * 0.5 + height.d() * 0.87, height.d() * 0.67),\
+  vec(width.d() * 0.98, width.d() * 0.1 + height.d() * 0.5)\
+)})
+
+; The middle of the screen is always in the asteroids list, regardless of
+; aspect ratio.
+#scroll_asteroids_list(pos) scrollbar(\
+  vec(width.d() * 0.5, height.d() * 0.5),\
+  -1., {pos})
+
+:local double i
+:local double j
+
+{click_clusters}
+
+pre_scroll:
+; The first 5 asteroids, we scroll to the bottom, after that we scroll to
+; the top. Vertical directions are reversed from what you would expect!
+{scroll_asteroids_list(if(i < 5., 0., 1.))}
+post_scroll:
+; Click an asteroid. We're going from the bottom to the top, so that when
+; finished the list is at the top, for QoL. Once the list has been scrolled
+; halfway through, the offset changes.
+; In tallscreen mode, the amount that the offset changes gradually decreases
+; as as the window gets taller, until eventually there is no offset when the
+; whole list fits on the screen.
+click({wide_or_tall(\
+  vec(height.d(),\
+      height.d() * (if(i < 5., 0.227, 0.272 - 0.087 * 5) + i * 0.087)),\
+  vec(width.d() * 0.5,\
+      max(if(i < 5., width.d() * 0.782, 0.), height.d()) + width.d() * (i * 0.0488 - 0.654))\
+)})
+{claim_rewards}
+{click_clusters}
+i += 1.
+; Only spend a frame scrolling the time we need to, which is on the 6th
+; iteration.
+goto(if(i == 5., pre_scroll, if(i < 10., post_scroll, 99)))
