@@ -1,6 +1,17 @@
 :global int diggerpos
 :local int pos
 
+; Set this to 1 to get infinite-loop behavior
+#infinite 0
+
+; Compile-time code switch for small bits of code that are different
+; between infinite and non-infinite versions
+#if_infinite(true_part, false_part) {lua(\
+  return {infinite}~=0 and [[{true_part}]] or [[{false_part}]]\
+)}
+
+:name D0S.{if_infinite(InfiniMiner,Autominer)}
+
 wakeup()
 open.mine()
 
@@ -13,7 +24,7 @@ diggerpos = diggerpos + 1
 ; assigned to pos.
 ; This creates 35 copies, which will end up numbered 2-35 (with
 ; two copies of 35).
-execute(if(diggerpos < 35, "D0S.Autominer", ""))
+execute(if(diggerpos < 35, "D0S.{if_infinite(InfiniMiner,Autominer)}", ""))
 
 ; diggerpos is inc'd once by this script and once by the script we spawn
 ; before this line is executed.
@@ -27,13 +38,13 @@ execute(if(diggerpos < 35, "D0S.Autominer", ""))
 ; We choose a late numbers for the tab/layer scripts so that all the
 ; diggers are already rolling by the time they get to their logic.
 setpos:
-pos = if(pos > 0, pos + 1, if(diggerpos == 34, 33, if(diggerpos == 35, 32, diggerpos - 2)))
+pos = if(pos > 0, {if_infinite(if(pos > 43, 33, pos + 1), pos + 1)}, if(diggerpos == 34, 33, if(diggerpos == 35, 32, diggerpos - 2)))
 tab(pos - 32)
 
 digloop:
 dig((pos % 8) / 2, pos / 8)
 stall:
-goto(if(isopen("mine") & diggerpos > 0, if(pos < 32, digloop, if(pos == 32, new_layer, if(hasLayers(), stall, if(pos > 43, done, setpos)))), done))
+goto(if(isopen("mine") & diggerpos > 0, if(pos < 32, digloop, if(pos == 32, new_layer, if(hasLayers(), stall, {if_infinite(setpos, if(pos > 43, done, setpos))}))), done))
 
 new_layer:
 newlayer()
