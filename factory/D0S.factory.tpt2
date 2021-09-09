@@ -2,39 +2,69 @@
 
 :name D0S.factory {version}
 
-:global int current_step
-:global int current_package
-:global int factory_package_id
-:global int package_executing
-:global int turbo_counter
+wakeup()
+open.factory()
 
-:global int factory_launch
+isopen("factory")
+
+:global string factory_launch
 :global int factory_target
-:global double factory_target_amount
 
-:local int i
-:local string itemdata
+:global int turbo.cycles
+:global int turbo.cycles.max
 
-begincycle:
+:local double target_value
 
-waituntil(current_step == 2 & current_package == factory_package_id)
-gotoif(skipcomputing, isopen("factory") == false | factory_launch == 0 | {get_raw(factory_target)} > 0.)
-package_executing = 1
-factory_launch = 0
+; Initial dispatch on entering the factory to determine if we are resuming
+; a crafting operation or waiting to launch a new one. This is done outside
+; of turbo, so that we never invoke turbo if we don't need to.
+gotoif(wait_loop, {get_raw(factory_target)} == 0.)
 
-executesync("run_recipes")
-stop("run_recipes")
-package_executing = 0
-skipcomputing:
+; The core factory cycle. We do each loop of factory production within
+; one call of nested turbo start/stop, which executes within one frame.
+;
+; This loop handles both calculating recipes via "run_recipes"
+; and crafting via "craft". This is done with conditional execution,
+; in order to save lines for future possible features.
+begin_cycle:
+executesync("turbo start")
 
-waituntil(current_step == 3 & current_package == factory_package_id)
-gotoif(skipactions, isopen("factory") == false | {get_raw(factory_target)} == 0.)
-package_executing = 1
-executesync("produce")
-stop("produce")
-executesync("craft")
-stop("craft")
-package_executing = 0
-skipactions:
+; Here we up the number of cycles so that it will be enough to
+; calculate the recipes or produce items. We intentionally have a
+; frame break between the recipe calculation and the beginning of crafting
+; to prevent jarring lag on startup.
+; This formula ensures that we don't accidentally step on another script
+; that needs more cycles, and also that we get the full amount of cycles
+; even if something else started turbo before us.
+turbo.cycles.max = max(turbo.cycles.max, turbo.cycles + 4000)
 
-goto(begincycle)
+; We have to save this, because the value can change as a result of executing
+; later scripts.
+target_value = {get_raw(factory_target)}
+
+; All conditional execution in the loop is behind this condition. If it
+; is true, then we're here because of `launch factory craft`. Otherwise,
+; this is a regular crafting iteration.
+factory_launch = if(target_value == 0., "</size>", factory_launch)
+
+executesync(if(target_value == 0., "run_recipes", "produce"))
+stop(if(target_value == 0., "run_recipes", "produce"))
+executesync(if(target_value == 0., "", "craft"))
+stop(if(target_value == 0., "", "craft"))
+
+executesync("turbo stop")
+
+; Here we either return to the next iteration of the production loop,
+; or stall on this instruction until we need to launch the factory.
+; Because there is always 1 extra cycle of turbo after "turbo stop," there
+; is enough time to execute this goto and have only a single frame break
+; before starting turbo again at the top of the loop.
+wait_loop:
+goto(if(isopen("factory") == false, 99,\
+     if({get_raw(factory_target)} > 0. || factory_launch == "go</size>",\
+       begin_cycle, wait_loop\
+     )\
+))
+
+; If we are exiting, the condition on the last line will keep jumping
+; us to line 99, so it is safe to end without a trailing no-op.

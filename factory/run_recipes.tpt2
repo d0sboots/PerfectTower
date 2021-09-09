@@ -177,7 +177,7 @@
   end\
   return factory.composite_string(\
     string.format(\
-      [[index("%s", "|" . sub(data, %d * (i + 1), 2), 0) / 3]],\
+      [[index("%s", "|" . sub(gsg({data_name}), %d * (i + 1), 2), 0) / 3]],\
       table.concat(acc),\
       factory.main_size\
     ),\
@@ -235,11 +235,15 @@
 :global int factory_target
 :global double factory_target_amount
 
+; We use the name of the data variable to pull double-duty as a
+; hider for all the craft-queue variables.
+; This macro gives a prettier name for the global data string.
+#data_name "<size=0>fdata"
+
 :local int i
-:local string data
 :local string loop_data
 
-data = {get_data(4)}
+gss({data_name}, {get_data(4)})
 loop:
 
 ; Evaluates to an expression that results in an string containing encoded data
@@ -257,7 +261,7 @@ loop:
 ; All of this is pulled from reading the appropriate sections of "data", mostly
 ; as-is. However, there is a secondary lookup for the item name.
 loop_data = {lookup_item} . sub(\
-  data,\
+  gsg({data_name}),\
   i * {lua(return factory.main_size)},\
   {lua(return factory.main_size + 3)}\
 )
@@ -293,17 +297,22 @@ global.double.set({queue_str} . {recipe_item},\
 i = i + 1 ;+ d2i(count({recipe_item} . " " . gdg({queue_str} . {recipe_item}), 1))
 gotoif(loop, i < {recipe_limit})
 
-:local int tier
+; We use a global variable when a local variable would do just fine,
+; because we want to initialize this particular global variable inside
+; the variable-hiding block. It will be used later in the produce scripts.
+:global int _tier
 
-tier = 10
+_tier = 10
 tierloop:
 
-{add_queue(tier, dust, max(0., ({get_queue(tier, lump)} - if(tier == 10, 0., count("lump", min(9, tier)))) * 4.0))}
-{add_queue(tier, ore, max(0., min(count("ore", tier), ceil({get_queue(tier, dust)} / 2.))))}
+{add_queue(_tier, dust, max(0., ({get_queue(_tier, lump)} - if(_tier == 10, 0., count("lump", min(9, _tier)))) * 4.0))}
+{add_queue(_tier, ore, max(0., min(count("ore", _tier), ceil({get_queue(_tier, dust)} / 2.))))}
 
-gotoif(nolumps, tier == 1 | count("ore", tier) + count("dust", tier) == 0.)
-{add_queue(-1 + tier, lump, max(0., {get_queue(tier, dust)} - {get_queue(tier, ore)} * 2.))}
+gotoif(nolumps, _tier == 1 | count("ore", _tier) + count("dust", _tier) == 0.)
+{add_queue(-1 + _tier, lump, max(0., {get_queue(_tier, dust)} - {get_queue(_tier, ore)} * 2.))}
 nolumps:
 
-tier -= 1
-gotoif(tierloop, tier > 0)
+_tier -= 1
+gotoif(tierloop, _tier > 0)
+
+gss("fhide2", "</size>")

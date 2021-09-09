@@ -2,10 +2,13 @@
 
 :global int factory_target
 :global double factory_target_amount
-:global int factory_launch
+:global string factory_launch
+
+:global int turbo.cycles.max
 
 :local int target_tier
 :local string target_type
+:local double target_amount
 
 key.f()
 
@@ -41,13 +44,29 @@ isopen("factory")
   acc[#acc + 1] = '"';\
   return table.concat(acc);\
 )}
-#error "<size=16><color=white>error"
+#error "<color=white><size=20>error"
+
 #entry_size {lua(return factory.entry_size)}
+
+; Begin turbo. This lets us detect if it actually exists and gets through
+; the remainder of this script quickly.
+executesync("turbo start")
+
+; A gap to visually separate the parameters from the code
+; above. "local.unset" is the shortest 1-parameter action when viewed in
+; the editor.
+local.unset(" ")
 
 target_tier = 1
 target_type = "set item type here"
-factory_target_amount = 8.
-waitwhile("You can edit previous lines, but don't the lines bellow" == "")
+target_amount = 8.
+
+; Begin a block that will hide the rest of the global variables from view.
+; This also conveniently shows as empty space in the in-game editor.
+gss("<size=0>fhide", "")
+
+factory_target_amount = target_amount
+
 ; This sets the target, i.e. the combined item/tier expression, by finding
 ; the appropriate string in the item_names data table. Because the names
 ; repeate twice (once for the "Xenos" name, once with the in-game name),
@@ -58,15 +77,35 @@ waitwhile("You can edit previous lines, but don't the lines bellow" == "")
 ; round down, instead of truncating to zero.
 factory_target = ((index({item_names}, "[" . target_type . "]", 0)\
   % ({lua(return #factory.items)} * {entry_size}) + {entry_size}) * 10) / {entry_size} + target_tier - 1
-global.string.set({error},\
-  if(factory_target - target_tier < 9, "Invalid item '" . target_type . "'</color></size>",\
-    if(target_tier < 1, "Tier " . target_tier . " < 1</color></size>",\
-	  if(target_tier > index(" 0123456789", sub(" " . {tier_data}, factory_target / 10, 1), 0),\
-        "Tier " . target_tier . " too big</color></size>",\
-        ""\
+
+; We re-use the same strings for both factory_launch and error. This is
+; because both end with </size>, so both can close the size block, but
+; error has a built-in <size=20> in the variable name so it's only closing
+; a local block.
+;
+; Doing things this way pushes two instructions after we set this, which
+; is needed for timing reasons.
+factory_launch =\
+  if(turbo.cycles.max == 0,\
+    "Needs turbo exec v2!</size>",\
+    if(factory_target - target_tier < 9, "Invalid item '" . target_type . "'</size>",\
+      if(target_tier < 1, "Tier " . target_tier . " < 1</size>",\
+        if(target_tier > index(" 0123456789", sub(" " . {tier_data}, factory_target / 10, 1), 0),\
+          "Tier " . target_tier . " too big</size>",\
+          "go</size>"\
+        )\
       )\
-	)\
-  )\
-)
-factory_launch = if(gsg({error}) == "", 1, 0)
-global.unset(if(gsg({error}) == "", {error}, ""))
+    )\
+  )
+; For error, we also need to close a <color> block.
+gss({error}, factory_launch . "</color>")
+global.unset(if(factory_launch == "go</size>", {error}, ""))
+
+; D0S.factory will take over as soon as factory_launch gets set 3 lines
+; above; it will call its own "turbo start" and thus prevent the frame from
+; ending before this "turbo stop" takes effect.
+; We need two cycles in-between to have a seamless transition.
+executesync("turbo stop")
+; Always need a no-op at the end, because of the extra cycle of turbo boost
+; after turbo stop.
+wait(0.0)
