@@ -1,0 +1,13 @@
+executesync(".*.*.*.*.* Begin actions here *.*.*.*.*.")
+executesync("Change any of these to what")
+executesync("you want, even other actions.")
+
+show("mine", true)
+executesync("D0S.Asteroid_Farm")
+show("mine", false)
+show("museum", true)
+executesync("Museum_Auto_Upgrader")
+show("museum", false)
+show("factory", true)
+
+executesync(".*.*.*.*.*.* End actions here *.*.*.*.*.*.")
