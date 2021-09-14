@@ -1,5 +1,6 @@
-; Claim all rewards in the asteroid mine. Can't delete finished asteroids
-; yet, because that requires right-clicking.
+; Claim all rewards in the asteroid mine. Doesn't delete finished asteroids,
+; because finished ones can't be detected. (And there's other scripts
+; for farming + renewing asteroids.)
 
 isopen("mine")
 
@@ -26,7 +27,6 @@ key.a()
   -1., {pos})
 
 :local double i
-:local double j
 
 {click_clusters}
 
