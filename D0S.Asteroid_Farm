@@ -1,0 +1,47 @@
+; Claims and deletes the first asteroid, and then scans for another.
+; Meant to be used on some kind of timer-loop.
+
+isopen("mine")
+
+key.a()
+
+; All layouts have two modes: "Widescreen" and "tallscreen". The dividing
+; line between them is 16:9 aspect ratio.
+#wide_or_tall(wide, tall) if(width.d() * 0.5625 > height.d(), {wide}, {tall})
+
+#click_clusters click({wide_or_tall(\
+  vec(width.d() * 0.5 + height.d() * 0.365, height.d() * 0.78),\
+  vec(width.d() * 0.7, width.d() * -0.123 + height.d())\
+)})
+
+#claim_rewards click({wide_or_tall(\
+  vec(width.d() * 0.5 + height.d() * 0.87, height.d() * 0.67),\
+  vec(width.d() * 0.98, width.d() * 0.1 + height.d() * 0.5)\
+)})
+
+; The middle of the screen is always in the asteroids list, regardless of
+; aspect ratio.
+#scroll_asteroids_list(pos) scrollbar(\
+  vec(width.d() * 0.5, height.d() * 0.5),\
+  -1., {pos})
+
+:local double i
+
+{click_clusters}
+; Vertical directions are reversed from what you would expect!
+{scroll_asteroids_list(1.)}
+
+; Click the first asteroid.
+click({wide_or_tall(\
+  vec(height.d(), height.d() * 0.62),\
+  vec(width.d() * 0.5, height.d() - width.d() * 0.215)\
+)})
+{claim_rewards}
+{click_clusters}
+remove(1)
+
+; Scan a new asteroid
+click({wide_or_tall(\
+  vec(height.d() * 0.95, height.d() * 0.054),\
+  vec(width.d() * 0.534, width.d() * 0.032)\
+)})
