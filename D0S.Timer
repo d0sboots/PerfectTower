@@ -1,0 +1,78 @@
+; This script loops through a set of tasks on a timer.
+
+; It handles updating a display and clearing out of whatever screen you're
+; in when the timer is up. It runs the script "D0S.Timer_Actions" when ready,
+; which is meant to be customized with whatever you want to do.
+
+key.t()
+
+:local double timeout
+:local double loop_minutes
+#loop_timer "<size=20><color=white>loop_timer"
+
+loop_minutes = 60.
+gotoif(toggle_off, gsg({loop_timer}) != "")
+
+#seconds(x) ({x} * 10000000.)
+#time_diff (timeout - now() + {seconds(1.)})
+
+main_loop:
+timeout = if(timeout == 0., now(), timeout + loop_minutes * {seconds(60.)})
+
+wait_loop:
+gss({loop_timer},\
+  floor({time_diff} / {seconds(60.)}) . ":" .\
+  floor({time_diff} / {seconds(10.)}) % 6. .\
+  floor({time_diff} / {seconds(1.)}) % 10. .\
+  "</color></size>")
+goto(if(gsg({loop_timer}) == "", toggle_off, if(now() > timeout, do_actions, wait_loop)))
+
+; Clear out of any screen, back to town. This won't work for being in
+; tower testing (nor would we want it to!)
+
+; This lua code just creates appropriate spaces in the list of all screens,
+; so that we can efficiently iterate over it in the AI script.
+{lua(\
+  local screens = "towertesting,tradingpost,powerplant,factory,laboratory,shipyard,workshop,arcade,museum,headquarters,constructionfirm,statueofcubos,mine";\
+  local i = 1;\
+  local maxlen = 0;\
+  local places = {};\
+  for place in string.gmatch(screens, "[^,]*") do\
+    if #place > maxlen then\
+      maxlen = #place;\
+    end\
+    places[i] = place;\
+    i = i + 1;\
+  end\
+  maxlen = maxlen + 1;\
+  local acc = {};\
+  local fmt = "%-" .. maxlen .. "s";\
+  for i = 1, #places do\
+    acc[i] = string.format(fmt, places[i])\
+  end\
+  all_places = table.concat(acc);\
+  entry_size = maxlen;\
+)}
+#all_places "{lua(return all_places)}"
+#entry_size {lua(return entry_size)}
+
+:local int i
+
+do_actions:
+show(sub({all_places}, {entry_size} * i,\
+  index({all_places}, " ", {entry_size} * i) - {entry_size} * i), false)
+i = (i + 1) % 16
+gotoif(do_actions, i != 0)
+
+; Call out to the customizable actions
+executesync("D0S.Timer_Actions")
+
+gotoif(main_loop, gsg({loop_timer}) != "")
+
+toggle_off:
+; We do this twice so that regardless of where we are in the loop, we'll
+; still see it be unset and thus exit.
+global.unset({loop_timer})
+; Ending with this makes the script safe to use with turbo exec
+; (assuming the actions are safe).
+global.unset({loop_timer})
