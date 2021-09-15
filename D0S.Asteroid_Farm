@@ -19,14 +19,23 @@ key.a()
   vec(width.d() * 0.98, width.d() * 0.1 + height.d() * 0.5)\
 )})
 
+#click_stairs click({wide_or_tall(\
+  vec(height.d() * 0.18, height.d() * 0.09),\
+  vec(width.d() * 0.1, width.d() * 0.05)\
+)})
+
 ; The middle of the screen is always in the asteroids list, regardless of
 ; aspect ratio.
 #scroll_asteroids_list(pos) scrollbar(\
   vec(width.d() * 0.5, height.d() * 0.5),\
   -1., {pos})
 
-:local double i
+:local int i
 
+; We don't know whether we were on the proper part of the stairs or not,
+; so try both. If we're on the wrong side, the worst that happens is we
+; mine a tile.
+loop_claim:
 {click_clusters}
 ; Vertical directions are reversed from what you would expect!
 {scroll_asteroids_list(1.)}
@@ -37,11 +46,23 @@ click({wide_or_tall(\
   vec(width.d() * 0.5, height.d() - width.d() * 0.215)\
 )})
 {claim_rewards}
-{click_clusters}
+{click_stairs}
+i = (i + 1) % 2
+gotoif(loop_claim, i != 0)
+
 remove(1)
 
+; We have to try scanning twice, too. Only one of them will be on the proper
+; side of the stairs, so we'll only scan once. We can't combine this with
+; the loop above, because we have to remove first, and that functions
+; regardless of which screen we're on.
+loop_scan:
+{click_clusters}
 ; Scan a new asteroid
 click({wide_or_tall(\
   vec(height.d() * 0.95, height.d() * 0.054),\
   vec(width.d() * 0.534, width.d() * 0.032)\
 )})
+{click_stairs}
+i = (i + 1) % 2
+gotoif(loop_scan, i != 0)
