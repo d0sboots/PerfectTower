@@ -89,7 +89,7 @@ EkQwUy5Bc3Rlcm9pZF9DbGFpbQEAAAAFa2V5LmEBAAAAEnRvd24ud2luZG93Lmlzb3Blbghjb25zdGFu
 ## Asteroid Farming
 This is meant to be part of a continuous Asteroid farm on floor 2 of the Mine. It collects all rewards from the first asteroid, then removes that asteroid and scans another. By doing this at a regular cadence, your workers will mine through most/all of the cluster by the time it reaches the top, and new ones will constantly be generated. Although this can be done manually (on key "a" by default), it is better when automated with a timer (see below for just such a script.)
 
-Works for any resolution, *does not work with Dynamic UI Scaling*. Must be on floor 2 for it to function. **This one does not work with Turbo Exec**, the transitions apparently require a frame paint in order to function.
+Works for any resolution, *does not work with Dynamic UI Scaling*. **This one does not work with Turbo Exec**, the transitions apparently require a frame paint in order to function.
 
 `D0S.Asteroid_Farm 1 1 13`
 ```
