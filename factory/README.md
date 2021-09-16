@@ -14,10 +14,9 @@ When setting up the editor, I suggest creating two new workspaces: One for the t
 
 Import the main files in this order, so that the eventual bundle export is consistent:
 
-`launch factory craft 1 1 8`<br>
-`D0S.init factory 1 0 11`<br>
-`D0S.factory 0 0 16`<br>
-`run_recipes 0 0 12`<br>
+`launch factory craft 1 1 13`<br>
+`D0S.factory 2 1 11`<br>
+`run_recipes 0 0 13`<br>
 `produce 0 0 16`<br>
 `produce dust 0 0 16`<br>
 `produce plates 0 0 14`<br>
@@ -26,6 +25,16 @@ Import the main files in this order, so that the eventual bundle export is consi
 `craft 0 0 12`<br>
 
 ## Changelog
+
+### V2.0.0
+
+Change to using Turbo Exec V2.
+
+All global variables are now hidden internally, instead of relying on turbo
+exec to do it (since V2 no longer messes with the variable display).
+```
+Bundle size: 68517   Scripts: 9   Max lines: 16
+```
 
 ### V1.0.1
 
