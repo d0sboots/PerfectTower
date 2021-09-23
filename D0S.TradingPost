@@ -1,0 +1,24 @@
+; Spam-trades the first offer in the trading post.
+; It's not necessary to trade more than the first, since just that one
+; alone will crush your economy.
+; Requires that the air stone is active.
+; Requires turbo exec (v1 or v2) for maximum speed.
+
+isopen("tradingpost")
+
+key.o()
+
+#trading "<size=20><color=white>trading"
+
+gotoif(end, gsg({trading}) != "")
+executesync("turbo start")
+gss({trading}, "Press o to stop</color></size>")
+
+loop:
+refresh()
+trade(0, 0.1)
+gotoif(loop, gsg({trading}) != "" && isopen("tradingpost"))
+
+executesync("turbo stop")
+end:
+global.unset({trading})
