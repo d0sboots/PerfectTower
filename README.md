@@ -10,6 +10,7 @@
 - [Autoclicker](#autoclicker)
 - [Dust Up-tierer](#dust-up-tierer)
 - [Button coordinate finder](#button-coordinate-finder)
+- [Infinity phase scripts](#infinity-phase-scripts)
 - [Other Utilities](#other-utilities)
 
 This is my collection of AI scripts and other useful things. I focus on low-RAM scripts (i.e. 14 actions or less), so that they'll be usable by everyone who has unlocked the AI.
@@ -176,6 +177,22 @@ The final equation for a button click should look like this:
 ```
 click(if(height.d()/width.d() >= 0.5625, vec(_tallscreen_coords_), vec(_widescreen_coords_)))
 ```
+
+## Infinity Phase Scripts
+SPOLERS BELOW FOR INFINITY PHASE! YOU HAVE BEEN WARNED!
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
+### Trading Post Crate Spam
+This requires the Air Stone to be active. Enter the Trading Post and press "o", and it will spam 10% trades, specifically the first (most valuable) trade.
+
+`D0S.TradingPost 1 1 8`
+```
+D0QwUy5UcmFkaW5nUG9zdAEAAAAFa2V5Lm8BAAAAEnRvd24ud2luZG93Lmlzb3Blbghjb25zdGFudAQLdHJhZGluZ3Bvc3QIAAAADmdlbmVyaWMuZ290b2lmCGNvbnN0YW50AggAAAARY29tcGFyaXNvbi5zdHJpbmcRZ2xvYmFsLnN0cmluZy5nZXQIY29uc3RhbnQEHTxzaXplPTIwPjxjb2xvcj13aGl0ZT50cmFkaW5nCGNvbnN0YW50BAIhPQhjb25zdGFudAQAE2dlbmVyaWMuZXhlY3V0ZXN5bmMIY29uc3RhbnQEC3R1cmJvIHN0YXJ0EWdsb2JhbC5zdHJpbmcuc2V0CGNvbnN0YW50BB08c2l6ZT0yMD48Y29sb3I9d2hpdGU+dHJhZGluZwhjb25zdGFudAQeUHJlc3MgbyB0byBzdG9wPC9jb2xvcj48L3NpemU+E3RyYWRpbmdwb3N0LnJlZnJlc2gRdHJhZGluZ3Bvc3QudHJhZGUIY29uc3RhbnQCAAAAAAhjb25zdGFudAOamZmZmZm5Pw5nZW5lcmljLmdvdG9pZghjb25zdGFudAIEAAAAD2NvbXBhcmlzb24uYm9vbBFjb21wYXJpc29uLnN0cmluZxFnbG9iYWwuc3RyaW5nLmdldAhjb25zdGFudAQdPHNpemU9MjA+PGNvbG9yPXdoaXRlPnRyYWRpbmcIY29uc3RhbnQEAiE9CGNvbnN0YW50BAAIY29uc3RhbnQEAiYmEnRvd24ud2luZG93Lmlzb3Blbghjb25zdGFudAQLdHJhZGluZ3Bvc3QTZ2VuZXJpYy5leGVjdXRlc3luYwhjb25zdGFudAQKdHVyYm8gc3RvcAxnbG9iYWwudW5zZXQIY29uc3RhbnQEHTxzaXplPTIwPjxjb2xvcj13aGl0ZT50cmFkaW5n
+```
+
+It works OK on its own, but is much more effective with Turbo Exec (either v1 or v2). https://github.com/Xenos6666/TPT2_scripts/blob/main/common/execution_stack/README.md
+
+This will crush your economy, quickly reducing your resources to that of your most effective producer(s). Putting all your perks into the Power Plant and boosting the Factory will make it more effective, since that increases your producer income, and producer income is the bottleneck for crate gain.
 
 ## Other Utilities
 ### Power Plant Optimizer/Calculator
