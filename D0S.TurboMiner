@@ -1,0 +1,90 @@
+; A mining program that uses turbo exec v2 to mine everything in
+; a single frame. (Unlike many of my scripts) it is designed to be
+; simple to understand, so that others can use it as a base for their
+; turbo-based programs.
+
+wakeup()
+open.mine()
+
+isopen("mine")
+
+; These are defined in turbo exec v2, and are available for public
+; use. turbo.cycles should never be written to, only read.
+:global int turbo.cycles
+:global int turbo.cycles.max
+
+:local int tab
+:local int row
+:local int should_loop
+
+begin:
+; This is the command to start turbo. Always use "executesync", so that you
+; know that turbo has started completely by the time it returns. Otherwise,
+; there may be timing complications if you set turbo.max.cycles.
+executesync("turbo start")
+
+; Increase the number of max cycles, so that we finish in one frame.
+; Always use this formula, which is designed to work even if another script
+; has started turbo before yours, or requested more cycles than yours needs.
+;
+; The number 3500 comes from the fact that each layer takes 25 cycles to mine.
+; With a maximum of 11*12 layers, that's 3300 cycles. 200 cycles are added
+; for additional potential overhead in the outer loops and other code.
+turbo.cycles.max = max(turbo.cycles.max, turbo.cycles + 3500)
+
+; Should the script loop infinitely?
+should_loop = 0
+
+; The rest of this is a relatively straightforward fast-mining script.
+
+newtab:
+tab = (tab % 12) + 1
+tab(tab)
+; Skip newlayer after setting tab, because the first layer might have stuff
+goto(loop)
+
+newlayer:
+newlayer()
+
+; This loop is "unrolled" for speed. Why does speed matter, when we're using
+; turbo exec? Well, even though everything will happen within one frame,
+; each line executed still takes some amount of real-word CPU time to process.
+; By cutting down on lines executed, we make that frame shorter, improving
+; the framerate.
+; Without unrolling, every dig takes 3 instructions. With it, we execute
+; 4 digs in 6 instructions, a huge improvement from 200% overhead to just 50%.
+; Further unrolling, or optimizations elsewhere in the script would not
+; accomplish very much. (This is a general maxim: Make sure you are optimizing
+; what matters.)
+loop:
+dig(0, row)
+dig(1, row)
+dig(2, row)
+dig(3, row)
+row = (row + 1) % 4
+
+; The most complicated line: jump to the correct place based on various conditions.
+goto(if(isopen("mine"),\
+  if(row != 0, loop,\
+    if(hasLayers(), newlayer,\
+      if(tab < 12, newtab, end)\
+    )\
+  ),\
+  end\
+))
+
+end:
+; This is the command to stop turbo. Just like with starting, always use
+; executesync so that the return is timed with the ending of the frame.
+executesync("turbo stop")
+
+; "turbo stop" gives us one extra cycle of turbo after it returns, because
+; that allows us to "goto" or do something else to make a loop and only have
+; a single frame break.
+; But that means it is *vital* that there's a no-op or other safe instruction
+; after "turbo stop", otherwise it will get run again because of turbo exec's
+; property that scripts keep running their last instruction instead of
+; exiting.
+; In this case, we'll either be looping to the beginning or stalling at
+; the end until the frame break.
+goto(if(should_loop == 0, 99, begin))
