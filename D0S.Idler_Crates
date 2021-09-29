@@ -1,0 +1,152 @@
+; Alternates between idle mode and trading crates.
+;
+; To use this, the air stone must be active, and you must be in
+; Tower Testing, with the correct idle mode already selected.
+;
+; Turbo Exec v2 is *required*!
+
+isopen("towertesting") || isopen("tradingpost")
+
+key.o()
+
+:global int turbo.cycles.max
+:global int turbo.register
+:global string turbo.state
+:local int i
+:local int repeat
+:local int loops
+
+; Macro our status variable for readability.
+#trading "<size=20><color=white>trading"
+#exiting "Exiting</color></size>"
+#running "Press o to stop</color></size>"
+
+; All layouts have two modes: "Widescreen" and "tallscreen". The dividing
+; line between them is 16:9 aspect ratio.
+#wide_or_tall(wide, tall) if(width.d() * 0.5625 > height.d(), {wide}, {tall})
+
+; The ternary is for memory relief, see below.
+#click_launch click(\
+  if(repeat % 5000 == 4999,\
+    vec(-1., -1.),\
+    {wide_or_tall(\
+      vec(height.d() * 0.56, height.d() * 0.1),\
+      vec(width.d() * 0.32, width.d() * 0.054)\
+    )}\
+  )\
+)
+
+; This variable is tunable, to reach the maximum crates/sec.
+loops = 325
+; This creates the toggle functionality.
+gss({trading}, if(turbo.cycles.max == 0, "<color=red>Need turbo exec v2!</color></color></size>", if(gsg({trading}) == "", {running}, {exiting})))
+goto(if(gsg({trading}) != {running}, end, repeat_loop))
+
+; This loop runs two frames:
+; The first starts in the Tower Testing screen in idle mode, leaves to go
+; to the trading post to trade crates, and then comes back and ends the
+; frame in Tower Testing, clicking the "launch" button to restart idle mode.
+;
+; The second frame simply runs one frame in idle mode without anything else
+; hapenning.
+;
+; It *seems* like you could merge the two into a single frame that does
+; everything. However, if you try that, the trades don't function, despite
+; the fact that you can tell (from the idle counter being reset each frame)
+; that it is still leaving and coming back, interrupting idle mode each frame.
+;
+; The only conclusion I have is that the end-of-frame click "locks in" a
+; transition effect to the idle screen on the next frame; with this locked in,
+; the trading post doesn't function correctly. With a one frame cooldown,
+; everything works as expected.
+
+main_loop:
+; This is hoisted here, so that it occurs sufficiently far after starting
+; turbo.
+turbo.cycles.max = max(turbo.cycles.max, 10000)
+
+; This loop is unrolled by three iterations to reduce the overhead of the
+; looping constructs. We spend most of our time in this loop (even with
+; turbo, and accounting for the fact that we spend an entire frame elsewhere),
+; so it pays to keep it efficient.
+loop:
+refresh()
+trade(0, 0.1)
+refresh()
+trade(0, 0.1)
+refresh()
+trade(0, 0.1)
+refresh()
+trade(0, 0.1)
+i = (i + 1) % loops
+gotoif(loop, i > 0)
+
+; Starting and stopping turbo is handled by this mini-loop. It is handled
+; at a low-level here by directly manipulating the "turbo.register" variable,
+; instead of calling "turbo start" and "turbo stop". This is done for speed,
+; and also to save lines, because it allows us to handle two halves of the
+; code by repeating this block.
+;
+; Everything is controlled by the "repeat" variable, which is always either
+; even or odd. Normally the loop is exited when repeat is odd, and thus it
+; will be odd on the first iteration, *except* when the script starts.
+;
+; When repeat is odd, register is decremented, stopping turbo. Then we move
+; from the trading post back to towertesting, and click the launch button.
+; Finally, we increment repeat. The turbo framework has enough delay built-in
+; to let us do all this before turbo expires, or more accurately usually
+; turbo will expire at the end of incrementing repeat.
+;
+; There is one extra wrinkle here: Very rarely, we will not leave the trading
+; post, and thus spend two frames in the trading post doing nothing.
+; This is to prevent a Unity bug where work accumulates due to moving in
+; and out of idle while never displaying a frame that is not in idle mode.
+; When the run is eventually finished, all this work is dispatched, causing
+; a large memory bump that may cause a crash. Instead, we periodically let
+; a "useless" frame render to discharge this work. By hapenning rarely
+; enough, it doesn't impact crates/sec too badly.
+;
+; The next instruction is the master "goto", which dispatches depending on
+; state. At this point, repeat is even, so we repeat the instruction until
+; turbo.state is "idle". Usually it will already by "idle" by the time we
+; get to this instruction, but this ensures that we are sync'd to the
+; proper frame boundary. Specifically, we spend one frame on the transition
+; from "active" to "idle", and one frame after we jump to the top of
+; repeat_loop. This ensures the 2-frame pattern.
+;
+; Now that repeat is even, we enable turbo. This is where we enter the loop
+; when the script first starts. We then move to the tradingpost, and the
+; click fires on an inert part of the UI. Lastly, we increment repeat
+; back to odd.
+;
+; In the second half of the master goto, we abort the script if it's been
+; signalled that it should stop, otherwise we jump back to the top.
+;
+; Being compound statements, all of these are more expensive to execute
+; than simple statements. But they are only run twice per overall iteration,
+; i.e. they make up a handful of cycles out of thousands, so the cost is
+; negligible.
+
+repeat_loop:
+turbo.register = turbo.register + 1 - (repeat % 2) * 2
+show(if(repeat % 2 == 0, "towertesting", "tradingpost"), false)
+show(if(repeat % 2 == 0, "tradingpost", "towertesting"), true)
+{click_launch}
+repeat = repeat + 1
+
+; We spend an extra frame on this wait, because it happens outside of turbo.
+; (The last cycle of turbo expires on the click above.) It is vital that this
+; *does* happen outside of turbo; if there is another script running with
+; turbo on, it will mess up the timing here. (It would be a bad idea anyway,
+; because it would be hogging CPU and slowing down your trades.)
+wait:
+goto(if(repeat % 2 == 0,\
+  if(turbo.state != "idle", wait, repeat_loop),\
+  if(gsg({trading}) == {running}, main_loop, exit)\
+))
+
+exit:
+executesync("turbo stop")
+
+end:
+global.unset(if(turbo.cycles.max == 0, "", {trading}))
