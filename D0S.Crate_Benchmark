@@ -1,0 +1,39 @@
+; Script for benchmarking the efficiency of D0S.Idler_Crates.
+; Use this for tuning the loop constant.
+;
+; Use Full Precision for maximum resolution in benchmarking.
+
+isopen("tradingpost")
+
+key.b()
+
+:local double next_time
+:local double end_time
+:global int turbo.register
+
+#trading "<size=20><color=white>trading"
+#exiting "Exiting</color></size>"
+#benchmark "<size=20><color=white>benchmark"
+#remaining (end_time - next_time)
+
+#seconds(x) (1e7 * {x})
+
+show("tradingpost", false)
+show("towertesting", true)
+execute("D0S.Idler_Crates")
+next_time = now()
+end_time = next_time + {seconds(15)}
+
+loop:
+waituntil(now() > next_time)
+gss({benchmark}, "0:" . d2s(floor({remaining}/{seconds(10)})) .\
+  d2s(floor({remaining}/{seconds(1)}) % 10.) . "</color></size>")
+next_time += {seconds(1)}
+goto(if(gsg({trading}) == "", end, if(next_time <= end_time, loop, cleanup)))
+
+cleanup:
+gss({trading}, {exiting})
+waituntil(gsg({trading}) == "")
+
+end:
+gss({benchmark}, "final: " . d2s((now() - end_time + {seconds(15)}) / {seconds(1)}) . "</color></size>")
