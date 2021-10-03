@@ -8,6 +8,11 @@ key.t()
 
 :local double timeout
 :local double loop_minutes
+
+; This is the global variable for displaying the timer value. It also
+; doubles as the signal for toggling the timer on/off. If you want to make
+; a copy of the script to run at the same time as the original, modify this
+; and the name of the script to execute, down below.
 #loop_timer "<size=20><color=white>loop_timer"
 
 loop_minutes = 60.
