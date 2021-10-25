@@ -118,6 +118,7 @@
 {special(ore, 10, "ore")}
 
 ;Tiers up dust, tiers 1-9
+;These are ore lumps
 {special(lump, 9, "lump")}
 
 ;Tries to make dust from ores and lower-tier dusts, tiers 1-10
