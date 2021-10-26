@@ -117,8 +117,9 @@
 ;Transforms ore into dust, tiers 1-10
 {special(ore, 10, "ore")}
 
-;Tiers up dust, tiers 1-9
-;These are ore lumps
+; Tiers up dust, tiers 1-9
+; These are ore lumps, plus putting them into the mixer.
+; There is no "only make ore lumps, without mixing them" option right now.
 {special(lump, 9, "lump")}
 
 ;Tries to make dust from ores and lower-tier dusts, tiers 1-10
