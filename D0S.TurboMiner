@@ -87,4 +87,4 @@ executesync("turbo stop")
 ; exiting.
 ; In this case, we'll either be looping to the beginning or stalling at
 ; the end until the frame break.
-goto(if(should_loop == 0, 99, begin))
+goto(if(should_loop != 0 && isopen("mine"), begin, 99))
