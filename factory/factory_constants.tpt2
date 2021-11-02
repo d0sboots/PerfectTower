@@ -1,6 +1,6 @@
 :import factory macros
 
-#version v2.0.0
+#version v2.0.1
 
 ; Everything in the list below is a valid target for automation, and can be
 ; assigned to the "target_type" variable in "lanuch factory craft".
@@ -60,6 +60,7 @@
 {make(pump, 10, "pump")}
 {make(hammer, 1, "hammer")}
 {make(block, 10, "block")}
+{make(rubber_sapling, 1, "sapling.rubber")}
 
 ; ----- SCANNABLE ITEM GROUPS -----
 ; These are not real items, but rather groups of items that will be made together
@@ -90,6 +91,7 @@
 ; starting) or lumps (due to technical limitations). Lumps aren't required
 ; for anything currently though.
 ; Includes rubber plates at tier 1 and hammers at tier *2*.
+; Rubber trees are at tier 9 because of their ore.
 {group(parts, 10)}
 
 ; All the tiers of chips. Warning: Expensive. Input this as tier 1.

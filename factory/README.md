@@ -26,6 +26,14 @@ Import the main files in this order, so that the eventual bundle export is consi
 
 ## Changelog
 
+### V2.0.1
+
+Add rubber saplings.
+
+```
+Bundle size: 68701   Scripts: 9   Max lines: 16
+```
+
 ### V2.0.0
 
 Change to using Turbo Exec V2.
