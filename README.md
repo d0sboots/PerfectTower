@@ -45,6 +45,8 @@ The package will prioritize using items already present in your inventory instea
 
 It can manage ore processing, dust tiering, and everything related. If more dust of a certain tier is needed then there is in the inventory, the package will first use all ores of that tier, then use dust of the previous tier. (This package assumes you have the chemical lumps exotic skill.)
 
+You can upgrade machines with it, but the process is slightly involved: First, take the machine out of its slot. Then, start the upgrade with 'F'. If the machine is needed to do the work, you will then need to put it back into its slot, and take it out again at the very end, to finish the upgrade.
+
 It uses a different up-tiering mechanism than [the uptierer below](#dust-up-tierer), and the two aren't aware of each other, but despite that they usually work fine together. If you completely run out of dust you may need to temporarily disable the uptierer in order to finish crafting, though.
 
 If there isn't enough ore or rubber, the package will try to craft as much as it can and will simply halt progress when it runs out of material.
