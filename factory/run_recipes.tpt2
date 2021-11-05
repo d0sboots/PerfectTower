@@ -238,7 +238,7 @@
 ; We use the name of the data variable to pull double-duty as a
 ; hider for all the craft-queue variables.
 ; This macro gives a prettier name for the global data string.
-#data_name "<size=0>fdata"
+#data_name "<size=0><line-height=0>fdata"
 
 :local int i
 :local string loop_data
@@ -315,4 +315,4 @@ nolumps:
 _tier -= 1
 gotoif(tierloop, _tier > 0)
 
-gss("fhide2", "</size>")
+gss("fhide2", "</line-height></size>")

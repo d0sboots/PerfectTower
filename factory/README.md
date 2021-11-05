@@ -26,6 +26,17 @@ Import the main files in this order, so that the eventual bundle export is consi
 
 ## Changelog
 
+### V2.1.0
+
+Fix a bug with crushing and mixing dust that would cause various issues
+if you were low on dust.
+
+Add "line-height=0" so that there isn't a big blank space in the variables list.
+
+```
+Bundle size: 68769   Scripts: 9   Max lines: 16
+```
+
 ### V2.0.1
 
 Add rubber saplings.
