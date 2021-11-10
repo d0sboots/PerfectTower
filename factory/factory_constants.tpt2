@@ -1,6 +1,6 @@
 :import factory macros
 
-#version v2.0.1
+#version v2.1.1
 
 ; Everything in the list below is a valid target for automation, and can be
 ; assigned to the "target_type" variable in "lanuch factory craft".
@@ -62,6 +62,11 @@
 {make(block, 10, "block")}
 {make(rubber_sapling, 1, "sapling.rubber")}
 
+; Transforms ore into dust, tiers 1-10
+; Because of an implementation detail, this must come before any
+; scannable items.
+{special(ore, 10, "ore")}
+
 ; ----- SCANNABLE ITEM GROUPS -----
 ; These are not real items, but rather groups of items that will be made together
 ; if you select one of these names. They are meant for use with the Crafter, to
@@ -115,9 +120,6 @@
 {group(all, 10)}
 
 ; ----- INGREDIENTS AND PRODUCED PARTS -----
-
-;Transforms ore into dust, tiers 1-10
-{special(ore, 10, "ore")}
 
 ; Tiers up dust, tiers 1-9
 ; These are ore lumps, plus putting them into the mixer.

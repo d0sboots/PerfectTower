@@ -26,7 +26,17 @@ Import the main files in this order, so that the eventual bundle export is consi
 
 ## Changelog
 
+### V2.1.1
+
+Fix a bug where trying to produce ore made producers instead.
+
+```
+Bundle size: 68769   Scripts: 9   Max lines: 16
+```
+
 ### V2.1.0
+
+***I forgot to update the version number in the script, it will show as v2.0.1***
 
 Fix a bug with crushing and mixing dust that would cause various issues
 if you were low on dust.
