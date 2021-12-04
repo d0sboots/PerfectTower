@@ -33,7 +33,9 @@ FGxhdW5jaCBmYWN0b3J5IGNyYWZ0AQAAAAVrZXkuZgEAAAASdG93bi53aW5kb3cuaXNvcGVuCGNvbnN0
 ```
 **This requires `turbo exec v2` to function, found here: https://github.com/Xenos6666/TPT2_scripts/blob/main/common/turbo_exec/README.md**
 
-***** **The list of all valid types can be found in the source code of [factory_constants](factory/factory_constants.tpt2).** *****
+┌─────────────────────────────────────────────────┐<br>
+│ The list of all valid types can be found in the source code of [factory_constants](factory/factory_constants.tpt2). │<br>
+└─────────────────────────────────────────────────┘
 
 ### Details
 
