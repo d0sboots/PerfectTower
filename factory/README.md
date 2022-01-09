@@ -23,15 +23,27 @@ Import the main files in this order, so that the eventual bundle export is consi
 `produce circuits 0 0 10`<br>
 `produce misc 0 0 13`<br>
 `craft 0 0 12`<br>
+`fix target typo 0 0 16`<br>
 
 ## Changelog
+
+### V2.2.0
+
+Group everything into a package, for convenience and orginazation.
+
+Add spell-check support (contributed by cl1694) to suggest correct item-name
+spellings when the item can't be found.
+
+```
+Bundle size: 79097   Scripts: 10   Max lines: 16
+```
 
 ### V2.1.1
 
 Fix a bug where trying to produce ore made producers instead.
 
 ```
-Bundle size: 68769   Scripts: 9   Max lines: 16
+Bundle size: 68768   Scripts: 9   Max lines: 16
 ```
 
 ### V2.1.0
@@ -44,7 +56,7 @@ if you were low on dust.
 Add "line-height=0" so that there isn't a big blank space in the variables list.
 
 ```
-Bundle size: 68769   Scripts: 9   Max lines: 16
+Bundle size: 68768   Scripts: 9   Max lines: 16
 ```
 
 ### V2.0.1
@@ -52,7 +64,7 @@ Bundle size: 68769   Scripts: 9   Max lines: 16
 Add rubber saplings.
 
 ```
-Bundle size: 68701   Scripts: 9   Max lines: 16
+Bundle size: 68700   Scripts: 9   Max lines: 16
 ```
 
 ### V2.0.0

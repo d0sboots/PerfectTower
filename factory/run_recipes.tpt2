@@ -1,6 +1,8 @@
 :import factory constants
 :import recipes
 
+:name {script_name(run_recipes)}
+
 ; Debugging function, kept in case of future problems.
 #debug_dump_recipes {lua(\
   acc = {};\

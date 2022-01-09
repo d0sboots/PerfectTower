@@ -1,5 +1,7 @@
 :import factory constants
 
+:name {script_name(produce circuits)}
+
 :global int _tier
 :local double previous_amount
 

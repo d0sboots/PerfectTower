@@ -1,6 +1,6 @@
 :import factory constants
 
-:name D0S.factory {version}
+:name {script_name(init)}
 
 wakeup()
 open.factory()
@@ -47,10 +47,10 @@ target_value = {get_raw(factory_target)}
 ; this is a regular crafting iteration.
 factory_launch = if(target_value == 0., "</size>", factory_launch)
 
-executesync(if(target_value == 0., "run_recipes", "produce"))
-stop(if(target_value == 0., "run_recipes", "produce"))
-executesync(if(target_value == 0., "", "craft"))
-stop(if(target_value == 0., "", "craft"))
+executesync(if(target_value == 0., "{script_name(run_recipes)}", "{script_name(produce)}"))
+stop(if(target_value == 0., "{script_name(run_recipes)}", "{script_name(produce)}"))
+executesync(if(target_value == 0., "", "{script_name(craft)}"))
+stop(if(target_value == 0., "", "{script_name(craft)}"))
 
 executesync("turbo stop")
 

@@ -1,6 +1,8 @@
 ; Infrastructure for producing all the constants in the factory package.
 ; Since this is :imported, it can't produce any instructions.
 
+#script_name(name) D0S.factory {version}:{name}
+
 ; Produces the name of the queue variable for the given tier and item.
 #queue_str "cq"
 #queue(tier, item) -1 + 10 * ({item}) + {tier}

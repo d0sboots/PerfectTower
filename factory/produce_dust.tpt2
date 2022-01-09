@@ -1,5 +1,7 @@
 :import factory constants
 
+:name {script_name(produce dust)}
+
 :global int _tier
 :local double previous_amount
 

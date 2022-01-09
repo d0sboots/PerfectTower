@@ -1,6 +1,8 @@
 :import factory constants
 :import recipes
 
+:name {script_name(craft)}
+
 :local double previous_amount
 :local int i
 :local string itemdata

@@ -1,5 +1,7 @@
 :import factory constants
 
+:name {script_name(launch factory craft)}
+
 :global int factory_target
 :global double factory_target_amount
 :global string factory_launch
@@ -101,11 +103,15 @@ factory_launch =\
 gss({error}, factory_launch . "</color>")
 global.unset(if(factory_launch == "go</size>", {error}, ""))
 
-; D0S.factory will take over as soon as factory_launch gets set 3 lines
+; "init" will take over as soon as factory_launch gets set 3 lines
 ; above; it will call its own "turbo start" and thus prevent the frame from
 ; ending before this "turbo stop" takes effect.
 ; We need two cycles in-between to have a seamless transition.
-executesync("turbo stop")
+; If the error is "Invalid item", then we invoke "fix target typo" to find
+; a potential near-match; it will be responsible for ending turbo.
+executesync(if(sub(gsg({error}), 0, 12) == "Invalid item",\
+  "{script_name(fix target typo)}",\
+  "turbo stop"))
 ; Always need a no-op at the end, because of the extra cycle of turbo boost
 ; after turbo stop.
 wait(0.0)

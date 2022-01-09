@@ -1,5 +1,7 @@
 :import factory constants
 
+:name {script_name(produce)}
+
 :global int _tier
 
 :local double previous_amount
@@ -11,16 +13,16 @@ produce("rubber", 1, {get_queue(1, rubber_plate)}, "presser")
 _tier = 1
 tierloop:
 
-executesync("produce dust")
-stop("produce dust")
+executesync("{script_name(produce dust)}")
+stop("{script_name(produce dust)}")
 gotoif(nexttier, _tier > 3 & {get_queue((_tier - 2) / 2, chip)} > 0. | _tier > 4 & {get_queue(_tier - 4, motor)} > 0.)
 
-executesync("produce circuits")
-stop("produce circuits")
-executesync("produce misc")
-stop("produce misc")
-executesync("produce plates")
-stop("produce plates")
+executesync("{script_name(produce circuits)}")
+stop("{script_name(produce circuits)}")
+executesync("{script_name(produce misc)}")
+stop("{script_name(produce misc)}")
+executesync("{script_name(produce plates)}")
+stop("{script_name(produce plates)}")
 
 nexttier:
 _tier += 1
