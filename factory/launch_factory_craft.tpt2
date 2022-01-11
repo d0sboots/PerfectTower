@@ -90,11 +90,13 @@ factory_target = ((index({item_names}, "[" . target_type . "]", 0)\
 factory_launch =\
   if(turbo.cycles.max == 0,\
     "Needs turbo exec v2!</size>",\
-    if(factory_target - target_tier < 9, "Invalid item '" . target_type . "'</size>",\
-      if(target_tier < 1, "Tier " . target_tier . " < 1</size>",\
-        if(target_tier > index(" 0123456789", sub(" " . {tier_data}, factory_target / 10, 1), 0),\
-          "Tier " . target_tier . " too big</size>",\
-          "go</size>"\
+    if(target_type == "", "You likely changed the name of target_type instead of the value, please re-import.</size>",\
+      if(factory_target - target_tier < 9, "Invalid item '" . target_type . "'</size>",\
+        if(target_tier < 1, "Tier " . target_tier . " < 1</size>",\
+          if(target_tier > index(" 0123456789", sub(" " . {tier_data}, factory_target / 10, 1), 0),\
+            "Tier " . target_tier . " too big</size>",\
+            "go</size>"\
+          )\
         )\
       )\
     )\

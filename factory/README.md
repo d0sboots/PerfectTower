@@ -34,8 +34,10 @@ Group everything into a package, for convenience and orginazation.
 Add spell-check support (contributed by cl1694) to suggest correct item-name
 spellings when the item can't be found.
 
+Add error-handling for if target_type is changed by name instead of by value.
+
 ```
-Bundle size: 79097   Scripts: 10   Max lines: 16
+Bundle size: 79357   Scripts: 10   Max lines: 16
 ```
 
 ### V2.1.1
