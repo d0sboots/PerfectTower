@@ -91,11 +91,13 @@ factory_launch =\
   if(turbo.cycles.max == 0,\
     "Needs turbo exec v2!</size>",\
     if(target_type == "", "You likely changed the name of target_type instead of the value, please re-import.</size>",\
-      if(factory_target - target_tier < 9, "Invalid item '" . target_type . "'</size>",\
-        if(target_tier < 1, "Tier " . target_tier . " < 1</size>",\
-          if(target_tier > index(" 0123456789", sub(" " . {tier_data}, factory_target / 10, 1), 0),\
-            "Tier " . target_tier . " too big</size>",\
-            "go</size>"\
+      if(target_type == "set item type here", "You need to set the values in <color=yellow>launch factory craft</color>. If you don't know the names of items, see <color=green>factory_constants.tpt2</color>, which is linked on the github.</size>",\
+        if(factory_target - target_tier < 9, "Invalid item '" . target_type . "'</size>",\
+          if(target_tier < 1, "Tier " . target_tier . " < 1</size>",\
+            if(target_tier > index(" 0123456789", sub(" " . {tier_data}, factory_target / 10, 1), 0),\
+              "Tier " . target_tier . " too big</size>",\
+              "go</size>"\
+            )\
           )\
         )\
       )\
