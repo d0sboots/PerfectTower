@@ -38,7 +38,7 @@ Add error-handling for if target_type is changed by name instead of by value,
 as well as running without modifying target_type.
 
 ```
-Bundle size: 79789   Scripts: 10   Max lines: 16
+Bundle size: 79729   Scripts: 10   Max lines: 16
 ```
 
 ### V2.1.1

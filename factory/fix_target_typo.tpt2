@@ -68,16 +68,13 @@ next_loop:
 ; so that the game stays somewhat responsive.
 turbo.cycles.max = max(turbo.cycles.max, 3000)
 
-; We swap the terms around by using subscripting. The seemingly "unneeded"
-; max(... , 0) is to guard against an exception that is thrown when index()
-; returns -1; because if() doesn't early-out, the contains-test doesn't actually
-; guard against it.
+; We swap the terms around by using subscripting.
 test_str = if(\
   contains(test_str, "_"),\
-  sub(test_str, index(test_str, "_", 0) + 1, 99) . "_" . sub(test_str, 0, max(index(test_str, "_", 0), 0)),\
+  sub(test_str, index(test_str, "_", 0) + 1, 99) . "_" . sub(test_str, 0, index(test_str, "_", 0)),\
   if(\
     contains(test_str, "."),\
-    sub(test_str, index(test_str, ".", 0) + 1, 99) . "." . sub(test_str, 0, max(index(test_str, ".", 0), 0)),\
+    sub(test_str, index(test_str, ".", 0) + 1, 99) . "." . sub(test_str, 0, index(test_str, ".", 0)),\
     test_str\
   )\
 )
