@@ -15,8 +15,8 @@ When setting up the editor, I suggest creating two new workspaces: One for the t
 Import the main files in this order, so that the eventual bundle export is consistent:
 
 `launch factory craft 1 1 13`<br>
-`D0S.factory 2 1 11`<br>
-`run_recipes 0 0 13`<br>
+`init 2 1 11`<br>
+`run_recipes 0 0 15`<br>
 `produce 0 0 16`<br>
 `produce dust 0 0 16`<br>
 `produce plates 0 0 14`<br>
@@ -29,16 +29,19 @@ Import the main files in this order, so that the eventual bundle export is consi
 
 ### V2.2.0
 
-Group everything into a package, for convenience and orginazation.
+The "more helpful errors" release.
 
-Add spell-check support (contributed by cl1694) to suggest correct item-name
-spellings when the item can't be found.
+* Add spell-check support (contributed by cl1694) to suggest correct item-name
+  spellings when the item can't be found.
+* Add error-handling for if target_type is changed by name instead of by value,
+  as well as running without modifying target_type.
+* Finally add checking for insufficient ore/rubber at startup, and show errors
+  instead of uptiering needlessly.
 
-Add error-handling for if target_type is changed by name instead of by value,
-as well as running without modifying target_type.
+Also group everything into a package, for convenience and orginazation.
 
 ```
-Bundle size: 79729   Scripts: 10   Max lines: 16
+Bundle size: 81073   Scripts: 10   Max lines: 16
 ```
 
 ### V2.1.1

@@ -10,9 +10,6 @@
 :local int loop_pos
 :local int table_pos
 
-;the package error text
-#error "<color=white><size=20>error"
-
 ; Main data table. This is all the items, delimited by |. It also includes the
 ; game_names of the items, except when they would be redundant. (Either identical
 ; to the regular name, or unneeded because the order-swapping we'll do will

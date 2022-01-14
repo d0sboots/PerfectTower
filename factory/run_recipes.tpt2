@@ -245,6 +245,10 @@
 :local int i
 :local string loop_data
 
+; Uncomment this for debugging. It needs to be before the data-hiding block.
+; Also uncomment the line below.
+;gss("debug", "")
+
 gss({data_name}, {get_data(4)})
 loop:
 
@@ -296,7 +300,10 @@ global.double.set({queue_str} . {recipe_item},\
     )\
   )\
 )
-i = i + 1 ;+ d2i(count({recipe_item} . " " . gdg({queue_str} . {recipe_item}), 1))
+i = i + 1
+; Uncomment this line for debugging. It will show the quantities and ids of all
+; items that need to be produced. You will also need to enable another line above.
+;gss("debug", gsg("debug") . if(gdg({queue_str} . {recipe_item}) > 0., "<br>" . {recipe_item} . " " . gdg({queue_str} . {recipe_item}), ""))
 gotoif(loop, i < {recipe_limit})
 
 ; We use a global variable when a local variable would do just fine,
@@ -317,4 +324,24 @@ nolumps:
 _tier -= 1
 gotoif(tierloop, _tier > 0)
 
+; If we're missing the resources needed to complete the recipe, set error.
+gss(\
+  {error},\
+  if(\
+    {get_queue(1, ore)} * 2. < {get_queue(1, dust)},\
+    "<line-height=20>Missing " . ({get_queue(1, dust)} - {get_queue(1, ore)} * 2.) . " T1 dust<br>and/or higher tier dust/ore!</line-height></size></color>",\
+    if(\
+      {get_queue(1, rubber)} > 0.,\
+      "<line-height=20>Missing " . {get_queue(1, rubber)} . " rubber!</line-height></size></color>",\
+      ""\
+    )\
+  )\
+)
+
+; This must come before the unset, to avoid ordering mishaps.
 gss("fhide2", "</line-height></size>")
+
+; If there's an error, unset target to cancel crafting and clean up future
+; iterations. (This leaves some mess behind if the target is changed to something
+; else without resetting AI, but it should be good enough.)
+global.unset(if(gsg({error}) == "", {error}, {queue_str} . (100 + factory_target)))

@@ -46,7 +46,6 @@ isopen("factory")
   acc[#acc + 1] = '"';\
   return table.concat(acc);\
 )}
-#error "<color=white><size=20>error"
 
 #entry_size {lua(return factory.entry_size)}
 
