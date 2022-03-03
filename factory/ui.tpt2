@@ -1,0 +1,261 @@
+:import factory constants
+
+:name {script_name(ui)}
+
+:local double count
+:local int visible_tier
+:local int tier
+:local int item
+:local int cursor
+
+:global int turbo.cycles
+:global int turbo.register
+:global int factory_target
+:global double factory_target_amount
+
+key.{start}()
+
+;isopen("factory")
+
+; Because of how turbo exec works, we can't launch turbo on the frame the script
+; starts by calling "turbo start", if we are being called from another script.
+; We can only do it by changing turbo.register directly, saving a layer of
+; script execution.
+; (This is because of the relative positioning of TE.turbo vs our script;
+; usually we would be before, but when we are first launched our script is after.)
+turbo.register += 1
+
+; =================================================================================
+; This part of the script will find a slot in the pool of workers to use as
+; "permanent storage". If one doesn't already exist with the given tag, a new one
+; will be allocated, *but* it will avoid overwriting other worker names using the
+; same sytem of tags for storage. Thus, scripts can use this to cooperate without
+; having to explicitly assign worker slot numbers.
+
+; The prefix to use. The square brackets are required, because this is how data
+; for other scripts are identified.
+#worker_prefix [factory]
+
+; This is the location that is ultimately chosen. If worker_slot < 100, then
+; it found a valid slot with the {worker_prefix}. If 100 <= worker_slot < 200,
+; then there was no existing slot, but new data can be initialized at
+; (worker_slot - 100). If worker_slot == 200, then there are no available slots
+; at all, and you should show an error message or take approriate action.
+:local int worker_slot
+
+#worker_lacks_prefix sub(worker.name(worker_slot), 0, {len({worker_prefix})}) != "{worker_prefix}"
+
+find_slot_loop:
+; We don't want to skip slot 0. Doing it like this saves a line.
+worker_slot = worker_slot + if({worker_lacks_prefix}, 1, 0)
+
+; The test against worker.group() checks for non-existant workers. They would
+; otherwise show as acceptable candidates, and we need to keep iterating to 200
+; in that case.
+gotoif(find_slot_loop,\
+  worker_slot < 100 && {worker_lacks_prefix} ||\
+  worker_slot >= 100 && worker_slot < 200 && (worker.group(worker_slot - 100) == -1 || sub(worker.name(worker_slot - 100), 0, 1) == "["))
+
+; End storage-slot-finding part
+; =================================================================================
+
+; Split out the worker data into separate variables. We take advantage of this
+; time to also perform increment/decrement, since we can easily combine it in
+; this stage. We don't bother checking if we've got a valid slot, because if we
+; don't, we'll simply fail to parse and get the fallback value.
+cursor = s2i(sub(worker.name(worker_slot), {len({worker_prefix})} + 11, 1), 2)
+#action_num s2i(gsg({action}), 0)
+count = min(99999999., max(1.,\
+  s2d(sub(worker.name(worker_slot), {len({worker_prefix})}, 8), 1.) +\
+  if(impulse() == "{script_name(u/d)}", i2d({action_num} * 10^(cursor - 2)), 0.)\
+))
+; Items in this variable are zero-indexed, as opposed to their regular ids, which
+; start from 1.
+item = (s2i(sub(worker.name(worker_slot), {len({worker_prefix})} + 9, 2), 0) +\
+  if(impulse() == "{script_name(u/d)}" && cursor == 0, {action_num}, 0) +\
+  {lua(return #factory.items)}) % {lua(return #factory.items)}
+
+; Now the secondary processing: Adjust item if we pressed right while cursor=0,
+; to do category skipping, and then adjust cursor after. We don't need to worry
+; about adjusting tier after doing this, because tier won't change from pressing
+; right, only visible_tier (which is a macro based on tier and item).
+#category_stops {lua(\
+  local items = factory.item_names\
+  local stops = {}\
+  stops[items["white_producer"].id - 1] = 'x'\
+  stops[items["oven"].id - 1] = 'x'\
+  stops[items["chip"].id - 1] = 'x'\
+  stops[items["producers"].id - 1] = 'x'\
+  stops[items["ingot"].id - 1] = 'x'\
+  for i = 1, #factory.items + 1 do\
+    stops[i] = stops[i] or ' '\
+  end\
+  return table.concat(stops)\
+)}
+
+; We use a lua-generated string of the form "    x    x   x   " to find where to
+; jump to; each "x" represents a stop-point. We add one afterwards, which both
+; advances past the stop point, and also sets the value back to zero when we are
+; at the end, since "not found" returns -1. The stop points have been adjusted
+; back by one already to account for this.
+item = if(impulse() == "{script_name(l/r)}" && cursor == 0 && {action_num} == -1,\
+  index("{category_stops}", "x", item) + 1,\
+  item)
+cursor = min(9, max(0, cursor + if(impulse() == "{script_name(l/r)}", {action_num}, 0)))
+
+; The distinction between "tier" and "visible_tier" has to do with the fact that
+; items have different tier maximums. When a user is scrolling through different
+; items, if the "tier" is T10 (represented as "9" in our zero-indexed scheme),
+; then the "visible_tier" will change to fit the maximum tier for the item, while
+; the tier remains at T10. However, if the item is a producer (max of T5), and
+; the user moves the cursor to the tier field and presses "W", the attempt to
+; increment "tier" will fix it at a new value of T5 (4).
+#tier_data {lua(\
+  local acc = {};\
+  for i = 1, #factory.items do\
+    local item = factory.items[i];\
+    acc[i] = string.format("%d", item.tier - 1);\
+  end\
+  return table.concat(acc)\
+)}
+; Is the current tier changing? (The actual value might not change, but the user
+; is at least trying to change it.)
+#is_changing_tier (impulse() == "{script_name(u/d)}" && cursor == 1)
+
+; Expression to load the saved tier data from the worker name, including
+; a default value when there is no data.
+#saved_worker_tier s2i(sub(worker.name(worker_slot), {len({worker_prefix})} + 8, 1), 0)
+
+; It makes the most sense to set visible_tier first. There is a complication
+; when adjusting the tier down; in this case, we reduce the maximum bounds by
+; one, so that (for instance) if the max tier is T5, and the current tier is T10,
+; we'll properly clip the visible_tier to T4 after subtracting 1 to get T9.
+; This type of adjustment isn't needed (or wanted) in the other direction, or
+; when the tier isn't changing.
+visible_tier = max(0,\
+  min(s2i(sub("{tier_data}", item, 1), 9) +\
+      if({is_changing_tier} && {action_num} == -1, -1, 0),\
+    {saved_worker_tier} + if({is_changing_tier}, {action_num}, 0)\
+  )\
+)
+tier = if({is_changing_tier}, visible_tier, {saved_worker_tier})
+
+; Finally, construct the visible name for use in the variable.
+{lua(\
+  local names = {}\
+  local name_sizes = {}\
+  local group_suffix = " (group)"\
+  local size = 0\
+  for i = 1, #factory.items do\
+    local item = factory.items[i]\
+    local name_size = #item.name\
+    if item.craft_type == "group" then\
+      name_size = name_size + #group_suffix\
+    end\
+    if name_size > size then size = name_size end\
+  end\
+  local fmt = "%-" .. size .. "s"\
+  for i = 1, #factory.items do\
+    local item = factory.items[i]\
+    local name = item.name\
+    if item.craft_type == "group" then\
+      name = name .. group_suffix\
+    end\
+    names[i] = string.format(fmt, name)\
+    name_sizes[i] = string.format("%02d", #name)\
+  end\
+  factory.name_data = table.concat(names)\
+  factory.name_sizes = table.concat(name_sizes)\
+  factory.items_count = #factory.items\
+  factory.entry_size = size\
+)}
+#name_data {lua(return factory.name_data)}
+#name_sizes {lua(return factory.name_sizes)}
+#entry_size {lua(return factory.entry_size)}
+
+; Set this variable in order to begin a variable-hiding block.
+; It looks like a no-op, but really we're ensuring that it has a slot in the
+; globals table, even if its value empty - in this case, what we care about
+; is the *name*, which starts with "<size=0>".
+; Do this *after* all the other work, to give turbo register time to
+; set its variables, in case we're doing this right at startup.
+gss({action}, gsg({action}))
+
+; Do conditional stuff, depending on if we're launching the factory.
+; We set all these variables always, so that they'll have a consistent order,
+; and also to save lines instead of jumping over this block.
+
+; This (maybe) launches the factory. We need to do it soon enough to not
+; interrupt turbo, see the comment on "turbo stop", below.
+factory_target_amount = if(impulse() == "key.{start}" && factory_target == 0,\
+  count, 0.)
+
+; Only set factory_target if it's zero, which indicates that the factory is idle.
+; This prevents repeated keypresses from messing things up.
+factory_target = if(impulse() == "key.{start}" && factory_target == 0,\
+  (item + 1) * 10 + visible_tier,\
+  factory_target)
+
+; Construct the status line. There's a *lot* that goes into this.
+;
+; For starters, we fake the variable - it's not really "make", but rather a
+; totally different variable that's less likely to collide. The true variable name
+; is never seen, because it's still part of the <size=0> block. We put our fake
+; variable name after. We do all this so that we can "unset" the variable by
+; just changing its value - this way, it's not truly unset, and we don't have
+; issues with variable ordering as a result.
+;
+; This also means we can change the variable name to something else, like
+; "error", if we need to, all without actually creating a new variable or
+; changing ordering.
+;
+; All the clauses are dynamically created on the fly here. We also create the
+; "cursor" by highlighting a specific part of the result in green. This involves
+; a great deal more complexity.
+#curs_col 2f4
+
+gss({status}, if(\
+  worker_slot == 200,\
+  "</size>error=<color=#fb3>No available workers!</color>",\
+  if(\
+    turbo.cycles == 0,\
+    "</size>error=<color=#fb3>Turbo exec is not working</color>",\
+    "</size>make=<color=#fff>" .\
+    sub(d2s(100000000. + count), 1, 9 - cursor) .\
+    "</color><color=#{curs_col}>".\
+    sub(d2s(100000000. + count), 10 - cursor, 1) .\
+    "</color><color=#fff>".\
+    sub(d2s(100000000. + count), 11 - cursor, 10) .\
+    "<smallcaps>x</smallcaps></color><color=#" .\
+    if(cursor == 1, "{curs_col}>T", "fff>T") .\
+    (visible_tier + 1) .\
+    if(cursor == 0, "</color><br><color=#{curs_col}>", "</color><br><color=#fff>") .\
+    sub("{name_data}", item * {entry_size},\
+      s2i(sub("{name_sizes}", item * 2, 2), 0)) .\
+    "<br></color>" . if(\
+      impulse() == "{script_name(init)}" && contains(gsg({action}), "<"),\
+      gsg({action}),\
+      if(\
+        factory_target == 0,\
+        "<color=#0df>{up}{left}{down}{right} moves, {start} crafts</color> ",\
+        "<color=#ff0>Crafting...</color>"\
+      )\
+    )\
+  )\
+))
+
+; "init" will take over as soon as factory_target_amount gets set 3 lines
+; above; it will call its own "turbo start" and thus prevent the frame from
+; ending before this "turbo stop" takes effect.
+; We need two cycles in-between to have a seamless transition.
+executesync("turbo stop")
+
+; Setting the data back in the worker is moved way down to the bottom, to function
+; as the "filler" action that can be repeated while the script is waiting for
+; the frame to end. We can't use of the actions the set global variables for this,
+; because they may need to be modified later in the frame, and thus setting them
+; here in a loop would overwrite the value.
+worker.setName(if(worker_slot < 100, worker_slot, worker_slot - 100),\
+  "{worker_prefix}" . sub(d2s(100000000. + count), 1, 8) . tier .\
+  sub(i2s(100 + item), 1, 2) . cursor\
+)

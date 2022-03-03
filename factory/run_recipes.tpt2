@@ -326,13 +326,13 @@ gotoif(tierloop, _tier > 0)
 
 ; If we're missing the resources needed to complete the recipe, set error.
 gss(\
-  {error},\
+  {action},\
   if(\
     {get_queue(1, ore)} * 2. < {get_queue(1, dust)},\
-    "<line-height=20>Missing " . ({get_queue(1, dust)} - {get_queue(1, ore)} * 2.) . " T1 dust<br>and/or higher tier dust/ore!</line-height></size></color>",\
+    "<color=#fb3>Missing " . ({get_queue(1, dust)} - {get_queue(1, ore)} * 2.) . " T1 dust<br>and/or higher tier dust/ore!</color>",\
     if(\
       {get_queue(1, rubber)} > 0.,\
-      "<line-height=20>Missing " . {get_queue(1, rubber)} . " rubber!</line-height></size></color>",\
+      "<color=#fb3>Missing " . {get_queue(1, rubber)} . " rubber!</color>",\
       ""\
     )\
   )\
@@ -344,4 +344,8 @@ gss("fhide2", "</line-height></size>")
 ; If there's an error, unset target to cancel crafting and clean up future
 ; iterations. (This leaves some mess behind if the target is changed to something
 ; else without resetting AI, but it should be good enough.)
-global.unset(if(gsg({error}) == "", {error}, {queue_str} . (100 + factory_target)))
+{set_raw(factory_target, if(\
+  contains(gsg({action}), "<"),\
+  0.,\
+  {get_raw(factory_target)}\
+))}

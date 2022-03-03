@@ -1,6 +1,6 @@
 :import factory macros
 
-#version v2.2.0
+#version v2.9.9
 
 ; Everything in the list below is a valid target for automation, and can be
 ; assigned to the "target_type" variable in "lanuch factory craft".
@@ -40,13 +40,13 @@
 
 ; Machines, tiers 1-10
 {make(oven, 10, "machine.oven")}
-{make(presser, 10, "machine.presser")}
 {make(assembly, 10, "machine.assembler")}
 {make(refiner, 10, "machine.refinery")}
-{make(mixer, 10, "machine.mixer")}
 {make(crusher, 10, "machine.crusher")}
-{make(belt, 10, "machine.transportbelt")}
 {make(cutter, 10, "machine.cutter")}
+{make(presser, 10, "machine.presser")}
+{make(mixer, 10, "machine.mixer")}
+{make(belt, 10, "machine.transportbelt")}
 {make(shaper, 10, "machine.shaper")}
 {make(boiler, 10, "machine.boiler")}
 
@@ -54,12 +54,12 @@
 {make(chip, 5, "chip")}
 
 ; Various crafted parts
-{make(insul_cable, 10, "cable.insulated")}
-{make(stacked_plate, 10, "plate.stack")}
+{make(block, 10, "block")}
 {make(motor, 10, "motor")}
 {make(pump, 10, "pump")}
+{make(stacked_plate, 10, "plate.stack")}
 {make(hammer, 1, "hammer")}
-{make(block, 10, "block")}
+{make(insul_cable, 10, "cable.insulated")}
 {make(rubber_sapling, 1, "sapling.rubber")}
 
 ; Transforms ore into dust, tiers 1-10
@@ -121,34 +121,36 @@
 
 ; ----- INGREDIENTS AND PRODUCED PARTS -----
 
+; Parts, tiers 1-10
+{item(ingot, 10, "ingot")}
+
+{item(circuit, 10, "circuit")}
+
+{item(cable, 10, "cable")}
+{item(wire, 10, "wire")}
+{item(board, 10, "plate.circuit")}
+
+;Tries to make dust from ores and lower-tier dusts, tiers 1-10
+{item(dust, 10, "dust")}
+
+{item(screw, 10, "screw")}
+
+{item(rubber_plate, 1, "plate.rubber")}
+{item(plate, 10, "plate")}
+{item(dense_plate, 10, "plate.dense")}
+
 ; Tiers up dust, tiers 1-9
 ; These are ore lumps, plus putting them into the mixer.
 ; There is no "only make ore lumps, without mixing them" option right now.
 {special(lump, 9, "lump")}
 
-;Tries to make dust from ores and lower-tier dusts, tiers 1-10
-{item(dust, 10, "dust")}
-
-; Parts, tiers 1-10
-{item(ingot, 10, "ingot")}
-
-{item(plate, 10, "plate")}
-{item(dense_plate, 10, "plate.dense")}
-{item(dense_block, 10, "block.dense")}
-{item(pipe, 10, "pipe")}
-
-{item(cable, 10, "cable")}
-{item(wire, 10, "wire")}
-
 {item(rod, 10, "rod")}
 {item(ring, 10, "ring")}
-{item(screw, 10, "screw")}
+{item(pipe, 10, "pipe")}
 
-{item(board, 10, "plate.circuit")}
-{item(circuit, 10, "circuit")}
+{item(dense_block, 10, "block.dense")}
 
 ; Rubber, tier 1 only
 {item(rubber, 1, "rubber")}
-{item(rubber_plate, 1, "plate.rubber")}
 
 ; ===== END OF VALID IDS =====

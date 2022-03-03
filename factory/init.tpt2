@@ -7,13 +7,16 @@ open.factory()
 
 isopen("factory")
 
-:global string factory_launch
+:global double factory_target_amount
 :global int factory_target
 
 :global int turbo.cycles
 :global int turbo.cycles.max
 
 :local double target_value
+
+; Run the UI, to display the current pending item.
+execute("{script_name(ui)}")
 
 ; Initial dispatch on entering the factory to determine if we are resuming
 ; a crafting operation or waiting to launch a new one. This is done outside
@@ -43,14 +46,21 @@ turbo.cycles.max = max(turbo.cycles.max, turbo.cycles + 4000)
 target_value = {get_raw(factory_target)}
 
 ; All conditional execution in the loop is behind this condition. If it
-; is true, then we're here because of `launch factory craft`. Otherwise,
+; is true, then we're here because of `ui`. Otherwise,
 ; this is a regular crafting iteration.
-factory_launch = if(target_value == 0., "</size>", factory_launch)
+executesync(if(target_value <= 0., "{script_name(run_recipes)}", "{script_name(produce)}"))
+stop(if(target_value <= 0., "{script_name(run_recipes)}", "{script_name(produce)}"))
+executesync(if(target_value <= 0., "", "{script_name(craft)}"))
+stop(if(target_value <= 0., "", "{script_name(craft)}"))
 
-executesync(if(target_value == 0., "{script_name(run_recipes)}", "{script_name(produce)}"))
-stop(if(target_value == 0., "{script_name(run_recipes)}", "{script_name(produce)}"))
-executesync(if(target_value == 0., "", "{script_name(craft)}"))
-stop(if(target_value == 0., "", "{script_name(craft)}"))
+; Clear factory_target to indicate that crafting is done, if it is, in fact, done.
+factory_target = if({get_raw(factory_target)} <= 0., 0, factory_target)
+; Re-display the UI when crafting is done.
+execute(if(factory_target == 0, "{script_name(ui)}", ""))
+
+; Clear this (unconditionally), to signal that we're not starting a new crafting
+; pass.
+factory_target_amount = 0.
 
 executesync("turbo stop")
 
@@ -60,11 +70,14 @@ executesync("turbo stop")
 ; is enough time to execute this goto and have only a single frame break
 ; before starting turbo again at the top of the loop.
 wait_loop:
-goto(if(isopen("factory") == false, 99,\
-     if({get_raw(factory_target)} > 0. || factory_launch == "go</size>",\
-       begin_cycle, wait_loop\
-     )\
-))
+gotoif(\
+  if(max(factory_target_amount, {get_raw(factory_target)}) > 0.,\
+    begin_cycle, wait_loop\
+  ),\
+  isopen("factory")\
+)
 
-; If we are exiting, the condition on the last line will keep jumping
-; us to line 99, so it is safe to end without a trailing no-op.
+; Remove the UI status so it doesn't clutter the variables when we're outside the
+; factory.
+; This is safe to repeat, when turbo is looping at the end of the script.
+gss({status}, "</size>")
