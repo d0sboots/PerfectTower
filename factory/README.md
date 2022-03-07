@@ -14,8 +14,6 @@ When setting up the editor, I suggest creating two new workspaces: One for the t
 
 Import the main files in this order, so that the eventual bundle export is consistent:
 
-`launch factory craft 1 1 13`<br>
-`init 2 1 11`<br>
 `run_recipes 0 0 15`<br>
 `produce 0 0 16`<br>
 `produce dust 0 0 16`<br>
@@ -23,9 +21,26 @@ Import the main files in this order, so that the eventual bundle export is consi
 `produce circuits 0 0 10`<br>
 `produce misc 0 0 13`<br>
 `craft 0 0 12`<br>
-`fix target typo 0 0 16`<br>
+`init 2 1 15`<br>
+`u/d 2 1 2`<br>
+`l/r 2 1 2`<br>
+`ui 1 0 16`<br>
 
 ## Changelog
+
+### V3.0.0
+
+The UI rewrite.
+
+* Editing "launch factory craft" is gone. (That whole script is gone.)
+* There is now a shiny new UI, which is navigated with WASD. Items, tiers, and
+  quantities are selected on-screen dynamically. The selections are remembered
+  across AI restarts by using worker-name storage.
+* More robust checking for when Turbo Exec isn't functioning.
+
+```
+Bundle size: 77734   Scripts: 11   Max lines: 16
+```
 
 ### V2.2.0
 
