@@ -42,6 +42,7 @@ HkQwUy5mYWN0b3J5IHYyLjkuOTpydW5fcmVjaXBlcwAAAAAAAAAADwAAABFnbG9iYWwuc3RyaW5nLnNl
 To use this, import and enable all the scripts in both this package and `turbo exec`. (You can right-click a package to quick-toggle-enable the whole package.) Then go to the factory and use WASD to select a quantity, tier and item.
 Pressing right (D) when the item is highlighted will quick-skip through
 categories, for faster navigation. Press "F" to craft when you're ready.
+
 #### Basic Features
 
 The package will prioritize using items already present in your inventory instead of crafting new ones, and it will always leave at least one dust of each tier.
@@ -61,8 +62,12 @@ You can safely leave the factory and come back while the scripts are running, th
 "Item groups" are added to allow quickly crafting large batches of items, for scanning in the Crafter. Some of them take a lot of space and/or time, especially the "all"
 group, so use with caution. (Maybe try out the narrower groups first.)
 
-Because this is a fork of Xenos' factory AI, many of the scripts have the same names. It **cannot** exist side-by-side with original Xenos; delete or at least disable the other
-package first. Also, it is not compatible with the "fast-scan" utility; if you try to use it nothing will happen. (But that functionality is built-in via item groups anyway.)
+This uses the names of workers to store state about what item/tier is
+selected, so that it survives across restarts. By default, it will overwrite
+the first worker name, replacing it with "[factory]" followed by some numbers.
+If you want it to be in a different slot, put the "[factory]" tag there and
+get rid of it in the old location. It also won't ever overwrite a location
+that starts with a "[" (open-bracket).
 
 ## Auto mining script V2
 This script mines across all tabs, at 16x speed (i.e. all squares simultaneously). It takes 181 frames, or ~1.5 seconds to mine 10 layers * 12 tabs at the default 120 FPS (with vsync disabled). However, the amount of floating text often drops the framerate lower, such that it takes longer. The max actions required is __9__, which should be accessible to everyone. Using this with turbo exec will take the roughly the same amount of real time, but cause the game to lag until the mining is finished.
