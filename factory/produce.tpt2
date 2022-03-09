@@ -6,6 +6,17 @@
 
 :local double previous_amount
 
+key.{left}()
+key.{right}()
+
+isopen("factory")
+
+; If we were launched via key impulse, invoke the UI immediately to start turbo,
+; and set action to signal which key was pressed. Otherwise, we're being called
+; as a produce script.
+execute(if(contains(impulse(), "key."), "{script_name(ui)}", ""))
+gotoif(end, contains(impulse(), "key."))
+
 previous_amount = count("rubber", 1)
 produce("rubber", 1, {get_queue(1, rubber_plate)}, "presser")
 {subtract_queue(1, rubber_plate, (previous_amount - count("rubber", 1)))}
@@ -19,8 +30,6 @@ gotoif(nexttier, _tier > 3 & {get_queue((_tier - 2) / 2, chip)} > 0. | _tier > 4
 
 executesync("{script_name(produce circuits)}")
 stop("{script_name(produce circuits)}")
-executesync("{script_name(produce misc)}")
-stop("{script_name(produce misc)}")
 executesync("{script_name(produce plates)}")
 stop("{script_name(produce plates)}")
 
@@ -28,4 +37,13 @@ nexttier:
 _tier += 1
 gotoif(tierloop, _tier < 11)
 
-wait(0.0)
+end:
+gss({action}, if(\
+ contains(impulse(), "key."),\
+ if(\
+   contains(impulse(), "key.{left}"),\
+   "1",\
+   "-1"\
+ ),\
+ gsg({action})\
+))

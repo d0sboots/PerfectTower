@@ -1,6 +1,6 @@
 :import factory macros
 
-#version v2.9.9
+#version v3.0.0
 
 ; Everything in the list below is a valid target for automation, and can be
 ; assigned to the "target_type" variable in "lanuch factory craft".
@@ -12,6 +12,8 @@
 ; If you add or change this list, mind this constraint:
 ; * All the crafted items have to come before the rest of the items.
 ; * All the item-groups must be in a single block.
+; * Prefer keeping things in alphabetical order within categories, because
+;   they are ordered the same way when presented in-game.
 
 ; ===== VALID IDS =====
 
@@ -20,51 +22,55 @@
 ; ----- CRAFTED ITEMS -----
 
 ; Producers, tiers 1-5
-{make(white_producer, 5, "producer.town")}
-{make(red_producer, 5, "producer.factory")}
-{make(orange_producer, 5, "producer.mine")}
+; Special producers, tier 1 only
+{make(black_producer, 5, "producer.statueofcubos")}
 {make(blue_producer, 5, "producer.workshop")}
 {make(brown_producer, 5, "producer.constructionFirm")}
-{make(green_producer, 5, "producer.laboratory")}
-{make(purple_producer, 5, "producer.headquarters")}
-{make(yellow_producer, 5, "producer.powerplant")}
-{make(pink_producer, 5, "producer.arcade")}
-{make(lightblue_producer, 5, "producer.tradingpost")}
 {make(cyan_producer, 5, "producer.shipyard")}
-{make(grey_producer, 5, "producer.museum")}
-{make(black_producer, 5, "producer.statueofcubos")}
-
-; Special producers, tier 1 only
-{make(gem_producer, 1, "producer.gems")}
 {make(exotic_producer, 1, "producer.exoticgems")}
+{make(gem_producer, 1, "producer.gems")}
+{make(green_producer, 5, "producer.laboratory")}
+{make(grey_producer, 5, "producer.museum")}
+{make(lightblue_producer, 5, "producer.tradingpost")}
+{make(orange_producer, 5, "producer.mine")}
+{make(pink_producer, 5, "producer.arcade")}
+{make(purple_producer, 5, "producer.headquarters")}
+{make(red_producer, 5, "producer.factory")}
+{make(white_producer, 5, "producer.town")}
+{make(yellow_producer, 5, "producer.powerplant")}
+
+{category(prod, white_producer, black_producer, yellow_producer)}
 
 ; Machines, tiers 1-10
-{make(oven, 10, "machine.oven")}
 {make(assembly, 10, "machine.assembler")}
-{make(refiner, 10, "machine.refinery")}
+{make(belt, 10, "machine.transportbelt")}
+{make(boiler, 10, "machine.boiler")}
 {make(crusher, 10, "machine.crusher")}
 {make(cutter, 10, "machine.cutter")}
-{make(presser, 10, "machine.presser")}
 {make(mixer, 10, "machine.mixer")}
-{make(belt, 10, "machine.transportbelt")}
+{make(oven, 10, "machine.oven")}
+{make(presser, 10, "machine.presser")}
+{make(refiner, 10, "machine.refinery")}
 {make(shaper, 10, "machine.shaper")}
-{make(boiler, 10, "machine.boiler")}
 
-; Chips, tier 1-5
-{make(chip, 5, "chip")}
+{category(mach, belt, assembly, shaper)}
 
 ; Various crafted parts
 {make(block, 10, "block")}
-{make(motor, 10, "motor")}
-{make(pump, 10, "pump")}
-{make(stacked_plate, 10, "plate.stack")}
+{make(chip, 5, "chip")}
 {make(hammer, 1, "hammer")}
 {make(insul_cable, 10, "cable.insulated")}
+{make(motor, 10, "motor")}
+{make(pump, 10, "pump")}
 {make(rubber_sapling, 1, "sapling.rubber")}
+{make(stacked_plate, 10, "plate.stack")}
+
+{category(crft, chip, block, stacked_plate)}
 
 ; Transforms ore into dust, tiers 1-10
 ; Because of an implementation detail, this must come before any
 ; scannable items.
+; This doesn't show up in any category in the UI.
 {special(ore, 10, "ore")}
 
 ; ----- SCANNABLE ITEM GROUPS -----
@@ -85,9 +91,19 @@
 ;     expensive in comparison to other things, craft them on your own when you
 ;     judge the time is right.
 
+; Makes *everything* (expect special producers and lumps) of the given tier.
+; This is the combination of "chips_and_prods", "machines", and "parts".
+; Requires x10 and high processing speed to have a hope of completing in a
+; reasonable amount of time for T5 and T10.
+; You need Quantum Warehouse to have enough space for this at higher tiers!
+{group(all, 10)}
 
-; All producers, except for special producers. Tiers 1-5
-{group(producers, 5)}
+; All the tiers of chips. Warning: Expensive. Input this as tier 1.
+{group(chips, 1)}
+
+; Producers + the chip of the corresponding tier. This is everything that
+; exists in tier range 1-5, for convenience.
+{group(chip_and_prods, 5)}
 
 ; All machines. Tiers 1-10
 {group(machines, 10)}
@@ -99,58 +115,42 @@
 ; Rubber trees are at tier 9 because of their ore.
 {group(parts, 10)}
 
-; All the tiers of chips. Warning: Expensive. Input this as tier 1.
-{group(chips, 1)}
+; All producers, except for special producers. Tiers 1-5
+{group(producers, 5)}
 
-; Producers + the chip of the corresponding tier. This is everything that
-; exists in tier range 1-5, for convenience.
-{group(chip_and_prods, 5)}
-
-; Machines + parts. This is everything that exists in tier range 1-10
-; (plus a few oddballs), for convenience. T1 Pressers are bumped up to
-; tier 2, so that they can be scanned immediately instead of being stuck
-; waiting for hammers.
-{group(machines_and_parts, 10)}
-
-; Makes *everything* (expect special producers and lumps) of the given tier.
-; This is the combination of "chips_and_prods" and "machines_and_parts".
-; Requires x10 and high processing speed to have a hope of completing in a
-; reasonable amount of time for T5 and T10.
-; You need Quantum Warehouse to have enough space for this at higher tiers!
-{group(all, 10)}
+{category(grup, all, all, producers)}
 
 ; ----- INGREDIENTS AND PRODUCED PARTS -----
 
 ; Parts, tiers 1-10
-{item(ingot, 10, "ingot")}
-
-{item(circuit, 10, "circuit")}
-
-{item(cable, 10, "cable")}
-{item(wire, 10, "wire")}
 {item(board, 10, "plate.circuit")}
+{item(cable, 10, "cable")}
+{item(circuit, 10, "circuit")}
+{item(dense_block, 10, "block.dense")}
+{item(dense_plate, 10, "plate.dense")}
+{item(ingot, 10, "ingot")}
+{item(pipe, 10, "pipe")}
+{item(plate, 10, "plate")}
+{item(ring, 10, "ring")}
+{item(rod, 10, "rod")}
+{item(rubber_plate, 1, "plate.rubber")}
+{item(screw, 10, "screw")}
+{item(wire, 10, "wire")}
+
+{category(part, circuit, board, wire)}
 
 ;Tries to make dust from ores and lower-tier dusts, tiers 1-10
+; Doesn't appear in the UI
 {item(dust, 10, "dust")}
-
-{item(screw, 10, "screw")}
-
-{item(rubber_plate, 1, "plate.rubber")}
-{item(plate, 10, "plate")}
-{item(dense_plate, 10, "plate.dense")}
 
 ; Tiers up dust, tiers 1-9
 ; These are ore lumps, plus putting them into the mixer.
 ; There is no "only make ore lumps, without mixing them" option right now.
+; Doesn't appear in the UI
 {special(lump, 9, "lump")}
 
-{item(rod, 10, "rod")}
-{item(ring, 10, "ring")}
-{item(pipe, 10, "pipe")}
-
-{item(dense_block, 10, "block.dense")}
-
 ; Rubber, tier 1 only
+; Doesn't appear in the UI
 {item(rubber, 1, "rubber")}
 
 ; ===== END OF VALID IDS =====

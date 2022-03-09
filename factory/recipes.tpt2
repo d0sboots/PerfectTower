@@ -445,7 +445,6 @@
 {component(0, chip, 1)}
 {recipe_producers(1)}
 
-{recipe(machines_and_parts)}
 #recipe_machines_and_parts \
 {component(0, oven, 1)}\
 {component(1, presser, 0 1 0 0 0 0 0 0 0 0)}\
@@ -459,7 +458,6 @@
 {component(0, shaper, 1)}\
 {component(0, boiler, 1)}\
 {recipe_parts}
-{recipe_machines_and_parts}
 
 {recipe(all)}
 {component(0, chip, 1 1 1 1 1 0 0 0 0 0)}

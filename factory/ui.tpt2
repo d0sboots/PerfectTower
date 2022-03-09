@@ -5,6 +5,7 @@
 :local double count
 :local int visible_tier
 :local int tier
+:local int category
 :local int item
 :local int cursor
 
@@ -63,45 +64,85 @@ gotoif(find_slot_loop,\
 ; time to also perform increment/decrement, since we can easily combine it in
 ; this stage. We don't bother checking if we've got a valid slot, because if we
 ; don't, we'll simply fail to parse and get the fallback value.
-cursor = s2i(sub(worker.name(worker_slot), {len({worker_prefix})} + 11, 1), 2)
-#action_num s2i(gsg({action}), 0)
-count = min(99999999., max(1.,\
-  s2d(sub(worker.name(worker_slot), {len({worker_prefix})}, 8), 1.) +\
-  if(impulse() == "{script_name(u/d)}", i2d({action_num} * 10^(cursor - 2)), 0.)\
-))
-; Items in this variable are zero-indexed, as opposed to their regular ids, which
-; start from 1.
-item = (s2i(sub(worker.name(worker_slot), {len({worker_prefix})} + 9, 2), 0) +\
-  if(impulse() == "{script_name(u/d)}" && cursor == 0, {action_num}, 0) +\
-  {lua(return #factory.items)}) % {lua(return #factory.items)}
 
-; Now the secondary processing: Adjust item if we pressed right while cursor=0,
-; to do category skipping, and then adjust cursor after. We don't need to worry
-; about adjusting tier after doing this, because tier won't change from pressing
-; right, only visible_tier (which is a macro based on tier and item).
-#category_stops {lua(\
-  local items = factory.item_names\
-  local stops = {}\
-  stops[items["white_producer"].id - 1] = 'x'\
-  stops[items["oven"].id - 1] = 'x'\
-  stops[items["chip"].id - 1] = 'x'\
-  stops[items["producers"].id - 1] = 'x'\
-  stops[items["ingot"].id - 1] = 'x'\
-  for i = 1, #factory.items + 1 do\
-    stops[i] = stops[i] or ' '\
+#action_num s2i(gsg({action}), 0)
+; Is the u/d action valid for this position?
+; Using contains() instead of == and chained compares saves a lot of import space.
+#is_ud(pos) contains(impulse() . cursor, ":craft{pos}")
+
+cursor = min(9, max(0,\
+  s2i(sub(worker.name(worker_slot), {len({worker_prefix})} + 11, 1), 0) +\
+  if(contains(impulse(), ":produce"), {action_num}, 0)\
+))
+count = min(9999999., max(1.,\
+  s2d(sub(worker.name(worker_slot), {len({worker_prefix})}, 7), 1.) +\
+  if(contains(impulse(), ":craft"), i2d({action_num} * 10^(cursor - 3)), 0.)\
+))
+
+#num_categories {lua(return #factory.categories)}
+category = (\
+  s2i(sub(worker.name(worker_slot), {len({worker_prefix})} + 8, 1), 0) +\
+  if({is_ud(1)}, {action_num}, 0) +\
+  {num_categories}\
+) % {num_categories}
+
+; Because math expressions are so expensive, in terms of import space, it's best
+; to just pre-compute tables of the next/previous item to go to for every item.
+; To avoid duplicating expressions, we also make a no-op table for the case where
+; we're not incrementing or decrementing.
+{lua(\
+  function factory.item_inc_table(inc)\
+    local acc = {}\
+    local default = string.format("%02d", factory.categories[1].default - 1)\
+    for i = 1, #factory.categories do\
+      local cat = factory.categories[i]\
+      local cat_size = cat.last - cat.first + 1\
+      for j = cat.first, cat.last do\
+        acc[j] = string.format("%02d", (j + inc - cat.first) % cat_size + cat.first - 1)\
+      end\
+    end\
+    for i = 1, #factory.items do\
+      acc[i] = acc[i] or default\
+    end\
+    return table.concat(acc)\
   end\
-  return table.concat(stops)\
+)}
+#item_inc_table(inc) {lua(return factory.item_inc_table({inc}))}
+#category_defaults {lua(\
+  local acc = {}\
+  for i = 1, #factory.categories do\
+    acc[i] = string.format("%02d", factory.categories[i].default - 1)\
+  end\
+  return table.concat(acc)\
 )}
 
-; We use a lua-generated string of the form "    x    x   x   " to find where to
-; jump to; each "x" represents a stop-point. We add one afterwards, which both
-; advances past the stop point, and also sets the value back to zero when we are
-; at the end, since "not found" returns -1. The stop points have been adjusted
-; back by one already to account for this.
-item = if(impulse() == "{script_name(l/r)}" && cursor == 0 && {action_num} == -1,\
-  index("{category_stops}", "x", item) + 1,\
-  item)
-cursor = min(9, max(0, cursor + if(impulse() == "{script_name(l/r)}", {action_num}, 0)))
+; Items in this variable are zero-indexed, as opposed to their regular ids, which
+; start from 1.
+item = s2i(\
+  if({is_ud(1)},\
+    sub(\
+      "{category_defaults}",\
+      category * 2,\
+      2\
+    ),\
+    sub(\
+      if({is_ud(0)},\
+        if(\
+          contains(gsg({action}), "-1"),\
+          "{item_inc_table(-1)}",\
+          "{item_inc_table(1)}"\
+        ),\
+        "{item_inc_table(0)}"\
+      ),\
+      s2i(\
+        sub(worker.name(worker_slot), {len({worker_prefix})} + 9, 2),\
+        {lua(return factory.categories[1].default - 1)}\
+      ) * 2,\
+      2\
+    )\
+  ),\
+  0\
+)
 
 ; The distinction between "tier" and "visible_tier" has to do with the fact that
 ; items have different tier maximums. When a user is scrolling through different
@@ -118,13 +159,10 @@ cursor = min(9, max(0, cursor + if(impulse() == "{script_name(l/r)}", {action_nu
   end\
   return table.concat(acc)\
 )}
-; Is the current tier changing? (The actual value might not change, but the user
-; is at least trying to change it.)
-#is_changing_tier (impulse() == "{script_name(u/d)}" && cursor == 1)
 
 ; Expression to load the saved tier data from the worker name, including
 ; a default value when there is no data.
-#saved_worker_tier s2i(sub(worker.name(worker_slot), {len({worker_prefix})} + 8, 1), 0)
+#saved_worker_tier s2i(sub(worker.name(worker_slot), {len({worker_prefix})} + 7, 1), 0)
 
 ; It makes the most sense to set visible_tier first. There is a complication
 ; when adjusting the tier down; in this case, we reduce the maximum bounds by
@@ -134,44 +172,41 @@ cursor = min(9, max(0, cursor + if(impulse() == "{script_name(l/r)}", {action_nu
 ; when the tier isn't changing.
 visible_tier = max(0,\
   min(s2i(sub("{tier_data}", item, 1), 9) +\
-      if({is_changing_tier} && {action_num} == -1, -1, 0),\
-    {saved_worker_tier} + if({is_changing_tier}, {action_num}, 0)\
+      if({is_ud(2)} && gsg({action}) == "-1", -1, 0),\
+    {saved_worker_tier} + if({is_ud(2)}, {action_num}, 0)\
   )\
 )
-tier = if({is_changing_tier}, visible_tier, {saved_worker_tier})
+tier = if({is_ud(2)}, visible_tier, {saved_worker_tier})
 
 ; Finally, construct the visible name for use in the variable.
 {lua(\
   local names = {}\
+  local name_starts = {}\
   local name_sizes = {}\
-  local group_suffix = " (group)"\
-  local size = 0\
+  local name_len = 0\
+\
   for i = 1, #factory.items do\
-    local item = factory.items[i]\
-    local name_size = #item.name\
-    if item.craft_type == "group" then\
-      name_size = name_size + #group_suffix\
-    end\
-    if name_size > size then size = name_size end\
-  end\
-  local fmt = "%-" .. size .. "s"\
-  for i = 1, #factory.items do\
-    local item = factory.items[i]\
-    local name = item.name\
-    if item.craft_type == "group" then\
-      name = name .. group_suffix\
-    end\
-    names[i] = string.format(fmt, name)\
+    local name = factory.items[i].name\
+    names[i] = name\
+    name_starts[i] = string.format("%03d", name_len)\
+    name_len = name_len + #name\
     name_sizes[i] = string.format("%02d", #name)\
   end\
   factory.name_data = table.concat(names)\
+  factory.name_starts = table.concat(name_starts)\
   factory.name_sizes = table.concat(name_sizes)\
   factory.items_count = #factory.items\
-  factory.entry_size = size\
+\
+  names = {}\
+  for i = 1, #factory.categories do\
+    names[i] = factory.categories[i].name\
+  end\
+  factory.category_names = table.concat(names)\
 )}
 #name_data {lua(return factory.name_data)}
+#name_starts {lua(return factory.name_starts)}
 #name_sizes {lua(return factory.name_sizes)}
-#entry_size {lua(return factory.entry_size)}
+#category_names {lua(return factory.category_names)}
 
 ; Set this variable in order to begin a variable-hiding block.
 ; It looks like a no-op, but really we're ensuring that it has a slot in the
@@ -181,20 +216,23 @@ tier = if({is_changing_tier}, visible_tier, {saved_worker_tier})
 ; set its variables, in case we're doing this right at startup.
 gss({action}, gsg({action}))
 
+; This no-op exists *solely* to adjust the number of cycles, so that we don't
+; land on the wrong number of turbo.cycles at the end and falsely think that
+; turbo is not working.
+wait(0.)
+
 ; Do conditional stuff, depending on if we're launching the factory.
 ; We set all these variables always, so that they'll have a consistent order,
 ; and also to save lines instead of jumping over this block.
 
+#valid_start contains(factory_target . impulse(), "0key.")
 ; This (maybe) launches the factory. We need to do it soon enough to not
 ; interrupt turbo, see the comment on "turbo stop", below.
-factory_target_amount = if(impulse() == "key.{start}" && factory_target == 0,\
-  count, 0.)
+factory_target_amount = if({valid_start}, count, factory_target_amount)
 
 ; Only set factory_target if it's zero, which indicates that the factory is idle.
 ; This prevents repeated keypresses from messing things up.
-factory_target = if(impulse() == "key.{start}" && factory_target == 0,\
-  (item + 1) * 10 + visible_tier,\
-  factory_target)
+factory_target = if({valid_start}, (item + 1) * 10 + visible_tier, factory_target)
 
 ; Construct the status line. There's a *lot* that goes into this.
 ;
@@ -221,19 +259,21 @@ gss({status}, if(\
     turbo.cycles == 0,\
     "</size>error=<color=#fb3>Turbo exec is not working</color>",\
     "</size>make=<color=#fff>" .\
-    sub(d2s(100000000. + count), 1, 9 - cursor) .\
+    sub(d2s(10000000. + count), 1, 9 - cursor) .\
     "</color><color=#{curs_col}>".\
-    sub(d2s(100000000. + count), 10 - cursor, 1) .\
+    sub(d2s(10000000. + count), 10 - cursor, 1) .\
     "</color><color=#fff>".\
-    sub(d2s(100000000. + count), 11 - cursor, 10) .\
-    "<smallcaps>x</smallcaps></color><color=#" .\
-    if(cursor == 1, "{curs_col}>T", "fff>T") .\
+    sub(d2s(10000000. + count), 11 - cursor, 10) .\
+    "<smallcaps>x</smallcaps><color=#" .\
+    if(cursor == 2, "{curs_col}>T", "fff>T") .\
     (visible_tier + 1) .\
-    if(cursor == 0, "</color><br><color=#{curs_col}>", "</color><br><color=#fff>") .\
-    sub("{name_data}", item * {entry_size},\
+    if(cursor == 1, "</color> <color=#{curs_col}>", "</color> <color=#fff>") .\
+    sub("{category_names}", category * 4, 4) .\
+    if(cursor == 0, "</color> ...<br><color=#{curs_col}>", "</color> ...<br><color=#fff>") .\
+    sub("{name_data}", s2i(sub("{name_starts}", item * 3, 3), 0),\
       s2i(sub("{name_sizes}", item * 2, 2), 0)) .\
-    "<br></color>" . if(\
-      impulse() == "{script_name(init)}" && contains(gsg({action}), "<"),\
+    "<br></color></color>" . if(\
+      contains(impulse() . gsg({action}), ":init<"),\
       gsg({action}),\
       if(\
         factory_target == 0,\
@@ -256,6 +296,6 @@ executesync("turbo stop")
 ; because they may need to be modified later in the frame, and thus setting them
 ; here in a loop would overwrite the value.
 worker.setName(if(worker_slot < 100, worker_slot, worker_slot - 100),\
-  "{worker_prefix}" . sub(d2s(100000000. + count), 1, 8) . tier .\
+  "{worker_prefix}" . sub(d2s(10000000. + count), 1, 7) . tier . category .\
   sub(i2s(100 + item), 1, 2) . cursor\
 )

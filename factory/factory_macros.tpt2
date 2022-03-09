@@ -48,6 +48,7 @@
   factory = {};\
   factory.items = {};\
   factory.item_names = {};\
+  factory.categories = {};\
   factory.name_max_size = 0;\
   factory.game_name_sizes = {};\
   factory.game_name_sizes.item = 0;\
@@ -114,6 +115,24 @@
     factory.entry_size = size;\
     return table.concat(acc);\
   end\
+\
+  function factory.add_category(name, ...)\
+    local category = {}\
+    factory.categories[#factory.categories + 1] = category\
+    category.name = name\
+    local name1, name2, name3 = "default", "first", "last"\
+    local arg1, arg2, arg3 = ...\
+    for i = 1, 3 do\
+      local trimmed = arg1:gsub("^ +", "")\
+      local item = factory.item_names[trimmed]\
+      if not item then\
+        return "Can't find " .. trimmed\
+      end\
+      category[name1] = item.id\
+      name1, name2, name3 = name2, name3\
+      arg1, arg2, arg3 = arg2, arg3\
+    end\
+  end\
 )}
 
 ; Define a new production item with name "name", craftable from tiers 1-"tiers".
@@ -143,4 +162,11 @@
 ; require special-case handling.
 #special(name, tiers, game_name) {lua(\
   return factory.add_item("{name}", {tiers}, {game_name}, "special")\
+)}
+
+; Defines a category grouping for the UI. "First" and "last" are the span of
+; the group (inclusive), in item names. Must be called *after* the relevant items
+; are defined.
+#category(name, default, first, last) {lua(\
+  return factory.add_category("{name}", "{default}", "{first}", "{last}")\
 )}

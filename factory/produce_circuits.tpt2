@@ -5,6 +5,9 @@
 :global int _tier
 :local double previous_amount
 
+executesync("{script_name(produce misc)}")
+stop("{script_name(produce misc)}")
+
 previous_amount = count("ingot", _tier)
 produce("ingot", _tier, min(previous_amount, ceil({get_queue(_tier, cable)} / 2.)), "refinery")
 {subtract_queue(_tier, cable, 2. * (previous_amount - count("ingot", _tier)))}
