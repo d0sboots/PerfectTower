@@ -15,15 +15,13 @@ When setting up the editor, I suggest creating two new workspaces: One for the t
 Import the main files in this order, so that the eventual bundle export is consistent:
 
 `run_recipes 0 0 15`<br>
-`produce 0 0 16`<br>
+`produce 2 1 16`<br>
 `produce dust 0 0 16`<br>
 `produce plates 0 0 14`<br>
-`produce circuits 0 0 10`<br>
+`produce circuits 0 0 12`<br>
 `produce misc 0 0 13`<br>
-`craft 0 0 12`<br>
+`craft 2 1 14`<br>
 `init 2 1 15`<br>
-`u/d 2 1 2`<br>
-`l/r 2 1 2`<br>
 `ui 1 0 16`<br>
 
 ## Changelog
@@ -39,7 +37,7 @@ The UI rewrite.
 * More robust checking for when Turbo Exec isn't functioning.
 
 ```
-Bundle size: 77734   Scripts: 11   Max lines: 16
+Bundle size: 75316   Scripts: 9   Max lines: 16
 ```
 
 ### V2.2.0

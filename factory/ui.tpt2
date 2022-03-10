@@ -286,9 +286,13 @@ gss({status}, if(\
 
 ; "init" will take over as soon as factory_target_amount gets set 3 lines
 ; above; it will call its own "turbo start" and thus prevent the frame from
-; ending before this "turbo stop" takes effect.
+; ending before this line takes effect.
 ; We need two cycles in-between to have a seamless transition.
-executesync("turbo stop")
+; We change the variable directly, instead of calling "turbo stop", for parity
+; with the way we start: This avoids some edge cases when turbo is incorrectly
+; installed. It also is fine in this case, because we don't need to wait for
+; the end of the frame.
+turbo.register -= 1
 
 ; Setting the data back in the worker is moved way down to the bottom, to function
 ; as the "filler" action that can be repeated while the script is waiting for
