@@ -22,9 +22,17 @@ Import the main files in this order, so that the eventual bundle export is consi
 `produce misc 0 0 13`<br>
 `craft 2 1 14`<br>
 `init 2 1 15`<br>
-`ui 1 0 16`<br>
+`ui 1 1 16`<br>
 
 ## Changelog
+
+### V3.0.1
+
+Bugfix: Crafting should only be enabled in the Factory.
+
+```
+Bundle size: 75364   Scripts: 9   Max lines: 16
+```
 
 ### V3.0.0
 

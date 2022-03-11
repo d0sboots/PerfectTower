@@ -16,7 +16,7 @@
 
 key.{start}()
 
-;isopen("factory")
+isopen("factory")
 
 ; Because of how turbo exec works, we can't launch turbo on the frame the script
 ; starts by calling "turbo start", if we are being called from another script.
