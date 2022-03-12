@@ -23,7 +23,7 @@ I maintain a fork of the external editor at https://d0sboots.github.io/perfect-t
 It's kind of a pain to move source code between editors, (as opposed to importing compiled code, which is easy), so if you already have a lot of work saved on the base editor at https://kyromyr.github.io/perfect-tower, it may not be worth switching. If you aren't using either yet, you definitely should use one instead of the in-game editor, though - the difference is night and day. Also worth noting is that compiling the source for many of my scripts requires the enhancements in my editor. (You don't need it to just import them.)
 
 ## Factory automation
-**v3.0.0**
+**v3.0.1**
 
 This set of scripts manages auto-crafting of everything in the factory. It is an (extremely rewritten) fork of Xenos' factory package, with 1/5 the size, 1/2 the scripts, only **16** maximum actions and scannable item-groups built-in to the base package.
 
