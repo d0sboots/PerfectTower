@@ -26,6 +26,15 @@ Import the main files in this order, so that the eventual bundle export is consi
 
 ## Changelog
 
+### V3.0.2
+
+Bugfix: Fix script getting stuck (and having multiple copies) when exiting
+during crafting.
+
+```
+Bundle size: 75528   Scripts: 9   Max lines: 16
+```
+
 ### V3.0.1
 
 Bugfix: Crafting should only be enabled in the Factory.

@@ -48,13 +48,31 @@ target_value = {get_raw(factory_target)}
 ; All conditional execution in the loop is behind this condition. If it
 ; is true, then we're here because of `ui`. Otherwise,
 ; this is a regular crafting iteration.
-executesync(if(target_value <= 0., "{script_name(run_recipes)}", "{script_name(produce)}"))
-stop(if(target_value <= 0., "{script_name(run_recipes)}", "{script_name(produce)}"))
-executesync(if(target_value <= 0., "", "{script_name(craft)}"))
-stop(if(target_value <= 0., "", "{script_name(craft)}"))
+
+; There are extra checks for isopen("factory") here. The main check is at the
+; bottom of the loop, but that happens before the end of the frame, so there will
+; be one more frame where we have exited the factory, but the loop still runs.
+; Normally, this wouldn't be an issue (all of the scripts will perform no actions
+; and leave the variables in the same state), but "produce" and "craft" have a
+; startup condition of isopen("factory"), since they do double-duty as UI impulse
+; scripts as well.
+; So, we have to protect them, otherwise executesync() will hang when it hits
+; the false condition, leading to a stuck script.
+executesync(if(\
+  isopen("factory"),\
+  if(target_value > 0., "{script_name(produce)}", "{script_name(run_recipes)}"),\
+  ""\
+))
+stop(if(target_value > 0., "{script_name(produce)}", "{script_name(run_recipes)}"))
+executesync(if(\
+  target_value > 0. && isopen("factory"),\
+  "{script_name(craft)}",\
+  ""\
+))
+stop(if(target_value > 0., "{script_name(craft)}", ""))
 
 ; Clear factory_target to indicate that crafting is done, if it is, in fact, done.
-factory_target = if({get_raw(factory_target)} <= 0., 0, factory_target)
+factory_target = if({get_raw(factory_target)} > 0., factory_target, 0)
 ; Re-display the UI when crafting is done.
 execute(if(factory_target == 0, "{script_name(ui)}", ""))
 
