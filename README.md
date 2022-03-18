@@ -10,7 +10,7 @@
 - [Autoclicker](#autoclicker)
 - [Dust Up-tierer](#dust-up-tierer)
 - [Button coordinate finder](#button-coordinate-finder)
-- [Finite Infinities v2] (#finite-infinities-v2)
+- [Finite Infinities v2](#finite-infinities-v2)
 - [Infinity phase scripts](#infinity-phase-scripts)
 - [Other Utilities](#other-utilities)
 
