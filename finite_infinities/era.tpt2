@@ -1,0 +1,79 @@
+; All layouts have two modes: "Widescreen" and "tallscreen". The dividing
+; line between them is 16:9 aspect ratio.
+#wide_or_tall(wide, tall) if(width.d() * 0.5625 > height.d(), {wide}, {tall})
+
+; All these macros just give nice names to a pile of experimentally derived
+; coordinates. The values came from ClickTrainer v2.7.
+
+#click_era_tab click({wide_or_tall(\
+  vec(ui.size() * 0.53 * height.d(), (0.5 - ui.size() * 0.25) * height.d() ),\
+  vec(ui.size() * 0.3 * width.d(), 0.5 * height.d() - ui.size() * 0.13 * width.d())\
+)})
+
+#click_era_left click({wide_or_tall(\
+  vec(ui.size() * 0.021 * height.d(), (0.5 - ui.size() * 0.25) * height.d() ),\
+  vec(ui.size() * 0.010 * width.d(), 0.5 * height.d() - ui.size() * 0.13 * width.d())\
+)})
+
+#click_hp click({wide_or_tall(\
+  vec(ui.size() * 0.38 * height.d(), (1.0 - ui.size() * 0.12) * height.d() ),\
+  vec(ui.size() * 0.21 * width.d(), 1.0 * height.d() - ui.size() * 0.067 * width.d())\
+)})
+
+#click_dmg click({wide_or_tall(\
+  vec(ui.size() * 0.38 * height.d(), (1.0 - ui.size() * 0.21) * height.d() ),\
+  vec(ui.size() * 0.21 * width.d(), 1.0 * height.d() - ui.size() * 0.118 * width.d())\
+)})
+
+; This version has four cases, because there's an extra split based on
+; ui.size() where the formula changes. This is because of the scrollbar; there's
+; a size at which all the elements fit at once, which causes one formula, otherwise
+; you need a different formula to describe the positions of the elements when
+; scrolled to the bottom of the container.
+; The parameter is the vertical box number, starting from 0 for lightning and
+; increasing to 2 for universal. The editor would optimize these expressions
+; if "i" were constant, but we end up making it a variable.
+#click_disable(i) click({wide_or_tall(\
+  vec(ui.size() * 0.347 * height.d(), if(\
+    ui.size() < 0.6756,\
+    (1.0 - (0.194 * {i} + 0.806) * ui.size()) * height.d(),\
+    (0.605 - 0.194 * {i}) * ui.size() * height.d()\
+  )),\
+  vec(ui.size() * 0.195 * width.d(), if(\
+    ui.size() * width.d() < 1.201 * height.d(),\
+    height.d() - (0.109 * {i} + 0.453) * ui.size() * width.d(),\
+    (0.341 - 0.109 * {i}) * ui.size() * width.d()\
+  ))\
+)})
+
+; This *appears* to not be dynamic for wide/tall layouts, or different ui-sizes.
+; However, we're taking advantage of the large size of the target area, and the
+; way that it scales - either this will be in the area, or the area will be so
+; tall that it doesn't need to be scrolled.
+#slide_to_bottom scrollbar(\
+  vec(0.02 * height.d(), 0.5 * height.d()),\
+  -1., 0.\
+)
+
+:local double i
+
+; The whole thing is controlled by New Bounds.
+gotoif(end, software.enabled("software.newbounds") == false)
+{click_era_tab}
+wait(0.3)
+{click_era_left}
+wait(0.5)
+{slide_to_bottom}
+
+; The loop is slightly unrolled, to increase the speed of clicking on the
+; dividers.
+loop:
+{click_hp}
+{click_hp}
+{click_dmg}
+{click_dmg}
+{click_disable(i)}
+i = (i + 1.) % 3.
+gotoif(loop, health(true) != 0.)
+
+end:

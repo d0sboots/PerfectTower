@@ -1,0 +1,17 @@
+game.newround()
+wakeup()
+
+isTowerTesting()
+
+gss("<size=0>finf", "---Hiding variables---")
+gis("dank sac", 1)
+gis("super multishot", 2)
+gis("dispel", 3)
+gis("temporal barrier", 4)
+gis("neutral response", 5)
+gis("radar", 6)
+gis("hurricane", 7)
+gis("super tower 1", 8)
+gis("super tower 2", 9)
+gis("nomore", 10)
+gss("---Stop hiding---", "</size=0>")

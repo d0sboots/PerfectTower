@@ -1,0 +1,25 @@
+:global int dispel
+:global int nomore
+:global int radar
+:global int hurricane
+
+; This handles all the repeated ability use. This was broken into multiple
+; scripts originally, but there's no need for it - the loop is short enough
+; that it can all be done here.
+loop:
+useinstant(if(negative() > 0 && energy(true) > 0.4, dispel, 0))
+useinstant(hurricane)
+useinstant(radar)
+useinstant(gig("super multishot"))
+useinstant(gig("neutral response"))
+useposition(nomore, vec(0.0, 0.0))
+; The only slightly complicated part: Prefer to use ST2 if everything is off
+; cooldown, or if ST2 is ready and ST1 is partway done. Otherwise, use ST1 if
+; ST2 is partway done (ST1 might still be on CD, but that's fine).
+; This ensures a constant rotation between the two, so they don't bunch up.
+useinstant(gig(if(\
+  cooldown(gig("super tower 1")) < 75.0 && cooldown(gig("super tower 2")) <= 0.0,\
+  "super tower 2",\
+  if(cooldown(gig("super tower 2")) < 75.0, "super tower 1", "")\
+)))
+gotoif(loop, health(true) != 0.)

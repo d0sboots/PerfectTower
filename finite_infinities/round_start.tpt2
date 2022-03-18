@@ -1,0 +1,21 @@
+game.newround()
+wakeup()
+
+isTowerTesting()
+
+; Give "era" and other scripts a chance to start, and for "load abilities ids"
+; to execute before the scripts run.
+wait(0.2)
+stop("finite infinities v2:era")
+execute("finite infinities v2:era")
+stop("finite infinities v2:spam abilities")
+execute("finite infinities v2:spam abilities")
+
+; Wait a bit more, to give time for the round to start up before we start the
+; cooldown on temporal barrier. Also, we *really* want these variables to be
+; set, since we only use them the once.
+wait(0.2)
+useinstant(gig("temporal barrier"))
+useinstant(gig("dank sac"))
+waituntil(cooldown(gig("dank sac")) <= 0.0)
+useinstant(gig("dank sac"))
