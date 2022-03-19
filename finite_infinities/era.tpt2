@@ -25,6 +25,11 @@
   vec(ui.size() * 0.21 * width.d(), 1.0 * height.d() - ui.size() * 0.118 * width.d())\
 )})
 
+#click_x25 click({wide_or_tall(\
+  vec(ui.size() * 0.438 * height.d(), ui.size() * 0.055 * height.d() ),\
+  vec(ui.size() * 0.246 * width.d(), ui.size() * 0.031 * width.d())\
+)})
+
 ; This version has four cases, because there's an extra split based on
 ; ui.size() where the formula changes. This is because of the scrollbar; there's
 ; a size at which all the elements fit at once, which causes one formula, otherwise
@@ -58,11 +63,12 @@
 :local double i
 
 ; The whole thing is controlled by New Bounds.
-gotoif(end, software.enabled("software.newbounds") == false)
+gotoif(end, software.enabled("software.newbounds") == false || max(era(), infinity()) == 0.)
 {click_era_tab}
 wait(0.3)
 {click_era_left}
 wait(0.5)
+{click_x25}
 {slide_to_bottom}
 
 ; The loop is slightly unrolled, to increase the speed of clicking on the

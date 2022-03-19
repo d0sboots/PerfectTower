@@ -3,7 +3,10 @@ wakeup()
 
 isTowerTesting()
 
-gss("<size=0>finf", "---Hiding variables---")
+; This not only hides variables, it doubles as our script counter variable.
+; We don't set it to zero here, since that might be overwriting the wrong thing.
+; Instead we set it to its current value, which defaults to zero.
+gis("<size=0>finf", gig("<size=0>finf"))
 gis("dank sac", 1)
 gis("super multishot", 2)
 gis("dispel", 3)
