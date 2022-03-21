@@ -60,6 +60,9 @@
   -1., 0.\
 )
 
+; Give the UI elements a chance to load.
+wait(0.5)
+
 ; The whole thing is controlled by New Bounds.
 gotoif(end, software.enabled("software.newbounds") == false || max(era(), infinity()) == 0.)
 {click_era_tab}

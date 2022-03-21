@@ -8,16 +8,13 @@ wakeup()
 
 isTowerTesting()
 
-; Give "era" and other scripts a chance to start, and for "load abilities ids"
-; to execute before the scripts run.
-wait(0.5)
 stop("finite infinities v2:era")
 execute("finite infinities v2:era")
 
+; We only get one shot at this, make sure we don't waste it by activating
+; before the variable is set.
+waituntil(gig("temporal barrier") != 0)
 useinstant(gig("temporal barrier"))
-useinstant(gig("dank sac"))
-waituntil(cooldown(gig("dank sac")) <= 0.0)
-useinstant(gig("dank sac"))
 
 gotoif(99, gig("<size=0>finf") > 0)
 gis("<size=0>finf", gig("<size=0>finf") + 1)
@@ -27,9 +24,11 @@ gis("<size=0>finf", gig("<size=0>finf") + 1)
 ; that it can all be done here.
 loop:
 useinstant(if(negative() > 0 && energy(true) > 0.4, dispel, 0))
-useinstant(hurricane)
+useinstant(if(health(true) > 0.5, gig("dank sac"), hurricane))
 useinstant(radar)
 useinstant(gig("super multishot"))
+; Unrolled loop: Do this again, if we have the energy for it.
+useinstant(if(negative() > 0 && energy(true) > 0.4, dispel, 0))
 useinstant(gig("neutral response"))
 useposition(nomore, vec(0.0, 0.0))
 ; The only slightly complicated part: Prefer to use ST2 if everything is off
