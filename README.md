@@ -10,6 +10,7 @@
 - [Autoclicker](#autoclicker)
 - [Dust Up-tierer](#dust-up-tierer)
 - [Button coordinate finder](#button-coordinate-finder)
+- [AI Benchmarker](#ai-benchmarker)
 - [Finite Infinities v2](#finite-infinities-v2)
 - [Infinity phase scripts](#infinity-phase-scripts)
 - [Other Utilities](#other-utilities)
@@ -196,6 +197,8 @@ The final equation for a button click should look like this:
 ```
 click(if(height.d()/width.d() >= 0.5625, vec(_tallscreen_coords_), vec(_widescreen_coords_)))
 ```
+## AI Benchmarker
+A script/execution suite for timing how long various things take to run. Using this is a bit more involved, so it's moved to its own subpage here: [benchmarker](benchmarker).
 
 ## Finite Infinities v2
 This is a blueprint AI, it goes with the Finite Infinites BP by Xenos.
