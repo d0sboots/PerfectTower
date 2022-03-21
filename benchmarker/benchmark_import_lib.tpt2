@@ -1,0 +1,25 @@
+; Macro for keeping all the names consistent. Changing the package name here
+; changes it for all scripts.
+#script_name(name) D0S.Benchmark v1.0:{name}
+
+; Display variable for the number of elapsed turbo cycles. As a user, you will
+; only see the final count, because that's the value it has when the frame ends.
+:global int benchmark_cycles
+
+; How many cycles to run each measurement for. The script itself will run turbo
+; for a few more cycles than this to do bookkeeping work, so expect
+; "benchmark_cycles" to be slightly larger.
+; Although the precision of the timer is much higher, the actual accuracy of the
+; now() function appears to be 0.5ms. So to achieve a timing accuracy of 0.1us,
+; we need (at least) 5000 cycles.
+:const int NUM_CYCLES 5000
+
+; The number of benchmark programs to run. Each one should be named "benchmark_N",
+; inside this package.
+:const int NUM_BENCHMARKS 2
+
+; How many times to repeat the measurement, to try to get the best, stable value.
+; Note that you'll be able to see in-progress results before this point, and
+; that you can also interrupt the process with F4, so there's little downside to
+; this being large.
+:const int NUM_REPEATS 1000

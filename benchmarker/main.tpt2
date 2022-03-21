@@ -1,0 +1,70 @@
+:import benchmark_import_lib
+
+:name {script_name(main)}
+
+; This is the main program for benchmarking. There should be no need for
+; manual modifications here; all the constants that need tweaking are in
+; benchmark_import_lib. But it might be useful to understand how it works.
+
+:global int benchmark_idx
+:local double start_time
+:local double elapsed_time
+
+key.b()
+
+#current_benchmark (benchmark_idx % (NUM_BENCHMARKS + 1))
+#bench_time ldg("btime" . {current_benchmark})
+#nanos(time) round(({time}) * (100. / NUM_CYCLES))
+
+; We get executed from "turbo exec" if we are being used to count cycles.
+gotoif(counting, impulse() == "{script_name(turbo exec)}")
+
+benchmark_idx = 0
+loop:
+execute("{script_name(turbo exec)}")
+
+; Turbo exec will start on this instruction: It takes one cycle for "turbo exec"
+; to execute main in counting mode (which happens immediately, on the line
+; above), and then on this line it beging the execute loop.
+; When we are looping, turbo exec will continue through the goto, ending
+; on the "execute". So the line above will be the last instruction of the frame,
+; followed by a frame break, followed by this being the first.
+benchmark_cycles = 0
+
+; The first iteration is for benchmark "0", the base case with no payload.
+execute("{script_name(benchmark_)}" . {current_benchmark})
+
+; Record start_time after the payload is already started, for maximum stability.
+start_time = now()
+
+; benchmark_cycles will be 3 the first time this line is run. There's
+; intrinsically 2 cycles between the two time measurements, assuming we didn't
+; wait at all. So, we subtract 1 to align these two quantities, bringing the
+; number of cycles to match the desired NUM_CYCLES.
+waituntil(benchmark_cycles - 1 >= NUM_CYCLES)
+elapsed_time = now() - start_time
+lds("btime" . {current_benchmark},\
+  min(elapsed_time, if({bench_time} == 0., 1./0., {bench_time}))\
+)
+; Update the result display for the benchmark run
+gss(\
+  if({current_benchmark} == 0, "base", "benchmark_" . {current_benchmark}),\
+  "last: " . {nanos(elapsed_time)} . "nS, best: " .\
+  {nanos({bench_time})} .\
+  if(\
+    {current_benchmark} == 0,\
+    "",\
+    "nS, self: " . {nanos({bench_time} - ldg("btime0"))}\
+  ) . "nS"\
+)
+
+benchmark_idx += 1
+goto(if(benchmark_idx >= (NUM_BENCHMARKS + 1) * NUM_REPEATS, end, loop))
+
+counting:
+; As the last line, this will keep getting executed until turbo ends.
+benchmark_cycles += 1
+
+; Jumping here will loop the previous instruction in turbo, but it will quit the
+; script if we're out of turbo.
+end:

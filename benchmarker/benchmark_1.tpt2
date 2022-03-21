@@ -1,0 +1,61 @@
+:import benchmark_import_lib
+
+:name {script_name(benchmark_1)}
+
+; Benchmarks are put in scripts named like this. You can have as many as you want,
+; but you have to modify the constant NUM_BENCHMARKS in main accordingly.
+
+; Benchmarks can be any length, but single-line ones are best/easiest. This is
+; because the time is being measured overall, so longer things are harder to
+; measure, and the time will just be an average score.
+
+; Duplicates "term" num_copies times.
+#dup(term, num_copies) {lua(\
+  local acc = {}\
+  for i = 1, {num_copies} do\
+    acc[i] = [[{term}]]\
+  end\
+  return table.concat(acc)\
+)}
+
+; The following macro is useful for amplifying infix operators, such as
+; conditional terms or math, to make effects more obvious.
+; It duplicates "term" num_copies times, placing "operator" in-between
+; each copy.
+#chain_infix(term, operator, num_copies) {lua(\
+  local acc = {}\
+  for i = 1, {num_copies} do\
+    acc[i] = [[{term}]]\
+  end\
+  return table.concat(acc, " {operator} ")\
+)}
+
+; The following macros are useful for amplifying binary functions. The first
+; chains them together in pre-order traversal, the 2nd in post-order.
+; Be aware that "num_copies" refers to the number of copies of the *function*
+; here - there will be one more "term" than that, in total.
+#binary_preorder(func, term, num_copies) {lua(\
+  local acc = {}\
+  for i = 1, {num_copies} do\
+    acc[i] = [[{func}(]]\
+  end\
+  acc[#acc+1] = [[{term}]]\
+  for i = 1, {num_copies} do\
+    acc[#acc+1] = [[,{term})]]\
+  end\
+  return table.concat(acc)\
+)}
+#binary_postorder(func, term, num_copies) {lua(\
+  local acc = {}\
+  for i = 1, {num_copies} do\
+    acc[i] = [[{func}({term}, ]]\
+  end\
+  acc[#acc+1] = [[{term}]]\
+  for i = 1, {num_copies} do\
+    acc[#acc+1] = ")"\
+  end\
+  return table.concat(acc)\
+)}
+
+;waituntil({chain_infix(true, &&, 35)})
+waituntil(contains({binary_preorder(concat, "test", 9)}, "{dup(test, 10)}"))

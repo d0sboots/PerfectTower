@@ -1,0 +1,9 @@
+:import benchmark_import_lib
+
+:name {script_name(turbo trigger)}
+
+; Doing this triggers turbo-exec behavior.
+; We use our own turbo exec implementation, because we want complete control
+; over how it works and the timing, and no overhead from other turbo
+; implementations.
+stop("{script_name(turbo trigger)}")

@@ -1,0 +1,16 @@
+:import benchmark_import_lib
+
+:name {script_name(turbo exec)}
+
+; Call back to main, to use it as a counting script. Because turbo hasn't started
+; yet, main will run its first instruction immediately, which is a gotoif().
+; It will be behind this script in the order, so resetting benchmark_cycles
+; will happen before it starts incrementing.
+execute("{script_name(main)}")
+
+; Run our custom turbo script. Since this is the last line, it will keep executing
+; as long as turbo is active, which will happen as long as we keep running this.
+;
+; We add cycles to this, so that turbo will continue until the next loop.
+; The actual length of the loop that is timed is controlled by main.
+execute(if(benchmark_cycles <= NUM_CYCLES + 6, "{script_name(turbo trigger)}", ""))
