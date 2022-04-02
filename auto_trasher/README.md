@@ -2,7 +2,7 @@
 
 This script trashes unwanted items that you pick up (from the
 mine floor 2). It runs automatically whenever you're in the Factory, and
-pauses itself when my [factory automation](../#factory-automation) in running
+pauses itself when my [factory automation](../README.md#factory-automation) in running
 so that it doesn't get screwed up.
 
 Turbo exec v2 is not required, but it will speed up trashing greatly.
