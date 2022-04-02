@@ -1,0 +1,151 @@
+:import trasher_macros
+
+; Change the lines below to configure what is auto-trashed and what is kept
+; in the factory.
+;
+; Every line of the form "auto_trash("item", "1234567890")" configures an
+; item for trashing. The item name (in the form the game wants) is the first
+; argument, and the list of tiers *to trash* is the second argument.
+; The tiers are single-character, with "0" being short for T10.
+;
+; (Don't worry about looking up item names - there will be a line for every
+; item in the game already.)
+;
+; If you want to stop trashing an item completely, you can change the tiers
+; to an empty string. Some lines are already like this by default.
+; DO NOT COMMENT OUT LINES TO STOP TRASHING. IT WILL NOT WORK.
+;
+; The initial configuration attempts to be a reasonable default:
+; It *keeps* T5 of all producers, gem/exo producers, T10 of all machines,
+; all tiers of chips, T8,9,10 of ingots, rubber, and all tiers of ore,
+; dust, and lumps. Everything else is trashed.
+; 
+; Once you are happy with your changes, copy the export code in the box on
+; the right into the game.
+;
+; If something breaks and you need to re-import, make sure to delete this
+; workspace first (the red button in the upper-right) to get a clean slate.
+
+; Producers
+{auto_trash("producer.statueofcubos", "1234")}
+{auto_trash("producer.workshop", "1234")}
+{auto_trash("producer.constructionFirm", "1234")}
+{auto_trash("producer.shipyard", "1234")}
+{auto_trash("producer.exoticgems", "")}
+{auto_trash("producer.gems", "")}
+{auto_trash("producer.laboratory", "1234")}
+{auto_trash("producer.museum", "1234")}
+{auto_trash("producer.tradingpost", "1234")}
+{auto_trash("producer.mine", "1234")}
+{auto_trash("producer.arcade", "1234")}
+{auto_trash("producer.headquarters", "1234")}
+{auto_trash("producer.factory", "1234")}
+{auto_trash("producer.town", "1234")}
+{auto_trash("producer.powerplant", "1234")}
+
+; Machines
+{auto_trash("machine.assembler", "123456789")}
+{auto_trash("machine.transportbelt", "123456789")}
+{auto_trash("machine.boiler", "123456789")}
+{auto_trash("machine.crusher", "123456789")}
+{auto_trash("machine.cutter", "123456789")}
+{auto_trash("machine.mixer", "123456789")}
+{auto_trash("machine.oven", "123456789")}
+{auto_trash("machine.presser", "123456789")}
+{auto_trash("machine.refinery", "123456789")}
+{auto_trash("machine.shaper", "123456789")}
+
+; Various parts
+{auto_trash("block", "1234567890")}
+{auto_trash("chip", "")}
+{auto_trash("hammer", "1")}
+{auto_trash("cable.insulated", "1234567890")}
+{auto_trash("motor", "1234567890")}
+{auto_trash("pump", "1234567890")}
+{auto_trash("sapling.rubber", "1")}
+{auto_trash("plate.stack", "1234567890")}
+
+{auto_trash("plate.circuit", "1234567890")}
+{auto_trash("cable", "1234567890")}
+{auto_trash("circuit", "1234567890")}
+{auto_trash("block.dense", "1234567890")}
+{auto_trash("plate.dense", "1234567890")}
+{auto_trash("pipe", "1234567890")}
+{auto_trash("plate", "1234567890")}
+{auto_trash("ring", "1234567890")}
+{auto_trash("rod", "1234567890")}
+{auto_trash("plate.rubber", 1)}
+{auto_trash("screw", "1234567890")}
+{auto_trash("wire", "1234567890")}
+
+; Ingredients
+{auto_trash("dust", "")}
+{auto_trash("ore", "")}
+{auto_trash("lump", "")}
+{auto_trash("rubber", "")}
+{auto_trash("ingot", "1234567")}
+
+; ===========================================================================
+;              CONFIGURATION ENDS / AI SCRIPT CODE BEGINS
+; ===========================================================================
+
+:name D0S.AutoTrasher
+
+wakeup()
+open.factory()
+
+isopen("factory")
+
+:global int factory_target
+
+:local string trash_data
+:local string item
+:local int i
+:local int colon
+
+; Save the computed data in a local variable, since we have to reference it
+; multiple times. The format is "item1:tiers|item2:tiers|", etc.
+trash_data = {trash_data}
+
+main_loop:
+; We support turbo-exec for speed and compatibilty with the factory, but
+; it's not required. Using turbo actually *reduces* lag when we're running
+; alongside the factory - instead of running all our instructions, we'll
+; spend most of our time in 'executesync("turbo stop")', which is much faster
+; to run.
+executesync("turbo start")
+
+; Abort execution if the factory is active. This ensures that we cause neither
+; problems nor lag for the factory, at the expense of an additional frame of
+; slowdown if we are running without turbo.
+gotoif(end_frame, factory_target != 0)
+
+; Here we search for the end of the item name and save it an a temporary
+; variable, as well as moving the position to the tiers section. We could make
+; this one line shorter, but we have lines to burn and this makes the export
+; code smaller.
+colon = index(trash_data, ":", i)
+item = sub(trash_data, i, colon - i)
+i = colon + 1
+
+tier_loop:
+; The inner loop. Each iteration trashes one tier of an item.
+; We turn the current position "i" into a tier by using a tiny lookup table.
+; The first character "-" is just a filler, to offset by 1 - it's much cheaper
+; than adding.
+; We trash "infinity" items rather than counting them.
+; It important to keep this loop tight in case we don't have turbo - it takes
+; 3 frames per tier, plus 8 frames of setup per item.
+trash(item, index("-1234567890", sub(trash_data, i, 1), 0), 1. / 0.)
+i += 1
+gotoif(tier_loop, contains(" 1234567890", sub(trash_data, i, 1)))
+
+; We have to adjust "i" past the delimiter character, and this is also an
+; opportunity to reset if we've reached the end of the list.
+i = if(index(trash_data, ":", i) < 0, 0, i + 1)
+
+end_frame:
+executesync("turbo stop")
+
+; This is safe to re-execute if we're still in turbo.
+gotoif(main_loop, isopen("factory"))
