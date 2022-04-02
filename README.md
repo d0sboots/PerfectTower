@@ -8,6 +8,7 @@
 - [Asteroid Farming](#asteroid-farming)
 - [Timed Task Looping](#timed-task-looping)
 - [Autoclicker](#autoclicker)
+- [Factory auto-trasher](#factory-auto-trasher)
 - [Dust Up-tierer](#dust-up-tierer)
 - [Button coordinate finder](#button-coordinate-finder)
 - [AI Benchmarker](#ai-benchmarker)
@@ -136,6 +137,16 @@ __Warning__: This is __not__ compatible with turbo-exec, if you try the sheer nu
 DkQwUy5TdXBlckNsaWNrAQAAAAVrZXkuYwAAAAAHAAAADmdsb2JhbC5pbnQuc2V0CGNvbnN0YW50BA9jbGlja19pbnN0YW5jZXMOYXJpdGhtZXRpYy5pbnQOZ2xvYmFsLmludC5nZXQIY29uc3RhbnQED2NsaWNrX2luc3RhbmNlcwhjb25zdGFudAQBKwhjb25zdGFudAIBAAAAD2dlbmVyaWMuZXhlY3V0ZQ50ZXJuYXJ5LnN0cmluZw5jb21wYXJpc29uLmludA5nbG9iYWwuaW50LmdldAhjb25zdGFudAQPY2xpY2tfaW5zdGFuY2VzCGNvbnN0YW50BAE8CGNvbnN0YW50AjYAAAAIY29uc3RhbnQEDkQwUy5TdXBlckNsaWNrCGNvbnN0YW50BAAPZ2VuZXJpYy5leGVjdXRlDnRlcm5hcnkuc3RyaW5nDmNvbXBhcmlzb24uaW50Dmdsb2JhbC5pbnQuZ2V0CGNvbnN0YW50BA9jbGlja19pbnN0YW5jZXMIY29uc3RhbnQEATwIY29uc3RhbnQCNgAAAAhjb25zdGFudAQORDBTLlN1cGVyQ2xpY2sIY29uc3RhbnQEAA1nZW5lcmljLmNsaWNrDm1vdXNlLnBvc2l0aW9uDmdlbmVyaWMuZ290b2lmCGNvbnN0YW50AgQAAAAOY29tcGFyaXNvbi5pbnQOZ2xvYmFsLmludC5nZXQIY29uc3RhbnQED2NsaWNrX2luc3RhbmNlcwhjb25zdGFudAQCPD0IY29uc3RhbnQCNgAAAA5nbG9iYWwuaW50LnNldAhjb25zdGFudAQPY2xpY2tfaW5zdGFuY2VzDmFyaXRobWV0aWMuaW50Dmdsb2JhbC5pbnQuZ2V0CGNvbnN0YW50BA9jbGlja19pbnN0YW5jZXMIY29uc3RhbnQEASsIY29uc3RhbnQCAQAAAAxnbG9iYWwudW5zZXQOdGVybmFyeS5zdHJpbmcOY29tcGFyaXNvbi5pbnQOZ2xvYmFsLmludC5nZXQIY29uc3RhbnQED2NsaWNrX2luc3RhbmNlcwhjb25zdGFudAQBPghjb25zdGFudAJtAAAACGNvbnN0YW50BA9jbGlja19pbnN0YW5jZXMIY29uc3RhbnQEAA==
 
 ```
+
+## Factory auto-trasher
+This script trashes unwanted items that you pick up (from the mine floor 2).
+It runs automatically whenever you're in the Factory, and pauses itself when my [factory automation](#factory-automation)
+in running so that it doesn't get screwed up.
+
+Turbo exec v2 is not required, but it will speed up trashing greatly.
+
+The [download and instructions](auto_trasher/README.md) are on a separate page, because there are a couple of different options
+depending on if you want to customize it.
 
 ## Dust Up-tierer
 This is a <s>simple</s> ore crushing/dust up-tiering combo. It works stand-alone, but pairs nicely with other factory automation that expects dust to be available. At __9__ actions, this should also work for everyone. It tries to crush any un-crushed ores, and up-tiers dust while trying to make the dust distribution match its built-in target ratios.
