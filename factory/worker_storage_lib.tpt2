@@ -1,0 +1,45 @@
+; This library will find a slot in the pool of workers to use as "permanent storage".
+; If one doesn't already exist with the given tag, a new one will be allocated,
+; *but* it will avoid overwriting other worker names using the same sytem of tags
+; for storage. Thus, scripts can use this to cooperate without having to
+; explicitly assign worker slot numbers.
+;
+; The scheme is that a name will be prefixed with "[TOKEN]", where "TOKEN" is
+; some short, unique word that will identify the script in question. For instance,
+; the factory might use the word "factory".
+;
+; This library does not actually store anything in the worker name. Instead, it
+; sets the variable "worker_slot", which you must declare in your code.
+; If worker_slot < 100, then it found a valid slot with the worker_prefix.
+; If 100 <= worker_slot < 200, then there was no existing slot, but new data
+; can be initialized at (worker_slot - 100). If worker_slot == 200, then there
+; are no available slots at all, and you should show an error message or take
+; approriate action.
+;
+; A complete example looks like this (replace angle brackets with curlies):
+;
+; :local int worker_slot
+; <worker_lib_line_1([TOKEN])>
+; <worker_lib_line_2>
+
+; =================================================================================
+
+#worker_prefix {lua(return worker_lib_prefix)}
+#worker_lacks_prefix sub(worker.name(worker_slot), 0, {len({worker_prefix})}) != "{worker_prefix}"
+
+; The first macro, which defines the first line and the loop variable that we
+; jump to. We also store the worker_prefix with Lua, so that we don't need to
+; repeat it on the 2nd macro.
+; We don't want to skip slot 0. Doing it like this saves a line.
+#worker_lib_line_1(worker_prefix_arg) {lua(\
+  worker_lib_prefix = "{worker_prefix_arg}"\
+)}\
+find_worker_slot_loop: worker_slot = worker_slot + if({worker_lacks_prefix}, 1, 0)
+
+; The second macro, which iterates until we're done.
+; The test against worker.group() checks for non-existant workers. They would
+; otherwise show as acceptable candidates, and we need to keep iterating to 200
+; in that case.
+#worker_lib_line_2 gotoif(find_worker_slot_loop,\
+  worker_slot < 100 && {worker_lacks_prefix} ||\
+  worker_slot >= 100 && worker_slot < 200 && (worker.group(worker_slot - 100) == -1 || contains(sub(worker.name(worker_slot - 100), 0, 1), "[")))
