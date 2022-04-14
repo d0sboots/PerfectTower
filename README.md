@@ -5,7 +5,7 @@
 - [Factory automation](#factory-automation)
 - [Auto mining script V2](#auto-mining-script-v2)
 - [Turbo miner](#turbo-miner)
-- [Museum combiner v3] (#museum-combiner-v3)
+- [Museum combiner v3](#museum-combiner-v3)
 - [Timed Task Looping](#timed-task-looping)
 - [Autoclicker](#autoclicker)
 - [Factory auto-trasher](#factory-auto-trasher)
@@ -103,7 +103,7 @@ DkQwUy5UdXJib01pbmVyAgAAAAZ3YWtldXAJb3Blbi5taW5lAQAAABJ0b3duLndpbmRvdy5pc29wZW4I
 Although this script is useful on its own, a large part of why I wrote it was to be an example for how to use turbo exec v2. It is relatively straightforward for a mining script, and all the speed comes from turbo. You can see the source, with liberal comments, at [D0S.TurboMiner](D0S.TurboMiner).
 
 ## Museum combiner v3
-This package combines museum powerstones, **really** fast. It is very close to
+This package combines museum powerstones, *really* fast. It is very close to
 the theoretical maximum speed, and much faster than any other combiner I know
 of. On my machine, it can upgrade a stone 11 tiers in <5 seconds, and do the
 entire equipped grid in ~8 minutes.
@@ -118,7 +118,7 @@ E0QwUy5NdXNldW0gdjMuMDpCdXkCAAAABWtleS53BWtleS5zAQAAABJ0b3duLndpbmRvdy5pc29wZW4I
 
 To use this, import and enable all the scripts in both this package and `turbo exec`.
 (You can right-click a package to quick-toggle-enable the whole package.)
-Then go to the museum and use W/S to change your **budget**.
+Then go to the museum and use W/S to change your *budget*.
 
 The budget is (roughly) how much will get spent to upgrade every stone in the
 grid; it's not what will get used every time. A good rule of thumb is to set
@@ -146,7 +146,8 @@ or turn off AI, but pressing "M" cleans up the inventory so you don't lose
 stones.
 
 The script gracefully handles running out of resources and offshore market
-rollovers. (In both cases, it continues on as best it can.)
+rollovers. (In both cases, it continues on as best it can.) It also handles
+not having an offshore market at all (it will just use regular stones).
 
 ### Transmuting
 
