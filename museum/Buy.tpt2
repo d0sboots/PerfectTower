@@ -1,0 +1,123 @@
+:import museum_macros
+:name {script(Buy)}
+
+; This isn't included in this subdirectory, but comes from the factory/ directory.
+:import worker_storage_lib
+
+; This script is responsible for buying from the regular market.
+;
+; It also contains initialization logic for variables. They must be set in the
+; proper order, so that the remain hidden inside our <size=0> block. This also
+; reads/writes the budget from worker storage, and increment/decrements it
+; if the right keys are pressed.
+
+key.{up}()
+key.{down}()
+
+isopen("museum")
+
+:global string museum_status
+:global int museum_tier
+:global int target_tier
+:global int museum_pos
+
+:global int turbo.register
+:global int turbo.cycles
+
+:local string local_buy
+:local double worker_val
+
+; If we're being called from Combine, we're a buyer.
+; Otherwise, if we're being invoked due to key-impulse, but the combiner is
+; currently running, abort. We don't want to change the budget in the middle
+; of things.
+goto(if(\
+  contains("{script(Combine)}", impulse()),\
+  buy,\
+  if(\
+    contains("key.{up}|key.{down}", impulse()) &&\
+      contains(museum_status, "Combining"),\
+    end,\
+    init\
+  )\
+))
+
+init:
+
+; We direct-start turbo, to avoid extra scripts causing lag.
+turbo.register += 1
+
+; Use worker_storage_lib to find a worker_slot to use for permanent storage.
+#prefix [museum]
+:local int worker_slot
+{worker_lib_line_1({prefix})}
+{worker_lib_line_2}
+
+; Fetch the budget from the chosen worker. The s2d fallback handles the case
+; where we're allocating new storage, as well.
+worker_val = s2d(sub(worker.name(worker_slot), {len({prefix})}, 99), 1e11)
+
+; Ensure this value is set before we start hiding variables.
+; If we're launching on wakeup(), the other turbo variables will get set
+; in time, but this one might not.
+turbo.cycles = turbo.cycles
+
+; If we're incrementing or decrementing the budget, round it to a fixed
+; amount. This allows users to set it to a specific amount by modifying the
+; worker if they wish, but we'll always get clean set-points when changing
+; via the UI.
+; The lower bound is 1e5, since at that point you can't buy any stones
+; (according to our budget).
+; Also, set budget to -1 if there are no worker slots available. This is our
+; signal to Main, so that it can display an appropriate error message.
+gds({budget}, if(\
+  worker_slot == 200,\
+  -1.,\
+  if(\
+    contains(impulse(), "key."),\
+    (10. ^ 0.5) ^ max(10., \
+      round(worker_val // (10. ^ 0.5)) +\
+      if(contains(impulse(), "key.{up}"), 1., -1.)\
+    ),\
+    worker_val\
+  )\
+))
+; Save the budget back. There's always enough room for the full value.
+worker.setName(\
+  worker_slot - if(worker_slot < 100, 0, 100),\
+  "{prefix}" . gdg({budget})\
+)
+
+; Set other variables that need to happen before we close the script block.
+museum_tier = museum_tier
+museum_pos = -1
+
+; Signal Main to wake up. We only want to override target_tier if it's idle,
+; i.e. set to 0 - other situations show that it's in use, and notifying about
+; changing budget is the lowest priority.
+target_tier = if(target_tier == 0, -3, target_tier)
+
+; We don't care about waiting for the frame break, so manipulate the value
+; directly instead of using "turbo stop".
+; This also gives some (useful) extra turbo frames to our caller, Main.
+turbo.register -= 1
+
+buy:
+; If we're a buyer, use the stone in inventory.
+; Otherwise, buy nothing until we can exit normally.
+local_buy = if(\
+  contains("{script(Combine)}", impulse()),\
+  element("inventory", 0),\
+  ""\
+)
+
+; Because of turbo exec, this script will keep running every cycle, until
+; the frame pause. At that point, it will exit, and we rely on Combine to
+; restart it.
+;
+; Everything is very carefully engineered to make this expression as minimal
+; as possible. It's worth spending extra cycles in set-up in order to remove
+; a single node from this expression.
+buy(local_buy)
+
+end:

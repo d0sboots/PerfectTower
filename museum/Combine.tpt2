@@ -1,0 +1,131 @@
+:import museum_macros
+:name {script(Combine)}
+
+; This script is responsible for actually combining gems.
+;
+; That's true in two senses: It both has the actual call to Combine(), and
+; also the logic immediately surrounding it that runs the combines and checks
+; to see if the loop is done.
+
+:global int museum_tier
+:global int target_tier
+
+:global int turbo.cycles.max
+:global int turbo.cycles
+:global int turbo.register
+
+; If we're invoking ourselves, we're a dedicated Combine()er.
+; Otherwise, check to see if we've already reached our goal.
+; If we have, we can exit early, otherwise fall through to the main logic.
+goto(if(\
+  contains(impulse(), "{script(Combine)}"),\
+  combine,\
+  if(tier("inventory", 0) >= target_tier, done, start)\
+))
+start:
+
+; Stop our parent. Although buying from the market might be what we need, it
+; would be in the wrong order relative to combines.
+stop("{script(BuyOffshore)}")
+
+; Keep restarting the buy and combine scripts whenever the turbo frame ends.
+; They rely on the 1-cycle-end-of-script-loop property of turbo to function,
+; so we also keep the cycle max up for efficiency.
+restart_loop:
+
+; We start 3 copies of combine, because each combine only combines 3 gems.
+; (As opposed to when you do it manually: then it does 2 combines, once on
+; mousedown and one on mouseup.) 3 is roughly optimal: there are very few
+; positions the inventory can be in that don't support 3 combines between buys,
+; whereas there are significantly more for 4. And combine is one of the most
+; time-expensive operations in the loop, so we don't want to run it pointlessly.
+execute("{script(Combine)}")
+execute("{script(Combine)}")
+execute("{script(Combine)}")
+
+; Start the correct buyer. Buy running this after the combiners, we'll always
+; end each cycle with a full inventory, which is important for the check below.
+execute(if(museum_tier == 1, "{script(Buy)}", "{script(BuyOffshore)}"))
+
+; Extend the max duration. There is a possible race condition where we might
+; already be exiting turbo due to being at too many cycles; this is death with
+; (and discussed more) in BuyOffshore. We can never be in the race condition
+; internally, because it does not take nearly 200 cycles to get from the
+; "turbo stop" to this line.
+turbo.cycles.max = max(turbo.cycles.max, turbo.cycles + 1050)
+
+; The core condition to wait for. This condition needs to be as minimal as
+; possible, because it is draining CPU time away from the important combine/buy
+; tasks every cycle. (So is the turbo exec machinery, but we can't help that.)
+waituntil(tier("inventory", 0) >= target_tier || turbo.cycles >= 1000)
+
+; If we are done, stop the buyers ASAP, to avoid wasting money. The condition
+; here relies on the condition above for correctness, but is simpler.
+; (Technically there's an edge case if it finishes right at the end, but the
+; number of cycles required means that won't happen.)
+stop(if(turbo.cycles >= 1000,\
+  "",\
+  if(museum_tier == 1, "{script(Buy)}", "{script(BuyOffshore)}")\
+))
+
+; We restart turbo by changing the variable directly, so that there isn't a
+; "turbo start" script taking up cycles. In comparison, we stop turbo with
+; executesync(), because we want to block until the end of the frame, and
+; the end of the frame will naturally clean up the script.
+executesync("turbo stop")
+turbo.register += 1
+
+; Do another loop if we're not done yet.
+; Abort if the 3rd-to-last power stone is not the tier we expect it to be.
+; Because Buy(Offshore) runs after the combines, and won't have been stopped
+; in the case where we're not done yet, we can expect the "fill inventory" buy
+; to have left the final position with our target tier. Checking this way
+; catches both museum rollover and out-of-resources.
+;
+; The reason for checking the 3rd-to-last slot, and not the last slot, has to
+; do with the way combine processing is run: It starts checking for combinable
+; stuff from the first slot down. So it's possible for two base-tier stones to
+; be left in the last two slots, but there can't be *3* in the last 3, because
+; they would be combine-eligible. *Unless* they were just bought. (This isn't
+; quite true, because the combines might be occupied with higher-tier stones,
+; but if we've exausted resources or had rollover, it will rapidly become true.)
+;
+; This also interacts in predictable ways with another couple of common issues:
+; lacking the "quick combine" skill and not having all the inventory slots.
+; If all the slots aren't purchased, this condition will always fail immediately.
+; The symptom will be that the combiners seems to "never do anything."
+; Conversely, without quick combine no progress will ever be made. As soon
+; as a power stone is hit that needs fast leveling, it will get "stuck" there.
+; This is a sure sign of lacking quick-combine.
+;
+; If we are doing a "careful" combine without fill-inventory, it shouldn't take
+; more than 1000 cycles, so this condition won't be a problem.
+gotoif(restart_loop,\
+  tier("inventory", 0) < target_tier && tier("inventory", 21) == museum_tier)
+
+done:
+; In case we jumped here directly.
+stop("{script(BuyOffshore)}")
+
+; This is the signal for Main that it should continue.
+museum_tier = -1
+
+; Now that we're done, move the finished stone back to "equipped". This also
+; moves partial/original stones back, if we cancelled via {start}.
+; This won't preserve order if there were spaces - everything will get
+; crunched together. Fixing this is technically possible, but very challenging
+; and just not worth it.
+;
+; Even though this happens after signalling, we get one extra cycle as a
+; "delay slot" before we're stopped by Main.
+move("inventory", 0, "equipped")
+
+combine:
+; Because of turbo exec, this script will keep running every cycle, until
+; the frame pause. At that point, it will exit, and we rely on Combine to
+; restart it.
+
+; There's no point in using a variable for the combine limit; halting the
+; combines is handled by the end of turbo. Having the limit be a constant
+; removes one node from the hottest execution path.
+combine(50)

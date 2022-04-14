@@ -1,0 +1,160 @@
+:import museum_macros
+:name {script(BuyOffshore)}
+
+; This script is responsible for buying from the offshore market.
+;
+; It also contains (stub) logic for handling key.{start}. This would be part
+; of Main normally, but there can only be 2 impulses per script at the
+; resource-cost-levels we're targeting.
+;
+; The final (bulk) of the logic deals with buying test stones from the
+; offshore market and doing calculations/preparations for the actual
+; combining, which is handled by Combine. This script sets museum_tier
+; and target_tier, which directly drive the combining process.
+
+key.{start}()
+
+:global int museum_tier
+:global int target_tier
+:global int museum_pos
+:global double budget
+
+:global int turbo.register
+:global int turbo.cycles
+:global int turbo.cycles.max
+
+:local int max_craft_tier
+:local string local_buy
+
+; Dispatch to the correct logic.
+; * If we're called from Combine, we're running as a Buyer.
+; * Otherwise, if we're called from key.{start}, then check if the museum
+;   is open. If it is, signal Main, otherwise exit. We can't just set a
+;   condition on the script, because that would possibly mess up scripts
+;   that execute us, on exiting the museum.
+; * Otherwise, we're called from Main, and are falling through to
+;   combine set-up.
+gotoif(\
+  if(\
+    contains("{script(Combine)}", impulse()),\
+    buy,\
+    if(isopen("museum"), button, end)\
+  ),\
+  contains("{script(Combine)}|key.{start}", impulse())\
+)
+
+; This local can be changed to set a ceiling on crafting.
+; Its only purpose is for getting all gems to the same level so they can
+; be transmuted with the cube; otherwise, this should be left at 50.
+; Usually it's better to just wait for Universal gems to show up in the
+; market, but if you're desperate, you can try this.
+max_craft_tier = 50
+
+; Only buy one of the expensive market gems to test with.
+fill(false)
+clear("inventory")
+
+; Buy a test gem from the market, to tell us what's available for upgrading
+; this element. The max tier is determined from our budget; we calculate it
+; so that at most 1% of our budget is spent on test gems, assuming 100 power
+; stones. (It will usually be much less, because of rounding and the random
+; chance of stone tiers.)
+; It's fine to miss out on some over-leveled gems in the market;
+; they are never the ones that will lead to the highest-leveled gems after
+; upgrading, anyway (when considering our budget).
+buyMarket(element("equipped", museum_pos),\
+  d2i((gdg({budget}) / (2000. * 10000. / 18.)) // 18.))
+
+; Set the tier of stones we are buying.
+; Typically, this is the tier we can get from the offshore market (as determined
+; from test-stone buying), or 1 to denote regular buying if the stones aren't
+; available right now from offshore.
+; However, there is a quirk at lower tiers: If we will only be able to upgrade
+; to tier 12 (or less) using the offshore market, it is always better to use
+; regular stones. The expression here is explained below.
+museum_tier = if(\
+  (gdg({budget}) / (100. * 2000. / 18.)) // 3. -\
+      i2d(tier("inventory", 0)) * (18. // 3. - 1.) < 13.,\
+  1,\
+  max(1, tier("inventory", 0))\
+)
+
+; Determine "target_tier", the level we are trying to upgrade to. In the
+; best case, we can upgrade 11 levels past the tier of the stones we can
+; buy from the museum. (Which may only be tier 1.)
+; We allocate 1% of budget to each stone. Based on the tier of the stones we
+; can buy, they cost 2000 * 18^museum_tier / 18 each. (We ignore the extra cost
+; of universal stones.) This determines how many stones we can buy, and thus,
+; the target tier.
+; Because of how test gems are bought, they should always be at least 100x
+; cheaper than our budget, meaning target_tier should be at least 4 levels
+; greater than museum_tier.
+target_tier = if(tier("equipped", museum_pos) < 0,\
+  -1,\
+  min(max_craft_tier,\
+    min(11,\
+      d2i((gdg({budget}) / (100. * 2000. / 18.)) // 3. -\
+        i2d(museum_tier) * (18. // 3.))\
+    ) + museum_tier\
+  )\
+)
+; There are a couple of different conditions here.
+; If tier(museum_pos) >= target_tier, we want to get rid of the test stone, so
+; that our stone goes to slot 0. That way the loop will end immediately.
+; If tier(museum_pos) < museum_tier, we want to get rid of *our* stone, because
+; it's too low level and can't be combined with.
+; Otherwise, it's potentially useful to help speed up the process.
+delete(\
+  if(tier("equipped", museum_pos) >= target_tier, "inventory", "equipped"),\
+  if(\
+    tier("equipped", museum_pos) >= target_tier,\
+    0,\
+    if(tier("equipped", museum_pos) < museum_tier, museum_pos, -1)\
+  )\
+)
+move("equipped", museum_pos, "inventory")
+
+; If we're only upgrading 6 or fewer levels, we buy one-at-a-time to avoid
+; overbuying. The number of operations is so small that it won't be slow.
+fill(target_tier - museum_tier > 6)
+
+; Extend turbo for a little longer. There's a race condition where we might
+; run out of cycles and start a new frame, but even if we do that on this
+; line, the new frame will start in time for the Combiners to loop properly,
+; and for the max-setting line in Combine to set the max to its proper value.
+;
+; Otherwise, this ensures that we stay in the current loop until the line
+; in Combine sets cycles.max to its full value.
+; This is a small enough extension so that if we never enter the main loop
+; of Combine, we'll still eventually hit turbo.cycles.max and start a new frame.
+; (I.e. we can't loop indefinitely with this extension alone.)
+turbo.cycles.max = max(turbo.cycles.max, turbo.cycles + 15)
+
+; executesync() is used here to pause us until our child Combine stops us.
+executesync("{script(Combine)}")
+
+; We jump here from the top when key.{start} is pressed.
+button:
+; Signal Main. This will overwrite target_tier if we are currently combining,
+; causing an early exit and leading to main resuming - which is what we
+; want.
+target_tier = -2
+
+buy:
+; If we're a buyer, use the stone in inventory.
+; Otherwise, buy nothing until we can exit normally.
+local_buy = if(\
+  contains("{script(Combine)}", impulse()),\
+  element("inventory", 0),\
+  ""\
+)
+
+; Because of turbo exec, this script will keep running every cycle, until
+; the frame pause. At that point, it will exit, and we rely on Combine to
+; restart it.
+;
+; Everything is very carefully engineered to make this expression as minimal
+; as possible. It's worth spending extra cycles in set-up in order to remove
+; a single node from this expression.
+buyMarket(local_buy, museum_tier)
+end:

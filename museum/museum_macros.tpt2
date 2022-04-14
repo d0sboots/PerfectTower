@@ -1,0 +1,11 @@
+; Standardized (package) naming across all the scripts
+#script(name) D0S.Museum v3.0:{name}
+
+; Keybindings. You can edit these here, or edit them in the scripts directly
+; (but it will be much more error-prone).
+#up w
+#down s
+#start m
+
+; Name of the budget variable, which begins the script-hiding block.
+#budget "<size=0>mb**"

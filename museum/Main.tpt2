@@ -1,0 +1,223 @@
+:import museum_macros
+:name {script(Main)}
+
+; The "main" script of the combiner. It starts on wakeup/entry into the
+; museum, and keeps running until the user leaves the museum. This is because
+; it is responsible for maintaining the UI global "museum_status", which
+; both conveys information to the user and also ends a <size=0> block that
+; hides our internal global variables. When we leave the museum, this is
+; set to "</size>" to blank the display and leave no clutter.
+;
+; This script also runs the outer part of the loop, which updates the
+; position of the combiner. It is well-suited to this, because it is the
+; only script that doesn't get stop()'ed at some point.
+
+:global int max_craft_tier
+:global int museum_pos
+
+:global string museum_status
+:global int museum_tier
+:global int target_tier
+
+:global int turbo.cycles
+:global int turbo.register
+
+:local double go_time
+
+wakeup()
+open.museum()
+
+isopen("museum")
+
+top:
+; Launch Buy to initialize the global variables in the proper order.
+; We re-do this after every run, because it resets museum_pos for us.
+executesync("{script(Buy)}")
+
+; This loop usually runs without turbo, although it can have lingering
+; turbo from other scripts without bad effects. It keeps the status line
+; up-to-date while the museum is not running.
+status_loop:
+; We use target_tier to receive signals from other scripts. 0 means nothing
+; is hapenning, so we always reset to 0 at the top.
+target_tier = 0
+
+; This is a useful sub-expression when displaying numbers in rounded
+; scientific notation. We want to extract the exponent, but for numbers like
+; .9996, we know they'll round up to 1.00 (when rounded to 3 places), so we
+; have to consider them as an exponent higher already.
+; The parameter is to allow for the injection of a constant for constant
+; folding in later expressions.
+#adjusted_exp(x) floor(gdg({budget}) // 10. - (0.9995 // 10. + {x}))
+
+; Stringify the budget in rounded-scientific notation, rounded to 3 digits
+; (2 after the decimal place). This is an awkwardly large expression, but
+; it's really the best we can do with the tools we have.
+; The "2" passed to adjusted_exp subtracts 2 from the exponent, so the
+; overall effect is to multiply by 100 (before rounding).
+#rounded_budget round(gdg({budget}) / (10. ^ {adjusted_exp(2.)})) / 100. .\
+  "e". {adjusted_exp(0.)}
+
+; Take the ceiling of time remaining (instead of the floor), so that we tick
+; over to 0 exactly when we cross the threshold, like how countdowns regularly
+; work.
+; The parameter is a divisor, so we can constant-fold the minute division.
+#time_ceil(x) floor((go_time - now() + 10000000.) / (10000000. * {x}))
+
+; Set the status. There's a lot of cases to this:
+; * Error for no workers available.
+;   - We don't have direct visibilty to worker_slot, but Buy will signal the
+;     error by setting budget to negative, which will never happen otherwise.
+; * Error for a bad Turbo install. This is disturbingly frequent.
+; * Show our current budget, with green highlighting to prompt that this
+;   can be adjusted.
+; * Show a brief help line, also with green highlighting to link the keys
+;   to the budget.
+; * If we've pressed {start}, show the Combining message instead. This is
+;   important because certain things key off of it. target_tier = -2 is the
+;   signal for this.
+;
+; We don't bother doing anything special when the museum isn't open, since
+; we'll handle that at the bottom of the script.
+museum_status = if(\
+  gdg({budget}) < 0.,\
+  "</size>error=<color=#fb3>No available workers!</color>",\
+  if(\
+    turbo.cycles == 0,\
+    "</size>error=<color=#fb3>Turbo exec is not working</color>",\
+    "</size>museum=<color=#2f4>" .\
+    {rounded_budget} .\
+    "</color> <color=#fff>budget</color><br>\
+<color=#0df><color=#2f4>{up}</color>/<color=#2f4>{down}</color> changes, <color=#2f4>{start}</color> " .\
+    if(\
+      go_time == 0.,\
+      "begins</color>",\
+      "stops</color><br><color=#fff>Waiting " .\
+      {time_ceil(60.)} . ":" . sub(d2s({time_ceil(1.)} % 60. + 100.), 1, 2) .\
+      "</color>"\
+    )\
+  )\
+)
+; The s2i()/sub() expression is a jump-table, where the string values are
+; line numbers.
+; The values that target_tier can have when we get here are 0
+; (if it hasn't been set to anything since it was cleared at the top of
+; status_loop), -2 (set when key.{start} is pressed), and -3 (set when
+; budget is adjusted via key.{up}/key.{down}).
+;
+; -2 finishes the loop. -3 should reset target_tier and update status by
+; jumping two lines back. 0 *could* repeat the same line, except sometimes
+; we have to update status, so we jump one back, to set status.
+; We can't merge the -3 and 0 cases, because setting target_tier over-frequently
+; makes keystrokes flaky.
+goto(if(\
+  isopen("museum"),\
+  if(\
+    go_time != 0. && now() > go_time,\
+    start_museum,\
+    s2i(sub("25 3", target_tier + 3, 1), 99)\
+  ),\
+  end\
+))
+
+start_museum:
+; Now that we're in the active part of the script, start turbo. We want
+; minimal overhead, so don't execute an extra script, just increment
+; the variable.
+turbo.register += 1
+
+; go_time is the time that we should automatically start the museum again.
+; Initially it is 0, which means the auto-timer is not running. If we get
+; here in that state, we set go_time to be an hour from now, so that when
+; the museum finishes we will start again an hour from when it started
+; (regardless of how long it took to run).
+; Otherwise, if target_tier is -2 then we pressed {start} to cancel the
+; timer, so we set go_time to 0. We will also jump to the bottom of the
+; script to stop turbo and return to the idle loop.
+; The final case handles automatic activation, where we add another hour
+; to the timer.
+go_time = if(\
+  go_time == 0.,\
+  now() + (60. * 60. * 10000000.),\
+  if(\
+    target_tier == -2,\
+    0.,\
+    go_time + (60. * 60. * 10000000.)\
+  )\
+)
+gotoif(stop_turbo, go_time == 0.)
+
+upgrade_loop:
+; Besides recording the tier of stones that can be bought, this also serves
+; as a signal variable. We must reset it to 0 so that we actually wait
+; for BuyOffshore/Combine to be done.
+museum_tier = 0
+
+; Go to the next script to perform the actual upgrade.
+; We run this even when museum_pos is -1, in order to set all the variables
+; properly. Combine will exit immediately in that case, without a frame break,
+; so we will fall down below and set the status correctly within the frame
+; that it starts.
+execute("{script(BuyOffshore)}")
+
+; Combine (which gets run from BuyOffshore) will signal us when it's done.
+; It must be stopped for proper cleanup.
+waituntil(museum_tier == -1)
+stop("{script(Combine)}")
+
+skip:
+museum_pos += 1
+; While running, we have fewer conditions to check, since the errors were
+; already signaled at the top. (There's nothing actually stopping the user
+; from starting the script anyway, but that's on them at that point.)
+;
+; The condition for displaying Combining is reversed, since it's usual
+; here, and if {start} is pressed it means we should exit.
+museum_status = "</size>museum=<color=#2f4>" .\
+  {rounded_budget} .\
+  "</color> <color=#fff>budget</color><br>" .\
+  if(\
+    target_tier != -2,\
+    "<color=#ff0>Combining... [" . museum_pos . "] <color=#2f4>{start}</color> stops</color>",\
+    "<color=#0df><color=#2f4>{up}</color>/<color=#2f4>{down}</color> changes, <color=#2f4>{start}</color> begins</color>"\
+  )
+
+stop_turbo:
+; Most of the time, we do not want to stop turbo. We only want to do it in
+; the specific cases where we'll be ending the loop. So, this duplicates a lot
+; of the logic in the loop below, all for the benefit of saving a line.
+;
+; Note that if we jumped to stop_turbo directly, museum_status can never
+; contain "Combining".
+executesync(if(\
+  isopen("museum") && museum_pos < 130 && contains(museum_status, "Combining"),\
+  "",\
+  "turbo stop"\
+))
+
+; This very complicated gotoif consolidates the ends of lots of loops into
+; one statement.
+; If the museum is closed, fall through to exit the script.
+; If we're through all the positions, or if we're no longer "Combining"
+; (which means {start} was pressed), go to the top to reset our state.
+; As a sub-quirk: If we cancelled via {start}, and go_time is still set,
+; jump to start_museum, which won't actually re-start the loop: It will
+; unset go_time instead, and jump back here, where we will finally exit
+; for real.
+; Otherwise, continue the loop: Either normally, or via a shortcut if this
+; part of the grid is empty, to avoid executing the sub-scripts.
+gotoif(\
+  if(\
+    museum_pos < 130 && contains(museum_status, "Combining"),\
+    if(tier("equipped", museum_pos) == -1, skip, upgrade_loop),\
+    if(target_tier == -2 && go_time != 0., start_museum, top)\
+  ),\
+  isopen("museum")\
+)
+
+end:
+; Before we exit, blank the status so that there isn't clutter on the screen.
+; This is safe to do in the last slot because turbo shouldn't be running by
+; this point. Even if it is, we're the only ones who set museum_status, so
+; it's still safe.
+museum_status = "</size>"
