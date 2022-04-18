@@ -127,6 +127,8 @@ this to the amount of Museum resources you have, or maybe a little less.
 Press "M" to start the combiner. (If you don't like these keys, see [the
 modification instructions](/museum/README.md) for how you can change them.)
 
+![The combiner running](/museum_combiner.png)
+
 ### Features
 
 The combiner tries to upgrade every stone you already have in your equipped
@@ -148,6 +150,12 @@ stones.
 The script gracefully handles running out of resources and offshore market
 rollovers. (In both cases, it continues on as best it can.) It also handles
 not having an offshore market at all (it will just use regular stones).
+
+This script uses worker-name storage to hold the budget even when AI is turned
+off. This will overwrite one of your worker's names (generally, the first one).
+If you want to use a different worker, name one of them `[museum]` and delete/rename
+the old name. You can also manually change the budget by editing the value stored
+here, which can be faster than hitting "W" or "S" a lot of times.
 
 ### Transmuting
 
