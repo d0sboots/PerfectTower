@@ -12,7 +12,7 @@
 - [Dust Up-tierer](#dust-up-tierer)
 - [Button coordinate finder](#button-coordinate-finder)
 - [AI Benchmarker](#ai-benchmarker)
-- [Auto Era Disabler] (#auto-era-disabler)
+- [Auto Era Disabler](#auto-era-disabler)
 - [Finite Infinities v2](#finite-infinities-v2)
 - [Infinity phase scripts](#infinity-phase-scripts)
 - [Other Utilities](#other-utilities)
@@ -315,7 +315,7 @@ An external blueprint script can also change the elements, in order to use the
 disabler as an (optional) part of its BP. To do this, set the global variable
 `<size=0>element_config` sometime early in your script. Also make sure to add
 `</size>` to the end of the value. (So instead of "nature<darkness", you would
-set it to "nature<darkness</size>".
+set it to "nature<darkness&lt;/size>".
 
 ## Finite Infinities v2
 This is a blueprint AI, it goes with the Finite Infinites BP by Xenos.
