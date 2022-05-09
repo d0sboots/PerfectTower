@@ -1,0 +1,160 @@
+:local string local_counter
+:local string element_config
+:local string elem_prefix
+:local double threshold
+:local int stage
+:local int pos
+:local int elem_idx
+:local string element
+
+wakeup()
+game.newround()
+
+isTowerTesting()
+
+; Macro for dealing with the element_config string.
+; We concat the global and local one together, so that if the global one
+; has been set it takes precedence, otherwise we'll use the local one.
+; Due to how it's parsed, we'll stop before continuing from global to local.
+#get_elements concat(gsg("<size=0>element_config"), element_config)
+
+; The counter also has an awkward (and script-private) name.
+; We often need to extract just the counter part, while replacing the
+; stuff that comes after.
+#counter "<size=0>er#c"
+#counter_prefix sub(gsg({counter}), 0, index(gsg({counter}), "</size>", 0))
+
+; These two macros define string data tables for looking up the names of
+; the elements. We use the first for matching prefixes, and also extracting
+; the full name. The second table contains the lengths of the full names,
+; stored at the same index in the string as the name starts in the first
+; table. By always grabbing 2 digits for the length, we guarantee that only
+; proper prefix matches will work.
+; The extra padding character at the start ensures that when things default
+; to 0, we won't get a valid length either.
+#element_names "_\
+nature_\
+electricity_\
+darkness_\
+universal_\
+fire_\
+light_\
+air_\
+water_\
+earth_\
+neutral"
+
+#element_lengths "_\
+06_____\
+11__________\
+08_______\
+09________\
+04___\
+05____\
+03__\
+05____\
+05____\
+07____"
+
+; The declaration of our disable order. We use "<" as a separator to make it
+; easy to parse, since it has to end with "</size>" to close the tag.
+element_config = "nature<elec<dark<uni<fire<light<air<water<earth<neut"
+element_config .= "</size>"
+
+; Set a counter value to determine if we're already running.
+; Unlike the traditional approach, we want to always start fresh on a new run,
+; and exit when a new copy starts. So we increment this counter, and keep a
+; copy of it locally. If our local copy differs, we exit. This actually takes
+; fewer lines than the traditional approach, but more complication at
+; startup, in order to use a string variable for hiding the counter.
+local_counter = s2i({counter_prefix}, 0) + 1 . "</size>"
+gss({counter}, local_counter)
+
+; Our loop revolves around the "stage" variable.
+
+; The first loop is stage 0. We won't set or increment any of our local
+; variables except threshold, which gets set to 1000. This lets us wait until
+; we have killed a few enemies before we start reading element_names, to give
+; outside scripts time to change it.
+
+; In stage 1, we read the first entry in element_names, update pos to point
+; to the next entry, set threshold to be the cost of this disable (which may
+; be -1 if it's not available in this level), and then increment stage if
+; threshold is non-negative, i.e. if the disable is valid. Then we wait
+; to have enough XP.
+
+; Stage 2 is much like stage 1, except we start by disabling the element we
+; were waiting for. If the element wasn't available, we will loop through
+; multiple times until we find one that is, and then finally wait for it and
+; disable it before entering stage 2. Otherwise, stage 2 is just like stage 1:
+; we are setting up to disable the 2nd element.
+
+; Stage 3 (and stage 4) are for disabling the era shield. Stage 3 goes through
+; the damage divisors, while stage 4 does health divisors. They're using the
+; same "element" variable, because the valid values don't overlap between
+; the upgrade.era and disable.era calls.
+
+; Stage 5 is for disabling all the rest of the elements. (However many we can
+; afford.) The min() in the expression that sets stage limits us to stage 5
+; normally. However, if we run out of elements in the element_names string,
+; we will go to stage 6, which signals to the loop at the end that we should
+; exit.
+
+main_loop:
+upgrade.era(element, 342)
+disable.era(element)
+
+stage = min(\
+  stage + if(threshold >= 0. && element != "", 1, 0),\
+  if(contains(sub({get_elements}, pos, 1), "/"), 6, 5)\
+)
+elem_prefix = sub({get_elements}, pos, index({get_elements}, "<", pos) - pos)
+elem_idx = index({element_names}, elem_prefix, 0)
+element = if(\
+  stage == 0,\
+  "Waiting for startup",\
+  if(\
+    stage == 3,\
+    "damage",\
+    if(\
+      stage == 4,\
+      "health",\
+      sub(\
+        {element_names},\
+        elem_idx,\
+        s2i(sub({element_lengths}, elem_idx, 2), 0)\
+      )\
+    )\
+  )\
+)
+gss({counter}, {counter_prefix} . if(\
+  element == "",\
+  "0</size><size=20><color=#f12>ERROR='" . elem_prefix . "' is not a valid prefix of an element</color></size>",\
+  "</size><size=20>next_disable=" . element . "</size>"\
+))
+; We use a "contains" check along with i2s() because it's more compact/faster
+; than doing a bunch of == checks. In general, there are a lot of contains()
+; tests, because of how it cuts down on nodes and thus shrinks the export
+; code.
+pos = if(\
+  contains("430", i2s(stage)) || contains(sub({get_elements}, pos, 1), "/"),\
+  pos,\
+  index({get_elements}, "<", pos) + 1\
+)
+
+threshold = if(\
+  stage == 0,\
+  1000.,\
+  if(\
+    contains("43", i2s(stage)),\
+    2188606.,\
+    disable.cost(element)\
+  )\
+)
+
+busy_loop:
+gotoif(\
+  if(xp() >= threshold, main_loop, busy_loop),\
+  stage < 6 && health(true) > 0. && contains(gsg({counter}), local_counter)\
+)
+gss({counter}, if(element == "", gsg({counter}), {counter_prefix} . "</size>"))
