@@ -1,5 +1,5 @@
 ; Standardized (package) naming across all the scripts
-#script(name) D0S.Museum v3.0:{name}
+#script(name) D0S.Museum v3.1:{name}
 
 ; Keybindings. You can edit these here, or edit them in the scripts directly
 ; (but it will be much more error-prone).

@@ -65,37 +65,49 @@ clear("inventory")
 buyMarket(element("equipped", museum_pos),\
   d2i((gdg({budget}) / (2000. * 10000. / 18.)) // 18.))
 
+; Macro for determining the number of tiers we can boost, given our budget and
+; stones of "in_tier".
+; We allocate 1% of budget to each stone. Based on the tier of the stones we
+; can buy, they cost 2000 * 18^in_tier / 18 each. (We ignore the extra cost
+; of universal stones.) This determines how many stones we can buy, and thus,
+; the max tier.
+; "offset" is a way of adding an additional factor of "in_tier" to the
+; expression as a constant factor. Doing this changes the meaning from
+; the number of tiers raised to the maximum tier attainable.
+#up_tiers(in_tier, offset) d2i((gdg({budget}) / (100. * 2000. / 18.)) // 3. - i2d({in_tier}) * (18. // 3. - {offset}))
+
 ; Set the tier of stones we are buying.
 ; Typically, this is the tier we can get from the offshore market (as determined
 ; from test-stone buying), or 1 to denote regular buying if the stones aren't
 ; available right now from offshore.
 ; However, there is a quirk at lower tiers: If we will only be able to upgrade
 ; to tier 12 (or less) using the offshore market, it is always better to use
-; regular stones. The expression here is explained below.
+; regular stones.
 museum_tier = if(\
-  (gdg({budget}) / (100. * 2000. / 18.)) // 3. -\
-      i2d(tier("inventory", 0)) * (18. // 3. - 1.) < 13.,\
-  1,\
-  max(1, tier("inventory", 0))\
+  contains(element("equipped", museum_pos), "universal") ||\
+    {up_tiers(tier("inventory", 0), 1)} > 12,\
+  max(\
+    tier("inventory", 0),\
+    if(\
+      contains(element("equipped", museum_pos), "universal"),\
+      -1,\
+      1\
+    )\
+  ),\
+  1\
 )
 
 ; Determine "target_tier", the level we are trying to upgrade to. In the
 ; best case, we can upgrade 11 levels past the tier of the stones we can
 ; buy from the museum. (Which may only be tier 1.)
-; We allocate 1% of budget to each stone. Based on the tier of the stones we
-; can buy, they cost 2000 * 18^museum_tier / 18 each. (We ignore the extra cost
-; of universal stones.) This determines how many stones we can buy, and thus,
-; the target tier.
+;
 ; Because of how test gems are bought, they should always be at least 100x
 ; cheaper than our budget, meaning target_tier should be at least 4 levels
 ; greater than museum_tier.
-target_tier = if(tier("equipped", museum_pos) < 0,\
+target_tier = if(min(tier("equipped", museum_pos), museum_tier) < 0,\
   -1,\
   min(max_craft_tier,\
-    min(11,\
-      d2i((gdg({budget}) / (100. * 2000. / 18.)) // 3. -\
-        i2d(museum_tier) * (18. // 3.))\
-    ) + museum_tier\
+    min(11, {up_tiers(museum_tier, 0)}) + museum_tier\
   )\
 )
 ; There are a couple of different conditions here.

@@ -45,7 +45,12 @@ execute("{script(Combine)}")
 
 ; Start the correct buyer. Buy running this after the combiners, we'll always
 ; end each cycle with a full inventory, which is important for the check below.
-execute(if(museum_tier == 1, "{script(Buy)}", "{script(BuyOffshore)}"))
+#correct_buyer if(\
+  contains(element("inventory", 0), "universal") || museum_tier != 1,\
+  "{script(BuyOffshore)}",\
+  "{script(Buy)}"\
+)
+execute({correct_buyer})
 
 ; Extend the max duration. There is a possible race condition where we might
 ; already be exiting turbo due to being at too many cycles; this is death with
@@ -63,10 +68,7 @@ waituntil(tier("inventory", 0) >= target_tier || turbo.cycles >= 1000)
 ; here relies on the condition above for correctness, but is simpler.
 ; (Technically there's an edge case if it finishes right at the end, but the
 ; number of cycles required means that won't happen.)
-stop(if(turbo.cycles >= 1000,\
-  "",\
-  if(museum_tier == 1, "{script(Buy)}", "{script(BuyOffshore)}")\
-))
+stop(if(turbo.cycles >= 1000, "", {correct_buyer}))
 
 ; We restart turbo by changing the variable directly, so that there isn't a
 ; "turbo start" script taking up cycles. In comparison, we stop turbo with
