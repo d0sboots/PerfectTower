@@ -5,7 +5,7 @@
 - [Factory automation](#factory-automation)
 - [Auto mining script V2](#auto-mining-script-v2)
 - [Turbo miner](#turbo-miner)
-- [Museum combiner v3](#museum-combiner-v3)
+- [Museum combiner v3](#museum-combiner-v31)
 - [Timed Task Looping](#timed-task-looping)
 - [Autoclicker](#autoclicker)
 - [Factory auto-trasher](#factory-auto-trasher)
