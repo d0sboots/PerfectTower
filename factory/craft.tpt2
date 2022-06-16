@@ -18,7 +18,7 @@ isopen("factory")
 ; If we were launched via key impulse, invoke the UI immediately to start turbo,
 ; and set action to signal which key was pressed. Otherwise, we're being called
 ; as a produce script.
-execute(if(contains(impulse(), "key."), "{script_name(ui)}", ""))
+execute(if(contains(impulse(), "key."), "{script_name(ui)}", "###badname###"))
 gotoif(group_abort, contains(impulse(), "key."))
 
 ; Craft all the items.

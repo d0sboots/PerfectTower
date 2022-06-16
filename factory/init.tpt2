@@ -61,20 +61,20 @@ target_value = {get_raw(factory_target)}
 executesync(if(\
   isopen("factory"),\
   if(target_value > 0., "{script_name(produce)}", "{script_name(run_recipes)}"),\
-  ""\
+  "###badname###"\
 ))
 stop(if(target_value > 0., "{script_name(produce)}", "{script_name(run_recipes)}"))
 executesync(if(\
   target_value > 0. && isopen("factory"),\
   "{script_name(craft)}",\
-  ""\
+  "###badname###"\
 ))
 stop(if(target_value > 0., "{script_name(craft)}", ""))
 
 ; Clear factory_target to indicate that crafting is done, if it is, in fact, done.
 factory_target = if({get_raw(factory_target)} > 0., factory_target, 0)
 ; Re-display the UI when crafting is done.
-execute(if(factory_target == 0, "{script_name(ui)}", ""))
+execute(if(factory_target == 0, "{script_name(ui)}", "###badname###"))
 
 ; Clear this (unconditionally), to signal that we're not starting a new crafting
 ; pass.
