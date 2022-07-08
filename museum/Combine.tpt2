@@ -9,10 +9,14 @@
 
 :global int museum_tier
 :global int target_tier
+:global int museum_pos
 
 :global int turbo.cycles.max
 :global int turbo.cycles
 :global int turbo.register
+
+; Stop our parent. If we're invoking ourselves, this is a wasted cycle.
+stop("{script(Calculate)}")
 
 ; If we're invoking ourselves, we're a dedicated Combine()er.
 ; Otherwise, check to see if we've already reached our goal.
@@ -20,13 +24,8 @@
 goto(if(\
   contains(impulse(), "{script(Combine)}"),\
   combine,\
-  if(tier("inventory", 0) >= target_tier, done, start)\
+  if(tier("inventory", 0) >= target_tier, done, restart_loop)\
 ))
-start:
-
-; Stop our parent. Although buying from the market might be what we need, it
-; would be in the wrong order relative to combines.
-stop("{script(BuyOffshore)}")
 
 ; Keep restarting the buy and combine scripts whenever the turbo frame ends.
 ; They rely on the 1-cycle-end-of-script-loop property of turbo to function,
@@ -43,18 +42,13 @@ execute("{script(Combine)}")
 execute("{script(Combine)}")
 execute("{script(Combine)}")
 
-; Start the correct buyer. Buy running this after the combiners, we'll always
+; Start the buyer. By running this after the combiners, we'll always
 ; end each cycle with a full inventory, which is important for the check below.
-#correct_buyer if(\
-  contains(element("inventory", 0), "universal") || museum_tier != 1,\
-  "{script(BuyOffshore)}",\
-  "{script(Buy)}"\
-)
-execute({correct_buyer})
+execute("{script(Buy)}")
 
 ; Extend the max duration. There is a possible race condition where we might
-; already be exiting turbo due to being at too many cycles; this is death with
-; (and discussed more) in BuyOffshore. We can never be in the race condition
+; already be exiting turbo due to being at too many cycles; this is dealt with
+; (and discussed more) in Calculate. We can never be in the race condition
 ; internally, because it does not take nearly 200 cycles to get from the
 ; "turbo stop" to this line.
 turbo.cycles.max = max(turbo.cycles.max, turbo.cycles + 1050)
@@ -68,18 +62,18 @@ waituntil(tier("inventory", 0) >= target_tier || turbo.cycles >= 1000)
 ; here relies on the condition above for correctness, but is simpler.
 ; (Technically there's an edge case if it finishes right at the end, but the
 ; number of cycles required means that won't happen.)
-stop(if(turbo.cycles >= 1000, "", {correct_buyer}))
+stop(if(turbo.cycles >= 1000, "", "{script(Buy)}"))
 
 ; We restart turbo by changing the variable directly, so that there isn't a
 ; "turbo start" script taking up cycles. In comparison, we stop turbo with
 ; executesync(), because we want to block until the end of the frame, and
 ; the end of the frame will naturally clean up the script.
-executesync("turbo stop")
+executesync("TE2.2:stop")
 turbo.register += 1
 
 ; Do another loop if we're not done yet.
 ; Abort if the 3rd-to-last power stone is not the tier we expect it to be.
-; Because Buy(Offshore) runs after the combines, and won't have been stopped
+; Because Buy runs after the combines, and won't have been stopped
 ; in the case where we're not done yet, we can expect the "fill inventory" buy
 ; to have left the final position with our target tier. Checking this way
 ; catches both museum rollover and out-of-resources.
@@ -103,24 +97,18 @@ turbo.register += 1
 ; If we are doing a "careful" combine without fill-inventory, it shouldn't take
 ; more than 1000 cycles, so this condition won't be a problem.
 gotoif(restart_loop,\
-  tier("inventory", 0) < target_tier && tier("inventory", 21) == museum_tier)
+  tier("inventory", 0) < target_tier && tier("inventory", 27) == museum_tier)
 
 done:
-; In case we jumped here directly.
-stop("{script(BuyOffshore)}")
-
 ; This is the signal for Main that it should continue.
-museum_tier = -1
+museum_tier = -2
 
 ; Now that we're done, move the finished stone back to "equipped". This also
 ; moves partial/original stones back, if we cancelled via {start}.
-; This won't preserve order if there were spaces - everything will get
-; crunched together. Fixing this is technically possible, but very challenging
-; and just not worth it.
 ;
 ; Even though this happens after signalling, we get one extra cycle as a
 ; "delay slot" before we're stopped by Main.
-move("inventory", 0, "equipped")
+museum.moveTo("inventory", 0, "equipped", museum_pos)
 
 combine:
 ; Because of turbo exec, this script will keep running every cycle, until

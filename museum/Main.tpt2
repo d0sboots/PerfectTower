@@ -158,11 +158,11 @@ museum_tier = 0
 ; properly. Combine will exit immediately in that case, without a frame break,
 ; so we will fall down below and set the status correctly within the frame
 ; that it starts.
-execute("{script(BuyOffshore)}")
+execute("{script(Calculate)}")
 
-; Combine (which gets run from BuyOffshore) will signal us when it's done.
+; Combine (which gets run from Calculate) will signal us when it's done.
 ; It must be stopped for proper cleanup.
-waituntil(museum_tier == -1)
+waituntil(museum_tier == -2)
 stop("{script(Combine)}")
 
 skip:
@@ -191,8 +191,8 @@ stop_turbo:
 ; contain "Combining".
 executesync(if(\
   isopen("museum") && museum_pos < 130 && contains(museum_status, "Combining"),\
-  "",\
-  "turbo stop"\
+  "%%museum-nop%%",\
+  "TE2.2:stop"\
 ))
 
 ; This very complicated gotoif consolidates the ends of lots of loops into

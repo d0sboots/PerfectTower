@@ -4,7 +4,7 @@
 ; This isn't included in this subdirectory, but comes from the factory/ directory.
 :import worker_storage_lib
 
-; This script is responsible for buying from the regular market.
+; This script is responsible for buying all stones.
 ;
 ; It also contains initialization logic for variables. They must be set in the
 ; proper order, so that the remain hidden inside our <size=0> block. This also
@@ -24,7 +24,8 @@ isopen("museum")
 :global int turbo.register
 :global int turbo.cycles
 
-:local string local_buy
+:local string local_elem
+:local int local_buy_amount
 :local double worker_val
 
 ; If we're being called from Combine, we're a buyer.
@@ -44,8 +45,10 @@ goto(if(\
 
 init:
 
-; We direct-start turbo, to avoid extra scripts causing lag.
-turbo.register += 1
+; We do *not* direct-start turbo, because we want to detect broken turbo installs.
+; In particular, if someone has turbo v2.1 still installed, that would break, but in a way
+; that's not easy to programatically detect if we direct-start at this point.
+executesync("TE2.2:start")
 
 ; Use worker_storage_lib to find a worker_slot to use for permanent storage.
 #prefix [museum]
@@ -103,9 +106,15 @@ target_tier = if(target_tier == 0, -3, target_tier)
 turbo.register -= 1
 
 buy:
+; If we're only upgrading 5 or fewer levels, we buy one-at-a-time to avoid
+; overbuying. The number of operations is so small that it won't be slow.
+; This actually maxes out on speed at +7 levels, because at that point we are
+; buying 6 each cycle, which matches the amount the combines use.
+local_buy_amount = max(1, (target_tier - museum_tier - 5) * 3)
+
 ; If we're a buyer, use the stone in inventory.
 ; Otherwise, buy nothing until we can exit normally.
-local_buy = if(\
+local_elem = if(\
   contains("{script(Combine)}", impulse()),\
   element("inventory", 0),\
   ""\
@@ -118,6 +127,6 @@ local_buy = if(\
 ; Everything is very carefully engineered to make this expression as minimal
 ; as possible. It's worth spending extra cycles in set-up in order to remove
 ; a single node from this expression.
-buy(local_buy)
+museum.buyTier(local_elem, museum_tier, local_buy_amount)
 
 end:
