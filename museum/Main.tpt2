@@ -22,8 +22,6 @@
 :global int turbo.cycles
 :global int turbo.register
 
-:local double go_time
-
 wakeup()
 open.museum()
 
@@ -58,11 +56,15 @@ target_tier = 0
 #rounded_budget round(gdg({budget}) / (10. ^ {adjusted_exp(2.)})) / 100. .\
   "e". {adjusted_exp(0.)}
 
+; Macro-substitution for the museum timer, allows mocking it out easily for
+; testing.
+#timer gdg("fake_timer")
+
 ; Take the ceiling of time remaining (instead of the floor), so that we tick
 ; over to 0 exactly when we cross the threshold, like how countdowns regularly
 ; work.
 ; The parameter is a divisor, so we can constant-fold the minute division.
-#time_ceil(x) floor((go_time - now() + 10000000.) / (10000000. * {x}))
+#time_ceil(x) floor(({timer} + 10000000.) / (10000000. * {x}))
 
 ; Set the status. There's a lot of cases to this:
 ; * Error for no workers available.
@@ -90,7 +92,7 @@ museum_status = if(\
     "</color> <color=#fff>budget</color><br>\
 <color=#0df><color=#2f4>{up}</color>/<color=#2f4>{down}</color> changes, <color=#2f4>{start}</color> " .\
     if(\
-      go_time == 0.,\
+      museum_tier != -2,\
       "begins</color>",\
       "stops</color><br><color=#fff>Waiting " .\
       {time_ceil(60.)} . ":" . sub(d2s({time_ceil(1.)} % 60. + 100.), 1, 2) .\
@@ -110,12 +112,18 @@ museum_status = if(\
 ; we have to update status, so we jump one back, to set status.
 ; We can't merge the -3 and 0 cases, because setting target_tier over-frequently
 ; makes keystrokes flaky.
+;
+; We use a modified jump table when museum_tier is -2, which indicates that
+; we are synced to the refresh timer. In that case, we abort when the timer is
+; 59:59 (meaning the refresh just hapenned), and when start is pressed (-2 for
+; target_tier) we jump back to executing Buy, which will reset museum_tier
+; (and also do other things, which we don't care about) in that case.
 goto(if(\
   isopen("museum"),\
   if(\
-    go_time != 0. && now() > go_time,\
+    museum_tier == -2 && {timer} >= (59. * 60. + 59.) * 10000000.,\
     start_museum,\
-    s2i(sub("25 3", target_tier + 3, 1), 99)\
+    s2i(sub(if(museum_tier == -2, "21 3", "25 3"), target_tier + 3, 1), 99)\
   ),\
   end\
 ))
@@ -125,27 +133,6 @@ start_museum:
 ; minimal overhead, so don't execute an extra script, just increment
 ; the variable.
 turbo.register += 1
-
-; go_time is the time that we should automatically start the museum again.
-; Initially it is 0, which means the auto-timer is not running. If we get
-; here in that state, we set go_time to be an hour from now, so that when
-; the museum finishes we will start again an hour from when it started
-; (regardless of how long it took to run).
-; Otherwise, if target_tier is -2 then we pressed {start} to cancel the
-; timer, so we set go_time to 0. We will also jump to the bottom of the
-; script to stop turbo and return to the idle loop.
-; The final case handles automatic activation, where we add another hour
-; to the timer.
-go_time = if(\
-  go_time == 0.,\
-  now() + (60. * 60. * 10000000.),\
-  if(\
-    target_tier == -2,\
-    0.,\
-    go_time + (60. * 60. * 10000000.)\
-  )\
-)
-gotoif(stop_turbo, go_time == 0.)
 
 upgrade_loop:
 ; Besides recording the tier of stones that can be bought, this also serves
@@ -200,17 +187,14 @@ executesync(if(\
 ; If the museum is closed, fall through to exit the script.
 ; If we're through all the positions, or if we're no longer "Combining"
 ; (which means {start} was pressed), go to the top to reset our state.
-; As a sub-quirk: If we cancelled via {start}, and go_time is still set,
-; jump to start_museum, which won't actually re-start the loop: It will
-; unset go_time instead, and jump back here, where we will finally exit
-; for real.
+;
 ; Otherwise, continue the loop: Either normally, or via a shortcut if this
 ; part of the grid is empty, to avoid executing the sub-scripts.
 gotoif(\
   if(\
     museum_pos < 130 && contains(museum_status, "Combining"),\
     if(tier("equipped", museum_pos) == -1, skip, upgrade_loop),\
-    if(target_tier == -2 && go_time != 0., start_museum, top)\
+    top\
   ),\
   isopen("museum")\
 )

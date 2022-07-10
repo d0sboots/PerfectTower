@@ -21,8 +21,6 @@ key.{start}()
 :global int turbo.cycles
 :global int turbo.cycles.max
 
-:local int max_craft_tier
-
 ; If we're called from key.{start}, then check if the museum
 ; is open. If it is, signal Main, otherwise exit. We can't just set a
 ; condition on the script, because that would possibly mess up scripts
@@ -32,13 +30,6 @@ key.{start}()
 ; want.
 target_tier = if(contains("key.{start}", impulse()) && isopen("museum"), -2, target_tier)
 gotoif(end, contains("key.{start}", impulse()))
-
-; This local can be changed to set a ceiling on crafting.
-; Its only purpose is for getting all gems to the same level so they can
-; be transmuted with the cube; otherwise, this should be left at 50.
-; Usually it's better to just wait for Universal gems to show up in the
-; market, but if you're desperate, you can try this.
-max_craft_tier = 50
 
 clear("inventory")
 
@@ -88,9 +79,7 @@ museum_tier = if(\
 ; greater than museum_tier.
 target_tier = if(min(tier("equipped", museum_pos), museum_tier) < 0,\
   -1,\
-  min(max_craft_tier,\
-    min(11, {up_tiers(museum_tier, 0)}) + museum_tier\
-  )\
+  min(11, {up_tiers(museum_tier, 0)}) + museum_tier\
 )
 ; There are a couple of different conditions here.
 ; If tier(museum_pos) >= target_tier, we want to get rid of the test stone, so

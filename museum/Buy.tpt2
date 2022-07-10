@@ -92,7 +92,14 @@ worker.setName(\
 )
 
 ; Set other variables that need to happen before we close the script block.
-museum_tier = museum_tier
+
+; If target_tier is -2, we're being invoked because start was pressed: Either
+; during the timer countdown, or to abort a running combine. Either way,
+; museum_tier needs to be set to 0 to signal no countdown.
+;
+; Otherwise, we leave it unchanged, which will usually mean the countdown remains
+; in effect.
+museum_tier = if(target_tier == -2, 0, museum_tier)
 museum_pos = -1
 
 ; Signal Main to wake up. We only want to override target_tier if it's idle,
