@@ -16,6 +16,7 @@ key.{start}()
 :global int target_tier
 :global int museum_pos
 :global double budget
+:global string offer_tiers
 
 :global int turbo.register
 :global int turbo.cycles
@@ -28,72 +29,52 @@ key.{start}()
 ; This will overwrite target_tier if we are currently combining,
 ; causing an early exit and leading to main resuming - which is what we
 ; want.
-target_tier = if(contains("key.{start}", impulse()) && isopen("museum"), -2, target_tier)
+; If we're called from Main, then we need to set museum_tier to 0, because it
+; serves as a signal variable. Main waits on it for BuyOffshore/Combine to be done.
+;
+; It's ugly to fold this up into a single conditional set, but between the fact that
+; we need museum_tier reset on the first instruction, and some of the other conditions
+; involved, it wouldn't be less complicated to do it as two instructions.
+global.int.set(\
+  if(contains("key.{start}", impulse()), "target_tier", "museum_tier"),\
+  if(contains("key.{start}", impulse()),\
+    if(isopen("museum"), -2, target_tier),\
+    0\
+  )\
+)
 gotoif(end, contains("key.{start}", impulse()))
 
 clear("inventory")
 
-; Buy a test gem from the market, to tell us what's available for upgrading
-; this element. The max tier is determined from our budget; we calculate it
-; so that at most 1% of our budget is spent on test gems, assuming 100 power
-; stones. (It will usually be much less, because of rounding and the random
-; chance of stone tiers.)
-; It's fine to miss out on some over-leveled gems in the market;
-; they are never the ones that will lead to the highest-leveled gems after
-; upgrading, anyway (when considering our budget).
-museum.buyRange(element("equipped", museum_pos),\
-  1, d2i((gdg({budget}) / (2000. * 10000. / 18.)) // 18.), 1)
 
-; Macro for determining the number of tiers we can boost, given our budget and
-; stones of "in_tier".
-; We allocate 1% of budget to each stone. Based on the tier of the stones we
-; can buy, they cost 2000 * 18^in_tier / 18 each. (We ignore the extra cost
-; of universal stones.) This determines how many stones we can buy, and thus,
-; the max tier.
-; "offset" is a way of adding an additional factor of "in_tier" to the
-; expression as a constant factor. Doing this changes the meaning from
-; the number of tiers raised to the maximum tier attainable.
-#up_tiers(in_tier, offset) d2i((gdg({budget}) / (100. * 2000. / 18.)) // 3. - i2d({in_tier}) * (18. // 3. - {offset}))
-
-; Set the tier of stones we are buying.
-; Typically, this is the tier we can get from buyRange(), which will be 1 to
-; denote regular buying if the stones aren't available right now from offshore.
-;
-; However, there is a quirk at lower tiers: If we will only be able to upgrade
-; to tier 12 (or less) using the offshore market, it is always better to use
-; regular stones. This doesn't work for universal, which doesn't exist in the
-; regular store.
-museum_tier = if(\
-  contains(element("equipped", museum_pos), "universal") ||\
-    {up_tiers(tier("inventory", 0), 1)} > 12,\
-  tier("inventory", 0),\
-  1\
-)
+; Load the pre-calculated tier of stone we are buying.
+museum_tier = s2i(sub(\
+  offer_tiers,\
+  {element_to_index_base(element("equipped", museum_pos), "")},\
+  2\
+), -1)
 
 ; Determine "target_tier", the level we are trying to upgrade to. In the
 ; best case, we can upgrade 11 levels past the tier of the stones we can
 ; buy from the museum. (Which may only be tier 1.)
-;
-; Because of how test gems are bought, they should always be at least 100x
-; cheaper than our budget, meaning target_tier should be at least 4 levels
-; greater than museum_tier.
 target_tier = if(min(tier("equipped", museum_pos), museum_tier) < 0,\
   -1,\
-  min(11, {up_tiers(museum_tier, 0)}) + museum_tier\
+  min(11 + museum_tier, d2i({up_tiers(i2d(museum_tier))}))\
 )
-; There are a couple of different conditions here.
-; If tier(museum_pos) >= target_tier, we want to get rid of the test stone, so
-; that our stone goes to slot 0. That way the loop will end immediately.
-; If tier(museum_pos) < museum_tier, we want to get rid of *our* stone, because
+; Unless tier(museum_pos) >= target_tier, buy one of the target stone.
+; The combiner requires *something* in the inventory to function properly, and
+; we might delete the only stone in the next line.
+museum.buyTier(\
+  element("equipped", museum_pos),\
+  museum_tier,\
+  if(tier("equipped", museum_pos) >= target_tier, 0, 1)\
+)
+; If tier(museum_pos) < museum_tier, we want to get rid of our stone, because
 ; it's too low level and can't be combined with.
 ; Otherwise, it's potentially useful to help speed up the process.
 delete(\
-  if(tier("equipped", museum_pos) >= target_tier, "inventory", "equipped"),\
-  if(\
-    tier("equipped", museum_pos) >= target_tier,\
-    0,\
-    if(tier("equipped", museum_pos) < museum_tier, museum_pos, -1)\
-  )\
+  if(tier("equipped", museum_pos) < museum_tier, "equipped", "inventory"),\
+  museum_pos\
 )
 move("equipped", museum_pos, "inventory")
 

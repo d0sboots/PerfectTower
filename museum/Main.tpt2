@@ -16,11 +16,14 @@
 :global int museum_pos
 
 :global string museum_status
+:global string offer_tiers
 :global int museum_tier
 :global int target_tier
 
 :global int turbo.cycles
 :global int turbo.register
+
+:local int offer_idx
 
 wakeup()
 open.museum()
@@ -58,13 +61,14 @@ target_tier = 0
 
 ; Macro-substitution for the museum timer, allows mocking it out easily for
 ; testing.
-#timer gdg("fake_timer")
+#timer museum.timer()
 
-; Take the ceiling of time remaining (instead of the floor), so that we tick
-; over to 0 exactly when we cross the threshold, like how countdowns regularly
-; work.
-; The parameter is a divisor, so we can constant-fold the minute division.
-#time_ceil(x) floor(({timer} + 10000000.) / (10000000. * {x}))
+; Normally we would take the ceiling of the time remaining, because that's
+; how timers work. (You show 1 second left until the time hits 0.)
+; However, the display timer in the museum uses floor, and we want to match
+; that, so we use floor too.
+; The parameter is a divisor, to make dealing with minutes easier.
+#time_floor(x) floor({timer}/ {x})
 
 ; Set the status. There's a lot of cases to this:
 ; * Error for no workers available.
@@ -95,7 +99,7 @@ museum_status = if(\
       museum_tier != -2,\
       "begins</color>",\
       "stops</color><br><color=#fff>Waiting " .\
-      {time_ceil(60.)} . ":" . sub(d2s({time_ceil(1.)} % 60. + 100.), 1, 2) .\
+      {time_floor(60.)} . ":" . sub(d2s({time_floor(1.)} % 60. + 100.), 1, 2) .\
       "</color>"\
     )\
   )\
@@ -121,7 +125,7 @@ museum_status = if(\
 goto(if(\
   isopen("museum"),\
   if(\
-    museum_tier == -2 && {timer} >= (59. * 60. + 59.) * 10000000.,\
+    museum_tier == -2 && {timer} >= 59. * 60. + 59.,\
     start_museum,\
     s2i(sub(if(museum_tier == -2, "21 3", "25 3"), target_tier + 3, 1), 99)\
   ),\
@@ -134,12 +138,34 @@ start_museum:
 ; the variable.
 turbo.register += 1
 
-upgrade_loop:
-; Besides recording the tier of stones that can be bought, this also serves
-; as a signal variable. We must reset it to 0 so that we actually wait
-; for BuyOffshore/Combine to be done.
-museum_tier = 0
+; This loop calculates the best stone to buy, for each element.
+get_offers:
 
+; The top tier that can be achieved, given input stones of "in_tier". Capped
+; either at +11 levels, or by the budget function of up_tiers.
+#top_tier(in_tier) min(11. + ({in_tier}), {up_tiers({in_tier})})
+
+; Turn an element string into an index. The base version is defined in museum_macros.
+#element_to_index(offset) {element_to_index_base(museum.slotElement(offer_idx), {offset})}
+
+; This monstrousity updates the value of the best tier to use for an element.
+; The element is the element in slot [offer_idx], and we're assessing whether
+; that offer will be an improvement.
+; The base logic relies on the top_tier formula.
+offer_tiers = if(\
+  museum.slotElement(offer_idx) == "" ||\
+    {top_tier(i2d(museum.slotTier(offer_idx)))} <=\
+      {top_tier(s2d(sub(offer_tiers, {element_to_index("")}, 2), -1.))},\
+  offer_tiers,\
+  sub(offer_tiers, 0, {element_to_index("")}) .\
+    sub(i2s(100 + museum.slotTier(offer_idx)), 1, 2) .\
+    sub(offer_tiers, {element_to_index("  ")}, 99)\
+)
+; There are max 10 offer slots, numbered 0 through 9. We'll exit after #9.
+offer_idx = (offer_idx + 1) % 10
+gotoif(get_offers, offer_idx > 0)
+
+upgrade_loop:
 ; Go to the next script to perform the actual upgrade.
 ; We run this even when museum_pos is -1, in order to set all the variables
 ; properly. Combine will exit immediately in that case, without a frame break,

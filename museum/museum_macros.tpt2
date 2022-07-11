@@ -1,5 +1,5 @@
 ; Standardized (package) naming across all the scripts
-#script(name) D0S.Museum v3.2:{name}
+#script(name) D0S.Museum v4.0:{name}
 
 ; Keybindings. You can edit these here, or edit them in the scripts directly
 ; (but it will be much more error-prone).
@@ -9,3 +9,18 @@
 
 ; Name of the budget variable, which begins the script-hiding block.
 #budget "<size=0>mb**"
+
+; Turn an element string into an index. For our purpose, all the indexes
+; need to be multiplied by two, so we look for the index of the first two
+; characters of the element.
+; The "offset" string allows us to concatenate on a string and thus add a
+; constant to the result.
+#element_to_index_base(ele, offset) index({offset} . "lielfidanaaiwaeaun", sub({ele}, 0, 2), 0)
+
+; Macro for determining the number of tiers we can boost, given our budget and
+; stones of "in_tier".
+; We allocate 1% of budget to each stone. Based on the tier of the stones we
+; can buy, they cost 2000 * 18^in_tier / 18 each. (We ignore the extra cost
+; of universal stones.) This determines how many stones we can buy, and thus,
+; the max tier.
+#up_tiers(in_tier) (gdg({budget}) / (100. * 2000. / 18.)) // 3. - ({in_tier}) * (18. // 3. - 1.)

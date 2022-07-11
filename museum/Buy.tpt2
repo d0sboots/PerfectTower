@@ -17,6 +17,7 @@ key.{down}()
 isopen("museum")
 
 :global string museum_status
+:global string offer_tiers
 :global int museum_tier
 :global int target_tier
 :global int museum_pos
@@ -101,6 +102,10 @@ worker.setName(\
 ; in effect.
 museum_tier = if(target_tier == -2, 0, museum_tier)
 museum_pos = -1
+
+; Two characters per tier. Universal is last. These are initialized to what can
+; be bought from the store.
+offer_tiers = "0101010101010101-1"
 
 ; Signal Main to wake up. We only want to override target_tier if it's idle,
 ; i.e. set to 0 - other situations show that it's in use, and notifying about
