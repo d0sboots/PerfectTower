@@ -103,14 +103,31 @@ worker.setName(\
 museum_tier = if(target_tier == -2, 0, museum_tier)
 museum_pos = -1
 
-; Two characters per tier. Universal is last. These are initialized to what can
-; be bought from the store.
-offer_tiers = "0101010101010101-1"
-
 ; Signal Main to wake up. We only want to override target_tier if it's idle,
 ; i.e. set to 0 - other situations show that it's in use, and notifying about
 ; changing budget is the lowest priority.
 target_tier = if(target_tier == 0, -3, target_tier)
+
+; Time for more ugly math! When we set preferred tier to "pref", we get stones in
+; the range [pref-10, pref], at uniform. We want our best stone to be in that
+; range - the one that we can *just* afford to do +11 levels from. Stones smaller
+; than that fall off at a rate of 1 tier/level, and stones higher fall off at a
+; rate of (18 log 3 - 1), or ~1.63 tiers/level. To maximize the potential of the
+; range, we want the top and bottom of the range to have equally high max_tiers,
+; so max_tier(pref - 10.5) = max_tier(pref + .5). (The halves make the range of
+; size 11, which is needed to properly match the actual integer-sized range.)
+;
+; Substituting gives pref - 10.5 + 11 = log_3(budget / (2000*100/18) / 18^(pref+.5)) + pref+.5,
+; 0 = log_3(budget / K) - (pref + .5) * log_3(18),
+; pref + .5 = log_3(budget / K) / log_3(18),
+; pref = log_18(budget / K) - .5,
+; pref = log_18(budget / (2000*100/18) / 18^.5),
+; pref = log_18(budget / (2000*100/18^.5))
+;
+; The result ends up being intuitive - since the range of stones spans 11 tiers, and
+; our uptiers is also +11 tiers, we want to match the preferred tier to the point where
+; we can just barely afford to buy the stone.
+museum.setPreferredTier(max(1, min(50, d2i((gdg({budget}) / (2000. * 100. / (18. ^ 0.5))) // 18.))))
 
 ; We don't care about waiting for the frame break, so manipulate the value
 ; directly instead of using "turbo stop".

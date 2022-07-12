@@ -1,5 +1,5 @@
 ; Standardized (package) naming across all the scripts
-#script(name) D0S.Museum v4.0:{name}
+#script(name) D0S.Museum v4.1:{name}
 
 ; Keybindings. You can edit these here, or edit them in the scripts directly
 ; (but it will be much more error-prone).
@@ -23,4 +23,13 @@
 ; can buy, they cost 2000 * 18^in_tier / 18 each. (We ignore the extra cost
 ; of universal stones.) This determines how many stones we can buy, and thus,
 ; the max tier.
-#up_tiers(in_tier) (gdg({budget}) / (100. * 2000. / 18.)) // 3. - ({in_tier}) * (18. // 3. - 1.)
+; There is an extra division by 9 and a floor. This means that if the level can't
+; be raised by at least 2 levels, the quantity in the log will be rounded down to 0,
+; and thus the log will result in -infinity. We add back the 2 levels on the outside.
+#up_tiers(in_tier) floor(gdg({budget}) / (100. * 2000. * 9. / 18.) / (18. ^ ({in_tier}))) // 3. + 2.
+
+; The top tier that can be achieved, given input stones of "in_tier". Capped
+; either at +11 levels, or by the budget function of up_tiers.
+; If we can't reach +2 levels, up_tiers returns -inf, which will result in -1.
+; from this function.
+#top_tier(in_tier) max(-1., min(11., {up_tiers({in_tier})}) + ({in_tier}))

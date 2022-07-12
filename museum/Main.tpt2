@@ -23,8 +23,6 @@
 :global int turbo.cycles
 :global int turbo.register
 
-:local int offer_idx
-
 wakeup()
 open.museum()
 
@@ -34,6 +32,11 @@ top:
 ; Launch Buy to initialize the global variables in the proper order.
 ; We re-do this after every run, because it resets museum_pos for us.
 executesync("{script(Buy)}")
+
+; Two characters per tier. Universal is last. These are initialized to what can
+; be bought from the store.
+; This logically belongs in "Buy", but is moved out of there to make space.
+offer_tiers = "0101010101010101-1"
 
 ; This loop usually runs without turbo, although it can have lingering
 ; turbo from other scripts without bad effects. It keeps the status line
@@ -127,7 +130,7 @@ goto(if(\
   if(\
     museum_tier == -2 && {timer} >= 59. * 60. + 59.,\
     start_museum,\
-    s2i(sub(if(museum_tier == -2, "21 3", "25 3"), target_tier + 3, 1), 99)\
+    s2i(sub(if(museum_tier == -2, "31 4", "36 4"), target_tier + 3, 1), 99)\
   ),\
   end\
 ))
@@ -137,33 +140,6 @@ start_museum:
 ; minimal overhead, so don't execute an extra script, just increment
 ; the variable.
 turbo.register += 1
-
-; This loop calculates the best stone to buy, for each element.
-get_offers:
-
-; The top tier that can be achieved, given input stones of "in_tier". Capped
-; either at +11 levels, or by the budget function of up_tiers.
-#top_tier(in_tier) min(11. + ({in_tier}), {up_tiers({in_tier})})
-
-; Turn an element string into an index. The base version is defined in museum_macros.
-#element_to_index(offset) {element_to_index_base(museum.slotElement(offer_idx), {offset})}
-
-; This monstrousity updates the value of the best tier to use for an element.
-; The element is the element in slot [offer_idx], and we're assessing whether
-; that offer will be an improvement.
-; The base logic relies on the top_tier formula.
-offer_tiers = if(\
-  museum.slotElement(offer_idx) == "" ||\
-    {top_tier(i2d(museum.slotTier(offer_idx)))} <=\
-      {top_tier(s2d(sub(offer_tiers, {element_to_index("")}, 2), -1.))},\
-  offer_tiers,\
-  sub(offer_tiers, 0, {element_to_index("")}) .\
-    sub(i2s(100 + museum.slotTier(offer_idx)), 1, 2) .\
-    sub(offer_tiers, {element_to_index("  ")}, 99)\
-)
-; There are max 10 offer slots, numbered 0 through 9. We'll exit after #9.
-offer_idx = (offer_idx + 1) % 10
-gotoif(get_offers, offer_idx > 0)
 
 upgrade_loop:
 ; Go to the next script to perform the actual upgrade.

@@ -22,6 +22,8 @@ key.{start}()
 :global int turbo.cycles
 :global int turbo.cycles.max
 
+:local int offer_idx
+
 ; If we're called from key.{start}, then check if the museum
 ; is open. If it is, signal Main, otherwise exit. We can't just set a
 ; condition on the script, because that would possibly mess up scripts
@@ -42,10 +44,44 @@ global.int.set(\
     0\
   )\
 )
-gotoif(end, contains("key.{start}", impulse()))
+; If we're called from key.{start}, we're done now. Otherwise, if offer_tiers is
+; the default, calculate it now, but don't bother re-doing work if we don't have to.
+; (This would be easier to do at the top, but there's no room in Main.)
+goto(if(\
+  contains("key.{start}", impulse()),\
+  end,\
+  if(\
+    contains(offer_tiers, "0101010101010101-1"),\
+    get_offers,\
+    skip_offers\
+  )\
+))
 
+; This loop calculates the best stone to buy, for each element.
+get_offers:
+
+; Turn an element string into an index. The base version is defined in museum_macros.
+#element_to_index(offset) {element_to_index_base(museum.slotElement(offer_idx), {offset})}
+
+; This monstrousity updates the value of the best tier to use for an element.
+; The element is the element in slot [offer_idx], and we're assessing whether
+; that offer will be an improvement.
+; The base logic relies on the top_tier formula.
+offer_tiers = if(\
+  museum.slotElement(offer_idx) == "" ||\
+    {top_tier(i2d(museum.slotTier(offer_idx)))} <=\
+      {top_tier(s2d(sub(offer_tiers, {element_to_index("")}, 2), -1.))},\
+  offer_tiers,\
+  sub(offer_tiers, 0, {element_to_index("")}) .\
+    sub(i2s(100 + museum.slotTier(offer_idx)), 1, 2) .\
+    sub(offer_tiers, {element_to_index("  ")}, 99)\
+)
+; There are max 10 offer slots, numbered 0 through 9. We'll exit after #9.
+offer_idx = offer_idx + 1
+gotoif(get_offers, offer_idx < 10)
+
+skip_offers:
 clear("inventory")
-
 
 ; Load the pre-calculated tier of stone we are buying.
 museum_tier = s2i(sub(\
@@ -59,22 +95,22 @@ museum_tier = s2i(sub(\
 ; buy from the museum. (Which may only be tier 1.)
 target_tier = if(min(tier("equipped", museum_pos), museum_tier) < 0,\
   -1,\
-  min(11 + museum_tier, d2i({up_tiers(i2d(museum_tier))}))\
+  d2i({top_tier(i2d(museum_tier))})\
 )
-; Unless tier(museum_pos) >= target_tier, buy one of the target stone.
-; The combiner requires *something* in the inventory to function properly, and
-; we might delete the only stone in the next line.
+; If tier(museum_pos) < museum_tier, buy one of the target stone.
+; In this case, we're about to move our stone into the 0th slot, and
+; if it's below the base level it will never get combined with, so
+; the combine loop will never end.
+; It's OK to still move it, because there's enough room in the inventory
+; for an extra stone.
+; If we can't afford the stone, or for some other reason are unable to buy
+; it, then we'll also fall through in Combine and move the original stone
+; back when we're done. In this way, we can always avoid eating stones,
+; no matter what happens.
 museum.buyTier(\
   element("equipped", museum_pos),\
   museum_tier,\
-  if(tier("equipped", museum_pos) >= target_tier, 0, 1)\
-)
-; If tier(museum_pos) < museum_tier, we want to get rid of our stone, because
-; it's too low level and can't be combined with.
-; Otherwise, it's potentially useful to help speed up the process.
-delete(\
-  if(tier("equipped", museum_pos) < museum_tier, "equipped", "inventory"),\
-  museum_pos\
+  if(tier("equipped", museum_pos) < museum_tier, 1, 0)\
 )
 move("equipped", museum_pos, "inventory")
 
