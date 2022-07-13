@@ -30,7 +30,7 @@ gotoif(wait_loop, {get_raw(factory_target)} == 0.)
 ; and crafting via "craft". This is done with conditional execution,
 ; in order to save lines for future possible features.
 begin_cycle:
-executesync("turbo start")
+executesync("TE2.2:start")
 
 ; Here we up the number of cycles so that it will be enough to
 ; calculate the recipes or produce items. We intentionally have a
@@ -80,11 +80,11 @@ execute(if(factory_target == 0, "{script_name(ui)}", "###badname###"))
 ; pass.
 factory_target_amount = 0.
 
-executesync("turbo stop")
+executesync("TE2.2:stop")
 
 ; Here we either return to the next iteration of the production loop,
 ; or stall on this instruction until we need to launch the factory.
-; Because there is always 1 extra cycle of turbo after "turbo stop," there
+; Because there is always 1 extra cycle of turbo after "TE2.2:stop," there
 ; is enough time to execute this goto and have only a single frame break
 ; before starting turbo again at the top of the loop.
 wait_loop:

@@ -1,6 +1,6 @@
 :import factory macros
 
-#version v3.0.3
+#version v3.0.4
 
 ; Everything in the list below is a valid target for automation, and can be
 ; assigned to the "target_type" variable in "lanuch factory craft".

@@ -20,7 +20,7 @@ key.{start}()
 isopen("factory")
 
 ; Because of how turbo exec works, we can't launch turbo on the frame the script
-; starts by calling "turbo start", if we are being called from another script.
+; starts by calling "TE2.2:start", if we are being called from another script.
 ; We can only do it by changing turbo.register directly, saving a layer of
 ; script execution.
 ; (This is because of the relative positioning of TE.turbo vs our script;
@@ -199,7 +199,7 @@ wait(0.)
 
 #valid_start contains(factory_target . impulse(), "0key.")
 ; This (maybe) launches the factory. We need to do it soon enough to not
-; interrupt turbo, see the comment on "turbo stop", below.
+; interrupt turbo, see the comment on "TE2.2:stop", below.
 factory_target_amount = if({valid_start}, count, factory_target_amount)
 
 ; Only set factory_target if it's zero, which indicates that the factory is idle.
@@ -257,10 +257,10 @@ gss({status}, if(\
 ))
 
 ; "init" will take over as soon as factory_target_amount gets set 3 lines
-; above; it will call its own "turbo start" and thus prevent the frame from
+; above; it will call its own "TE2.2:start" and thus prevent the frame from
 ; ending before this line takes effect.
 ; We need two cycles in-between to have a seamless transition.
-; We change the variable directly, instead of calling "turbo stop", for parity
+; We change the variable directly, instead of calling "TE2.2:stop", for parity
 ; with the way we start: This avoids some edge cases when turbo is incorrectly
 ; installed. It also is fine in this case, because we don't need to wait for
 ; the end of the frame.
