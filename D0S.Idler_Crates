@@ -3,7 +3,7 @@
 ; To use this, the air stone must be active, and you must be in
 ; Tower Testing, with the correct idle mode already selected.
 ;
-; Turbo Exec v2 is *required*!
+; Turbo Exec v2.2 is *required*!
 
 isopen("towertesting") || isopen("tradingpost")
 
@@ -39,7 +39,7 @@ key.o()
 ; This variable is tunable, to reach the maximum crates/sec.
 loops = 325
 ; This creates the toggle functionality.
-gss({trading}, if(turbo.cycles.max == 0, "<color=red>Need turbo exec v2!</color></color></size>", if(gsg({trading}) == "", {running}, {exiting})))
+gss({trading}, if(turbo.cycles.max == 0, "<color=red>Need turbo exec v2.2!</color></color></size>", if(gsg({trading}) == "", {running}, {exiting})))
 goto(if(gsg({trading}) != {running}, end, repeat_loop))
 
 ; This loop runs two frames:
@@ -146,7 +146,7 @@ goto(if(repeat % 2 == 0,\
 ))
 
 exit:
-executesync("turbo stop")
+executesync("TE2.2:stop")
 
 end:
 global.unset(if(turbo.cycles.max == 0, "", {trading}))
