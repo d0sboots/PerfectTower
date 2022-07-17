@@ -1,5 +1,5 @@
 ; Standardized (package) naming across all the scripts
-#script(name) D0S.Museum v4.1:{name}
+#script(name) D0S.Museum v4.2:{name}
 
 ; Keybindings. You can edit these here, or edit them in the scripts directly
 ; (but it will be much more error-prone).
@@ -32,4 +32,4 @@
 ; either at +11 levels, or by the budget function of up_tiers.
 ; If we can't reach +2 levels, up_tiers returns -inf, which will result in -1.
 ; from this function.
-#top_tier(in_tier) max(-1., min(11., {up_tiers({in_tier})}) + ({in_tier}))
+#top_tier(in_tier) max(-1., min(50., min(11., {up_tiers({in_tier})}) + ({in_tier})))
