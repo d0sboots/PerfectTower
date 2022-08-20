@@ -86,14 +86,14 @@ clear("inventory")
 ; Load the pre-calculated tier of stone we are buying.
 museum_tier = s2i(sub(\
   offer_tiers,\
-  {element_to_index_base(element("equipped", museum_pos), "")},\
+  {element_to_index_base(element("loadout", museum_pos), "")},\
   2\
 ), -1)
 
 ; Determine "target_tier", the level we are trying to upgrade to. In the
 ; best case, we can upgrade 11 levels past the tier of the stones we can
 ; buy from the museum. (Which may only be tier 1.)
-target_tier = if(min(tier("equipped", museum_pos), museum_tier) < 0,\
+target_tier = if(min(tier("loadout", museum_pos), museum_tier) < 0,\
   -1,\
   d2i({top_tier(i2d(museum_tier))})\
 )
@@ -108,11 +108,11 @@ target_tier = if(min(tier("equipped", museum_pos), museum_tier) < 0,\
 ; back when we're done. In this way, we can always avoid eating stones,
 ; no matter what happens.
 museum.buyTier(\
-  element("equipped", museum_pos),\
+  element("loadout", museum_pos),\
   museum_tier,\
-  if(tier("equipped", museum_pos) < museum_tier, 1, 0)\
+  if(tier("loadout", museum_pos) < museum_tier, 1, 0)\
 )
-move("equipped", museum_pos, "inventory")
+move("loadout", museum_pos, "inventory")
 
 ; Extend turbo for a little longer. There's a race condition where we might
 ; run out of cycles and start a new frame, but even if we do that on this

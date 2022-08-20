@@ -108,7 +108,7 @@ museum_tier = -2
 ;
 ; Even though this happens after signalling, we get one extra cycle as a
 ; "delay slot" before we're stopped by Main.
-museum.moveTo("inventory", 0, "equipped", museum_pos)
+museum.moveTo("inventory", 0, "loadout", museum_pos)
 
 combine:
 ; Because of turbo exec, this script will keep running every cycle, until

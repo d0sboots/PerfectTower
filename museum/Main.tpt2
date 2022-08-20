@@ -195,7 +195,7 @@ executesync(if(\
 gotoif(\
   if(\
     museum_pos < 130 && contains(museum_status, "Combining"),\
-    if(tier("equipped", museum_pos) == -1, skip, upgrade_loop),\
+    if(tier("loadout", museum_pos) == -1, skip, upgrade_loop),\
     top\
   ),\
   isopen("museum")\
