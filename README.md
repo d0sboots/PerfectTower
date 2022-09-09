@@ -58,7 +58,7 @@ Press "F" to craft when you're ready.
 
 The package will prioritize using items already present in your inventory instead of crafting new ones, and it will always leave at least one dust of each tier.
 
-It can manage ore processing, dust tiering, and everything related. If more dust of a certain tier is needed then there is in the inventory, the package will first use all ores of that tier, then use dust of the previous tier. (This package assumes you have the chemical lumps exotic skill; if you don't have it, it will likely get "stuck.")
+It can manage ore processing, dust tiering, and everything related. If more dust of a certain tier is needed then there is in the inventory, the package will first use all ores of that tier, then use dust of the previous tier. (***This package assumes you have the chemical lumps exotic skill***; if you don't have it, it will likely get "stuck.")
 
 You can upgrade machines with it, but the process is slightly involved: First, take the machine out of its slot. Then, start the upgrade with 'F'. If the machine is needed to do the work, you will then need to put it back into its slot, and take it out again at the very end, to finish the upgrade.
 
