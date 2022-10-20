@@ -108,7 +108,7 @@ DkQwUy5UdXJib01pbmVyAgAAAAZ3YWtldXAJb3Blbi5taW5lAQAAABJ0b3duLndpbmRvdy5pc29wZW4I
 Although this script is useful on its own, a large part of why I wrote it was to be an example for how to use turbo exec v2. It is relatively straightforward for a mining script, and all the speed comes from turbo. You can see the source, with liberal comments, at [D0S.TurboMiner](D0S.TurboMiner).
 
 ## Museum combiner v4
-**v4.3**
+**v4.4**
 
 This package combines museum powerstones, *really* fast. It is very close to
 the theoretical maximum speed. On my machine, it can upgrade a stone 11 tiers

@@ -38,6 +38,20 @@ executesync("{script(Buy)}")
 ; This logically belongs in "Buy", but is moved out of there to make space.
 offer_tiers = "0101010101010101-1"
 
+; Macro-substitution for the museum timer, allows mocking it out easily for
+; testing.
+#timer museum.timer()
+
+; No-offshore-market fix: If we get here with museum_tier == -2 (which is the
+; waiting-to-start state), but the timer is *exactly* 1 hour, this means the user
+; doesn't have the offshore market and is getting the default value. In this case,
+; reset museum tier so that the script stops properly.
+museum_tier = if(\
+  museum_tier == -2 && {timer} == 60. * 60.,\
+  0,\
+  museum_tier\
+)
+
 ; This loop usually runs without turbo, although it can have lingering
 ; turbo from other scripts without bad effects. It keeps the status line
 ; up-to-date while the museum is not running.
@@ -61,10 +75,6 @@ target_tier = 0
 ; overall effect is to multiply by 100 (before rounding).
 #rounded_budget round(gdg({budget}) / (10. ^ {adjusted_exp(2.)})) / 100. .\
   "e". {adjusted_exp(0.)}
-
-; Macro-substitution for the museum timer, allows mocking it out easily for
-; testing.
-#timer museum.timer()
 
 ; Normally we would take the ceiling of the time remaining, because that's
 ; how timers work. (You show 1 second left until the time hits 0.)
@@ -130,7 +140,7 @@ goto(if(\
   if(\
     museum_tier == -2 && {timer} >= 59. * 60. + 59.,\
     start_museum,\
-    s2i(sub(if(museum_tier == -2, "31 4", "36 4"), target_tier + 3, 1), 99)\
+    s2i(sub(if(museum_tier == -2, "41 5", "47 5"), target_tier + 3, 1), 99)\
   ),\
   end\
 ))
