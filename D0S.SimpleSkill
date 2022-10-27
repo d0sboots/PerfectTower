@@ -1,0 +1,22 @@
+; Use the first skill, forever.
+; Handles the trickiness involved with not getting lots of copies on restart.
+; Easy to modify.
+
+wakeup()
+game.newround()
+
+isTowerTesting()
+
+; We're using a funny variable name to show a "status" when running, and also
+; so that we can hide the status when we're done (instead of using unset(),
+; which can cause issues for other scripts.)
+#var "<size=0>sK"
+#running "</size><color=white>Skills running</color>"
+
+gotoif(99, gsg({var}) == {running})
+gss({var}, {running})
+loop:
+; Change this, or add more stuff here, if you want to use more/different skills
+useinstant(1)
+gotoif(loop, health.max() > 0.)
+gss({var}, "</size>")

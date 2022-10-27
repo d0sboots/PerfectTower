@@ -3,6 +3,7 @@
 #### Quick-Navigation
 - [Improved code editor](#improved-code-editor)
 - [Turbo Exec v2.2](#turbo-exec-v22)
+- [Simple Skill script](#simple-skill-script)
 - [Factory automation](#factory-automation)
 - [Auto mining script V2](#auto-mining-script-v2)
 - [Turbo miner](#turbo-miner)
@@ -29,6 +30,19 @@ It's kind of a pain to move source code between editors, (as opposed to importin
 
 ## Turbo Exec v2.2
 The latest version of turbo exec lives in a package, and is fully backwards-compatible with the non-packaged TEv2. Get this if a script says it needs it, otherwise you don't need it. (It doesn't do anything on its own.) Get it (and more information) at https://github.com/d0sboots/TPT2_scripts/blob/main/common/turbo_exec/README.md.
+
+## Simple Skill script
+All this does is use the first active skill, constantly, as long as you are in tower testing.
+
+`D0S.SimpleSkill 2 1 5`
+
+```
+D0QwUy5TaW1wbGVTa2lsbAIAAAAGd2FrZXVwDWdhbWUubmV3cm91bmQBAAAAE2dhbWUuaXNUb3dlclRlc3RpbmcFAAAADmdlbmVyaWMuZ290b2lmCGNvbnN0YW50AmMAAAARY29tcGFyaXNvbi5zdHJpbmcRZ2xvYmFsLnN0cmluZy5nZXQIY29uc3RhbnQECjxzaXplPTA+c0sIY29uc3RhbnQEAj09CGNvbnN0YW50BCo8L3NpemU+PGNvbG9yPXdoaXRlPlNraWxscyBydW5uaW5nPC9jb2xvcj4RZ2xvYmFsLnN0cmluZy5zZXQIY29uc3RhbnQECjxzaXplPTA+c0sIY29uc3RhbnQEKjwvc2l6ZT48Y29sb3I9d2hpdGU+U2tpbGxzIHJ1bm5pbmc8L2NvbG9yPhd0b3dlci5tb2R1bGUudXNlaW5zdGFudAhjb25zdGFudAIBAAAADmdlbmVyaWMuZ290b2lmCGNvbnN0YW50AgMAAAARY29tcGFyaXNvbi5kb3VibGUQdG93ZXIuaGVhbHRoLm1heAhjb25zdGFudAQBPghjb25zdGFudAMAAAAAAAAAABFnbG9iYWwuc3RyaW5nLnNldAhjb25zdGFudAQKPHNpemU9MD5zSwhjb25zdGFudAQHPC9zaXplPg==
+```
+
+It's not hard to make this yourself, but it's a bit tricky to get the conditions right so you don't
+get extra copies when clicking "restart," so here's a canonical example. It's
+straightforward to edit this to change or add more abilities if you need to.
 
 ## Factory automation
 **v3.0.4**
