@@ -188,11 +188,6 @@ tier = if({is_ud(2)}, visible_tier, {saved_worker_tier})
 ; set its variables, in case we're doing this right at startup.
 gss({action}, gsg({action}))
 
-; This no-op exists *solely* to adjust the number of cycles, so that we don't
-; land on the wrong number of turbo.cycles at the end and falsely think that
-; turbo is not working.
-wait(0.)
-
 ; Do conditional stuff, depending on if we're launching the factory.
 ; We set all these variables always, so that they'll have a consistent order,
 ; and also to save lines instead of jumping over this block.
@@ -256,7 +251,18 @@ gss({status}, if(\
   )\
 ))
 
-; "init" will take over as soon as factory_target_amount gets set 3 lines
+; Pause/unpause a dissolve worker, if it occupies our data slot.
+; If it's a different type of worker, leave it alone by dummying out the name.
+worker.pauseName(\
+  if(\
+    contains(worker.task(worker.name(worker_slot)), "factory.dissolveManagement"),\
+    worker.name(worker_slot),\
+    "![@#nosuchtask#@]!"\
+  ),\
+  contains(gsg({status}), "Crafting")\
+)
+
+; "init" will take over as soon as factory_target_amount gets set 4 lines
 ; above; it will call its own "TE2.2:start" and thus prevent the frame from
 ; ending before this line takes effect.
 ; We need two cycles in-between to have a seamless transition.
@@ -268,7 +274,7 @@ turbo.register -= 1
 
 ; Setting the data back in the worker is moved way down to the bottom, to function
 ; as the "filler" action that can be repeated while the script is waiting for
-; the frame to end. We can't use of the actions the set global variables for this,
+; the frame to end. We can't use of the actions that set global variables for this,
 ; because they may need to be modified later in the frame, and thus setting them
 ; here in a loop would overwrite the value.
 worker.setName(if(worker_slot < 100, worker_slot, worker_slot - 100),\
