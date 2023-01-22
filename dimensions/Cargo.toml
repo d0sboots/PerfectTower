@@ -1,0 +1,10 @@
+[package]
+name = "dimensions"
+description = "Utility that duplicates The Perfect Tower II's logic for generating dimensions, letting you find them more efficiently than clicking around."
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.63"
+
+[dependencies]
+clap = { version = "=4.0.32", features = ["derive", "wrap_help"] }
+clap_lex = { version = "=0.3.0" }
