@@ -32,7 +32,7 @@ impl JavaRNG {
     pub fn int_range(&mut self, min: i32, max: i32) -> i32 {
         let fmin = f64::from(min);
         let fmax = f64::from(max);
-        let fresult = (fmax - fmin) * f64::from(self.next_float()) + fmin;
+        let fresult = ((fmax - fmin) * f64::from(self.next_float()) + fmin).floor();
         unsafe { fresult.to_int_unchecked() }
     }
 
