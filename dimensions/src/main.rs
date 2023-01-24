@@ -16,6 +16,6 @@ fn main() {
     let args = Args::parse();
     if let [x, y] = args.show[..] {
         let dim = Dimension::new(x, y);
-        println!("Dim {} {}: {}", x, y, dim);
+        println!("{{{} {}}} {}", x, y, dim);
     }
 }

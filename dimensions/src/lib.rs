@@ -92,7 +92,7 @@ impl UnityRNG {
     }
 }
 
-#[derive(Default, Copy, Clone)]
+#[derive(Default, Copy, Clone, Debug)]
 pub struct ResourceName {
     chars: [u8; 9],
     size: u8,
@@ -142,14 +142,14 @@ impl ResourceName {
     }
 }
 
-#[derive(Default, Copy, Clone)]
+#[derive(Default, Copy, Clone, Debug)]
 #[repr(align(2))]
 pub struct Attribute {
     type_: u8,
     count: u8,
 }
 
-#[derive(Default, Copy, Clone)]
+#[derive(Default, Copy, Clone, Debug)]
 pub struct DimensionalResource {
     name: ResourceName,
     name_scheme: u8,
@@ -297,16 +297,17 @@ impl fmt::Display for DimensionalResource {
         for i in 0..usize::from(self.attribute_size) {
             writeln!(
                 f,
-                "{:2} {}",
+                "  {:2} {:10}  {:5.1}",
                 self.attributes[i].count,
-                ATTRIBUTES[usize::from(self.attributes[i].type_)]
+                ATTRIBUTES[usize::from(self.attributes[i].type_)],
+                f64::from(self.attributes[i].count) * f64::from(self.qty),
             )?;
         }
         Ok(())
     }
 }
 
-#[derive(Default, Copy, Clone)]
+#[derive(Default, Copy, Clone, Debug)]
 pub struct Dimension {
     name: ResourceName,
     stacks_size: u8,
