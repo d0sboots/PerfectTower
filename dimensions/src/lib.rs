@@ -1,6 +1,8 @@
-use std::fmt;
+use arrayvec::ArrayVec;
+use serde::ser::{SerializeMap, SerializeStruct, Serializer};
+use serde::Serialize;
 use std::num::Wrapping;
-use std::str;
+use std::{fmt, str};
 
 // Utility that duplicates The Perfect Tower II's logic for generating
 // dimensions, letting you find them more efficiently than clicking around.
@@ -15,7 +17,7 @@ pub struct JavaRNG {
 impl JavaRNG {
     const MASK: Wrapping<u64> = Wrapping(0xFFFFFFFFFFFF);
     const PRIME: Wrapping<u64> = Wrapping(0x5DEECE66D);
-    fn new(seed: u64) -> JavaRNG {
+    fn new(seed: u64) -> Self {
         JavaRNG {
             seed: (Wrapping(seed) ^ Self::PRIME) & Self::MASK,
         }
@@ -31,15 +33,17 @@ impl JavaRNG {
     }
 
     pub fn int_range(&mut self, min: i32, max: i32) -> i32 {
-        let fmin = f64::from(min);
-        let fmax = f64::from(max);
+        let fmin: f64 = min.into();
+        let fmax: f64 = max.into();
         // Optimization/order-of-ops: We moved the addition of min outside the floating-point op,
         // so that the interior result would be non-negative and we could trunc instead
-        // of needing floor().
+        // of needing floor(). But we need to do the conversion as i64, since the float result can
+        // have the range of a u32!
         // This *should* be equivalent, since it should be impossible for our f32 source to
         // generate numbers that would lead to boundary cases with f64 math.
         let fresult = (fmax - fmin) * f64::from(self.next_float());
-        ((unsafe { fresult.to_int_unchecked::<i64>() }) + i64::from(min)) as i32
+        let iresult: i64 = unsafe { fresult.to_int_unchecked() };
+        (iresult + i64::from(min)) as i32
     }
 
     pub fn float_range(&mut self, min: f32, max: f32) -> f32 {
@@ -55,7 +59,7 @@ pub struct UnityRNG {
 }
 
 impl UnityRNG {
-    pub fn new(seed: i32) -> UnityRNG {
+    pub fn new(seed: i32) -> Self {
         let mut wrap_seed = Wrapping(seed);
         let mut state = 0u128;
         const PRIME: Wrapping<i32> = Wrapping(0x6c078965);
@@ -92,17 +96,14 @@ impl UnityRNG {
     }
 }
 
-#[derive(Default, Copy, Clone, Debug)]
+#[derive(Default, Debug)]
 pub struct ResourceName {
     chars: [u8; 9],
     size: u8,
 }
 
 impl ResourceName {
-    pub fn to_str(&self) -> &str {
-        unsafe { std::str::from_utf8_unchecked(&self.chars[0..usize::from(self.size)]) }
-    }
-
+    /// self may be uninitialized
     fn generate(&mut self, rng: &mut UnityRNG) {
         const VOWELS: &[u8; 5] = b"aeiou";
         const CONSONANTS: &[u8; 21] = b"bcdfghjklmnpqrstvwxyz";
@@ -142,40 +143,118 @@ impl ResourceName {
     }
 }
 
+impl AsRef<str> for ResourceName {
+    fn as_ref(&self) -> &str {
+        unsafe { str::from_utf8_unchecked(&self.chars[0..self.size.into()]) }
+    }
+}
+
+impl Serialize for ResourceName {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(self.as_ref())
+    }
+}
+
 #[derive(Default, Copy, Clone, Debug)]
-#[repr(align(2))]
 pub struct Attribute {
     type_: u8,
     count: u8,
 }
 
-#[derive(Default, Copy, Clone, Debug)]
+#[derive(Default, Debug)]
 pub struct DimensionalResource {
     name: ResourceName,
     name_scheme: u8,
     flavor_text_key: u8,
-    attribute_size: u8,
-    attributes: [Attribute; 5],
+    attributes: ArrayVec<Attribute, 5>,
     qty: f32,
 }
 
 impl DimensionalResource {
+    pub const ATTRIBUTES: [&'static str; 21] = [
+        "Cool",
+        "Hard",
+        "Sweet",
+        "Wet",
+        "Herbal",
+        "Organic",
+        "Spicy",
+        "Smelly",
+        "Creepy",
+        "Metallic",
+        "Volatile",
+        "Unstable",
+        "Rusty",
+        "Slimy",
+        "Fluffy",
+        "Spiky",
+        "Strange",
+        "Sturdy",
+        "Exotic",
+        "Artificial",
+        "Complex",
+    ];
+
+    pub const FLAVOR_TEXT: [&'static str; 34] = [
+        "",
+        "It glows in the dark",
+        "It's breathing",
+        "It pulsates at a low frequency",
+        "It produces a low buzzing sound",
+        "It moves when you don't look at it",
+        "It gets warm when you touch it",
+        "It responds to audiovisual stimuli",
+        "It vibrates when it gets close to magnets",
+        "The air surrounding it feels colder than usual",
+        "Upon touching it you feel wholesome",
+        "It appears in your dreams",
+        "It has the shape of a mammal",
+        "It becomes invisible when you lick it",
+        "Its surface is uneven and coarse",
+        "It's way heavier than it looks",
+        "It slowly pulls nearby objects towards it",
+        "It crawls away from magnets",
+        "It absorbs light somehow",
+        "Voices emit from it when placed in a dark environment",
+        "Touching it erases your skin",
+        "It knows your friends and your family",
+        "It talks to you in your dreams",
+        "It stares back at you",
+        "It grows arms and legs when not looking at it",
+        "Eating it makes your knees bend backwards",
+        "It constantly talks about antimatter",
+        "Touching it reveals your future",
+        "You feel an otherwordly presence when you sit down next to it",
+        "It only wants to sit on the top shelf",
+        "Attempts to break it results in a thermonuclear explosion.",
+        "It has been to France.",
+        "Its favourite food is fried seashells.",
+        "Rubbing it on your cheeks provides nightmares followed by months of insomnia.",
+    ];
+
+    pub const NAME_SCHEME: [&'static str; 6] = [
+        "_",
+        "Pieces of _",
+        "Shards of _",
+        "Droplets of _",
+        "_ Ingots",
+        "_ Ore",
+    ];
+
     pub fn name(&self) -> &str {
-        self.name.to_str()
+        self.name.as_ref()
     }
 
     pub fn full_name(&self) -> String {
-        match self.name_scheme {
-            1 => "Pieces of _",
-            2 => "Shards of _",
-            3 => "Droplets of _",
-            4 => "_ Ingots",
-            5 => "_ Ore",
-            _ => "_",
-        }
-        .replace('_', self.name())
+        Self::NAME_SCHEME[usize::from(self.name_scheme)]
+            .to_owned()
+            .replace('_', self.name())
     }
 
+    /// self may be uninitialized
     pub fn generate(&mut self, seed: i32) {
         let mut urng = UnityRNG::new(seed);
         // Impl gets color as HSVA, we don't care
@@ -193,10 +272,10 @@ impl DimensionalResource {
             // We impose our own offset scheme here, so everything fits into a u8
             if 0.001 <= urng.next_float() {
                 // dimensional.flavor.text.
-                self.flavor_text_key = (urng.int_range(0, 20) + 0x20) as u8;
+                self.flavor_text_key = (urng.int_range(0, 20) + 1) as u8;
             } else {
                 // dimensional.flavor.text.rare.
-                self.flavor_text_key = (urng.int_range(0, 13) + 0x40) as u8;
+                self.flavor_text_key = (urng.int_range(0, 13) + 21) as u8;
             }
         } else {
             self.flavor_text_key = 0;
@@ -208,9 +287,11 @@ impl DimensionalResource {
         for i in 0..attribute_types.len() {
             attribute_types[i] = i as u8;
         }
-        self.attribute_size = urng.int_range(1, 6) as u8;
-        for i in 0..usize::from(self.attribute_size) {
-            let attr = &mut self.attributes[i];
+        unsafe {
+            self.attributes.set_len(urng.int_range(1, 6) as usize);
+        }
+        let flen = self.attributes.len() as f64;
+        for attr in &mut self.attributes {
             let idx = urng.int_range(0, attribute_types.len() as i32) as usize;
             attr.type_ = attribute_types[idx];
             // We have to shift everything, to properly simulate C# remove_at
@@ -218,7 +299,7 @@ impl DimensionalResource {
             let newlen = attribute_types.len() - 1;
             attribute_types = &mut attribute_types[..newlen];
 
-            let val = f64::from(urng.next_float()) * 99.0 / f64::from(self.attribute_size);
+            let val = f64::from(urng.next_float()) * 99.0 / flen;
             // Exploit the rounding mode of floating point math (specified as round-ties-to-even)
             // to round our numbers, since f64::round does the wrong thing.
             // It's safe to fold the addition of 1.0 into BIG, because none of the reachable values
@@ -233,96 +314,91 @@ impl fmt::Display for DimensionalResource {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:21} {:.3}/sec", self.full_name(), self.qty)?;
         if self.flavor_text_key != 0 {
-            write!(f, "  \"{}\"", match self.flavor_text_key {
-                32 => "It glows in the dark",
-                33 => "It's breathing",
-                34 => "It pulsates at a low frequency",
-                35 => "It produces a low buzzing sound",
-                36 => "It moves when you don't look at it",
-                37 => "It gets warm when you touch it",
-                38 => "It responds to audiovisual stimuli",
-                39 => "It vibrates when it gets close to magnets",
-                40 => "The air surrounding it feels colder than usual",
-                41 => "Upon touching it you feel wholesome",
-                42 => "It appears in your dreams",
-                43 => "It has the shape of a mammal",
-                44 => "It becomes invisible when you lick it",
-                45 => "Its surface is uneven and coarse",
-                46 => "It's way heavier than it looks",
-                47 => "It slowly pulls nearby objects towards it",
-                48 => "It crawls away from magnets",
-                49 => "It absorbs light somehow",
-                50 => "Voices emit from it when placed in a dark environment",
-                51 => "Touching it erases your skin",
-                64 => "It knows your friends and your family",
-                65 => "It talks to you in your dreams",
-                66 => "It stares back at you",
-                67 => "It grows arms and legs when not looking at it",
-                68 => "Eating it makes your knees bend backwards",
-                69 => "It constantly talks about antimatter",
-                70 => "Touching it reveals your future",
-                71 => "You feel an otherwordly presence when you sit down next to it",
-                72 => "It only wants to sit on the top shelf",
-                73 => "Attempts to break it results in a thermonuclear explosion.",
-                74 => "It has been to france.",
-                75 => "Its favourite food is fried seashells.",
-                76 => "Rubbing it on your cheeks provides nightmares followed by months of insomnia.",
-                x => panic!("Invalid flavor_text_key: {}", x)
-            })?;
-        }
-        writeln!(f)?;
-        const ATTRIBUTES: [&str; 21] = [
-            "Cool",
-            "Hard",
-            "Sweet",
-            "Wet",
-            "Herbal",
-            "Organic",
-            "Spicy",
-            "Smelly",
-            "Creepy",
-            "Metallic",
-            "Volatile",
-            "Unstable",
-            "Rusty",
-            "Slimy",
-            "Fluffy",
-            "Spiky",
-            "Strange",
-            "Sturdy",
-            "Exotic",
-            "Artificial",
-            "Complex",
-        ];
-        for i in 0..usize::from(self.attribute_size) {
-            writeln!(
+            write!(
                 f,
-                "  {:2} {:10}  {:5.1}",
-                self.attributes[i].count,
-                ATTRIBUTES[usize::from(self.attributes[i].type_)],
-                f64::from(self.attributes[i].count) * f64::from(self.qty),
+                "  \"{}\"",
+                Self::FLAVOR_TEXT[usize::from(self.flavor_text_key)]
+            )?;
+        }
+        for attr in &self.attributes {
+            write!(
+                f,
+                "\n  {:2} {:10}  {:5.1}",
+                attr.count,
+                Self::ATTRIBUTES[usize::from(attr.type_)],
+                f64::from(attr.count) * f64::from(self.qty),
             )?;
         }
         Ok(())
     }
 }
 
-#[derive(Default, Copy, Clone, Debug)]
+impl Serialize for DimensionalResource {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        struct AttrHelper<'a> {
+            attr: &'a [Attribute],
+        }
+        impl Serialize for AttrHelper<'_> {
+            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+            where
+                S: Serializer,
+            {
+                let mut state = serializer.serialize_map(Some(self.attr.len()))?;
+                for attr in self.attr {
+                    state.serialize_entry(
+                        DimensionalResource::ATTRIBUTES[usize::from(attr.type_)],
+                        &attr.count,
+                    )?;
+                }
+                state.end()
+            }
+        }
+
+        let mut state = serializer.serialize_struct("DimensionalResource", 4)?;
+        state.serialize_field("name", &self.full_name())?;
+        if self.flavor_text_key == 0 {
+            state.skip_field("flavor_text")?;
+        } else {
+            state.serialize_field(
+                "flavor_text",
+                Self::FLAVOR_TEXT[usize::from(self.flavor_text_key)],
+            )?;
+        }
+        state.serialize_field(
+            "attributes",
+            &AttrHelper {
+                attr: &self.attributes,
+            },
+        )?;
+        state.serialize_field("qty", &self.qty)?;
+        state.end()
+    }
+}
+
+#[derive(Default, Debug, Serialize)]
 pub struct Dimension {
+    x: i32,
+    y: i32,
     name: ResourceName,
-    stacks_size: u8,
-    stacks: [DimensionalResource; 3],
+    stacks: ArrayVec<DimensionalResource, 3>,
 }
 
 impl Dimension {
-    pub fn new(xcoord: i32, ycoord: i32) -> Dimension {
+    pub fn new(xcoord: i32, ycoord: i32) -> Self {
         let mut dim = Dimension::default();
+        dim.x = xcoord;
+        dim.y = ycoord;
         let mut rng = JavaRNG::from_coords(xcoord, ycoord);
         dim.name
             .generate(&mut UnityRNG::new(rng.int_range(-0x80000000, 0x7fffffff)));
-        dim.stacks_size = rng.int_range(1, 4) as u8;
-        for i in 0..usize::from(dim.stacks_size) {
-            let stack = &mut dim.stacks[i];
+        // Fill out uninitialized memory instead of copying the struct
+        unsafe {
+            dim.stacks.set_len(rng.int_range(1, 4) as usize);
+        }
+        for stack in &mut dim.stacks {
             stack.generate(rng.int_range(-0x80000000, 0x7fffffff));
             stack.qty = rng.float_range(0.001, 8.5);
         }
@@ -330,15 +406,15 @@ impl Dimension {
     }
 
     pub fn name(&self) -> &str {
-        self.name.to_str()
+        self.name.as_ref()
     }
 }
 
 impl fmt::Display for Dimension {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "{}", self.name())?;
-        for i in 0..usize::from(self.stacks_size) {
-            write!(f, "{}", self.stacks[i])?;
+        write!(f, "{{{} {}}} {}", self.x, self.y, self.name())?;
+        for stack in &self.stacks {
+            write!(f, "\n{}", stack)?;
         }
         Ok(())
     }
