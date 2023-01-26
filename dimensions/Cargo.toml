@@ -1,7 +1,7 @@
 [package]
 name = "dimensions"
 description = "Utility that duplicates The Perfect Tower II's logic for generating dimensions, letting you find them more efficiently than clicking around."
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 rust-version = "1.63"
 
