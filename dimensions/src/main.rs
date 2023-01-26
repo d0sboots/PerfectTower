@@ -2,6 +2,7 @@
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use dimensions::Dimension;
+use indicatif::{ProgressBar, ProgressStyle};
 use serde_json;
 use std::fs::File;
 use std::io::{self, Write};
@@ -111,11 +112,17 @@ fn main() {
                 [x, y] => [x, y],
                 _ => [60000, 60000],
             };
+            let y_total = u64::try_from(y_max - y_min + 1).unwrap();
+            let x_total = u64::try_from(x_max - x_min + 1).unwrap();
+            let progress = ProgressBar::new(y_total * x_total).with_style(
+                ProgressStyle::with_template("{elapsed_precise}{wide_bar}{eta_precise} {pos:>7}/{len:7}").unwrap().progress_chars("=>·"),
+            );
             for y in y_min..=y_max {
                 for x in x_min..=x_max {
                     let dim = Dimension::new(x, y);
                     print_dim(&dim, &mut file, args.format);
                 }
+                progress.inc(x_total);
             }
         }
     }
