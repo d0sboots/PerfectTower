@@ -1,11 +1,15 @@
 use arrayvec::ArrayVec;
 use serde::ser::{SerializeMap, SerializeStruct, Serializer};
 use serde::Serialize;
+use std::io::{self, Write};
 use std::num::Wrapping;
 use std::{fmt, str};
 
 // Utility that duplicates The Perfect Tower II's logic for generating
 // dimensions, letting you find them more efficiently than clicking around.
+
+#[cfg(test)]
+mod tests;
 
 // Random number implementation stolen from Java. Used for various operations,
 // primarily to seed Unity's RNG.
@@ -44,6 +48,33 @@ impl JavaRNG {
         let fresult = (fmax - fmin) * f64::from(self.next_float());
         let iresult: i64 = unsafe { fresult.to_int_unchecked() };
         (iresult + i64::from(min)) as i32
+    }
+
+    /// Iterates across all seeds that can be returned from int_range(-0x80000000, 0x7fffffff),
+    /// which is how the UnityRNG gets seeded. Due to the use of floats internally, only 2^24
+    /// unique seeds are possible.
+    ///
+    /// This uses an optimized algorithm that avoids floating-point math.
+    pub fn possible_seeds() -> impl Iterator<Item = i32> {
+        struct Iter {
+            x: u32,
+        }
+        impl Iterator for Iter {
+            type Item = i32;
+            fn next(&mut self) -> Option<Self::Item> {
+                if self.x < 1 << 24 {
+                    const MIN: i64 = -0x80000000;
+                    const MAX: i64 = 0x7fffffff;
+                    let result = ((MAX - MIN) as u64) * u64::from(self.x);
+                    self.x += 1;
+                    Some(((result >> 24) as u32 ^ MIN as u32) as i32)
+                } else {
+                    None
+                }
+            }
+        }
+
+        Iter { x: 0 }
     }
 
     pub fn float_range(&mut self, min: f32, max: f32) -> f32 {
@@ -308,6 +339,25 @@ impl DimensionalResource {
             attr.count = unsafe { ((val + (1.0 + BIG)) - BIG).to_int_unchecked() };
         }
     }
+
+    pub fn write_compact<T: Write>(&self, writer: &mut T) -> io::Result<()> {
+        let fqty = (f64::from(self.qty) - f64::from(0.001f32))
+            * (24f64.exp2() / f64::from(8.5f32 - 0.001f32))
+            + 0.5;
+        let iqty: u32 = unsafe { fqty.to_int_unchecked() };
+        write!(
+            writer,
+            "{}{}{} {:06x}",
+            char::from(self.flavor_text_key + 64),
+            self.name_scheme,
+            self.name.as_ref(),
+            iqty,
+        )?;
+        for attr in &self.attributes {
+            write!(writer, " {}{}", char::from(attr.type_ + 65), attr.count,)?;
+        }
+        Ok(())
+    }
 }
 
 impl fmt::Display for DimensionalResource {
@@ -407,6 +457,21 @@ impl Dimension {
 
     pub fn name(&self) -> &str {
         self.name.as_ref()
+    }
+
+    /// A small format that's still human-readable
+    pub fn write_compact<T: Write>(&self, writer: &mut T) -> io::Result<()> {
+        write!(writer, "{}|{} {}[", self.x, self.y, self.name.as_ref())?;
+        let mut first = true;
+        for stack in &self.stacks {
+            if !first {
+                writer.write_all(b",")?;
+            }
+            first = false;
+            stack.write_compact(writer)?;
+        }
+        writer.write_all(b"]\n")?;
+        Ok(())
     }
 }
 

@@ -1,9 +1,11 @@
 //! Utility to make use of the dimension library.
 
-use std::io::{self, Write};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use dimensions::Dimension;
 use serde_json;
+use std::fs::File;
+use std::io::{self, Write};
+use std::path::PathBuf;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, ValueEnum)]
 enum Format {
@@ -11,6 +13,7 @@ enum Format {
     Json,
     JsonPretty,
     Debug,
+    Compact,
 }
 
 #[derive(Parser)]
@@ -22,21 +25,34 @@ struct Cli {
     #[arg(short, long, default_value = "pretty")]
     /// Format output according to the given formatter
     format: Format,
+
+    #[arg(short, long)]
+    /// Output file to write to
+    out: Option<PathBuf>,
 }
 
-fn print_dim(dim: &Dimension, format: Format) {
-    let mut handle = io::stdout().lock();
-    match format {
-        Format::Pretty => writeln!(handle, "{}", dim).unwrap(),
-        Format::Json => {
-            serde_json::to_writer(&mut handle, dim).unwrap();
-            handle.write_all(b"\n").unwrap();
-        },
-        Format::JsonPretty => {
-            serde_json::to_writer_pretty(io::stdout(), dim).unwrap();
-            handle.write_all(b"\n").unwrap();
+fn print_dim(dim: &Dimension, file: &mut Option<File>, format: Format) {
+    fn print_internal<T: Write>(dim: &Dimension, writer: &mut T, format: Format) {
+        match format {
+            Format::Pretty => writeln!(writer, "{}", dim).unwrap(),
+            Format::Json => {
+                serde_json::to_writer(&mut *writer, dim).unwrap();
+                writer.write_all(b"\n").unwrap();
+            }
+            Format::JsonPretty => {
+                serde_json::to_writer_pretty(&mut *writer, dim).unwrap();
+                writer.write_all(b"\n").unwrap();
+            }
+            Format::Debug => writeln!(writer, "{:#?}", dim).unwrap(),
+            Format::Compact => dim.write_compact(writer).unwrap(),
         }
-        Format::Debug => writeln!(&mut handle, "{:#?}", dim).unwrap(),
+    }
+    match file {
+        None => {
+            let mut writer = io::stdout().lock();
+            print_internal(dim, &mut writer, format)
+        }
+        Some(f) => print_internal(dim, f, format),
     }
 }
 
@@ -73,11 +89,15 @@ struct Search {
 
 fn main() {
     let args = Cli::parse();
+    let mut file: Option<File> = match args.out {
+        None => None,
+        Some(path) => Some(File::create(path).unwrap()),
+    };
     match &args.command {
         Command::Show(Show { show }) => {
             if let [x, y] = show[..] {
                 let dim = Dimension::new(x, y);
-                print_dim(&dim, args.format);
+                print_dim(&dim, &mut file, args.format);
             } else {
                 panic!("No args in {show:?}");
             }
@@ -94,7 +114,7 @@ fn main() {
             for y in y_min..=y_max {
                 for x in x_min..=x_max {
                     let dim = Dimension::new(x, y);
-                    print_dim(&dim, args.format);
+                    print_dim(&dim, &mut file, args.format);
                 }
             }
         }
