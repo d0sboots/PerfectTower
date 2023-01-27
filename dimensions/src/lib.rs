@@ -1,18 +1,22 @@
+//! Utility that duplicates The Perfect Tower II's logic for generating
+//! dimensions, letting you find them more efficiently than clicking around.
+
+use ahash::AHashSet;
 use arrayvec::ArrayVec;
+use regex::bytes::Regex;
 use serde::ser::{SerializeMap, SerializeStruct, Serializer};
 use serde::Serialize;
 use std::io::{self, Write};
 use std::num::Wrapping;
 use std::{fmt, str};
 
-// Utility that duplicates The Perfect Tower II's logic for generating
-// dimensions, letting you find them more efficiently than clicking around.
-
 #[cfg(test)]
 mod tests;
 
-// Random number implementation stolen from Java. Used for various operations,
-// primarily to seed Unity's RNG.
+pub mod stub;
+
+/// Random number implementation stolen from Java. Used for various operations,
+/// primarily to seed Unity's RNG.
 #[derive(Copy, Clone, Debug)]
 pub struct JavaRNG {
     seed: Wrapping<u64>,
@@ -21,19 +25,32 @@ pub struct JavaRNG {
 impl JavaRNG {
     const MASK: Wrapping<u64> = Wrapping(0xFFFFFFFFFFFF);
     const PRIME: Wrapping<u64> = Wrapping(0x5DEECE66D);
-    fn new(seed: u64) -> Self {
+    pub fn new(x: i32, y: i32) -> JavaRNG {
+        let seed = (i64::from(y + 10000000) * 0x40000000 + i64::from(x + 10000000)) as u64;
         JavaRNG {
             seed: (Wrapping(seed) ^ Self::PRIME) & Self::MASK,
         }
     }
 
-    pub fn from_coords(x: i32, y: i32) -> JavaRNG {
-        JavaRNG::new((i64::from(y + 10000000) * 0x40000000 + i64::from(x + 10000000)) as u64)
+    /// Translates a "seed" value returned from next_uint() into the value that would be returned
+    /// from int_range(-0x80000000, 0x7fffffff), which is how the UnityRNG gets seeded. Due to the
+    /// use of floats internally, only 2^24 unique seeds are possible.
+    ///
+    /// This uses an optimized algorithm that avoids floating-point math.
+    pub fn translate_seed(seed: u32) -> i32 {
+        const MIN: i64 = -0x80000000;
+        const MAX: i64 = 0x7fffffff;
+        let result = ((MAX - MIN) as u64) * u64::from(seed);
+        ((result >> 24) as u32 ^ MIN as u32) as i32
+    }
+
+    pub fn next_uint(&mut self) -> u32 {
+        self.seed = (self.seed * Self::PRIME + Wrapping(0xb)) & Self::MASK;
+        (self.seed >> 24).0 as u32
     }
 
     pub fn next_float(&mut self) -> f32 {
-        self.seed = (self.seed * Self::PRIME + Wrapping(0xb)) & Self::MASK;
-        (self.seed >> 24).0 as f32 * (-24f32).exp2()
+        self.next_uint() as f32 * (-24f32).exp2()
     }
 
     pub fn int_range(&mut self, min: i32, max: i32) -> i32 {
@@ -50,40 +67,13 @@ impl JavaRNG {
         (iresult + i64::from(min)) as i32
     }
 
-    /// Iterates across all seeds that can be returned from int_range(-0x80000000, 0x7fffffff),
-    /// which is how the UnityRNG gets seeded. Due to the use of floats internally, only 2^24
-    /// unique seeds are possible.
-    ///
-    /// This uses an optimized algorithm that avoids floating-point math.
-    pub fn possible_seeds() -> impl Iterator<Item = i32> {
-        struct Iter {
-            x: u32,
-        }
-        impl Iterator for Iter {
-            type Item = i32;
-            fn next(&mut self) -> Option<Self::Item> {
-                if self.x < 1 << 24 {
-                    const MIN: i64 = -0x80000000;
-                    const MAX: i64 = 0x7fffffff;
-                    let result = ((MAX - MIN) as u64) * u64::from(self.x);
-                    self.x += 1;
-                    Some(((result >> 24) as u32 ^ MIN as u32) as i32)
-                } else {
-                    None
-                }
-            }
-        }
-
-        Iter { x: 0 }
-    }
-
     pub fn float_range(&mut self, min: f32, max: f32) -> f32 {
         (max - min) * self.next_float() + min
     }
 }
 
-// Unity's internal RNG (https://docs.unity3d.com/ScriptReference/Random.html)
-// Used for most of the actual random number generation.
+/// Unity's internal RNG (https://docs.unity3d.com/ScriptReference/Random.html)
+/// Used for most of the actual random number generation.
 #[derive(Copy, Clone, Debug)]
 pub struct UnityRNG {
     state: u128,
@@ -171,6 +161,14 @@ impl ResourceName {
             }
         }
         self.size = *out_size as u8;
+    }
+
+    pub fn filter(re: &Regex, i: u32, hash: &mut AHashSet<u32>) {
+        let mut name = ResourceName::default();
+        name.generate(&mut UnityRNG::new(JavaRNG::translate_seed(i)));
+        if re.is_match(&name.chars[0..usize::from(name.size)]) {
+            hash.insert(i);
+        }
     }
 }
 
@@ -441,7 +439,7 @@ impl Dimension {
         let mut dim = Dimension::default();
         dim.x = xcoord;
         dim.y = ycoord;
-        let mut rng = JavaRNG::from_coords(xcoord, ycoord);
+        let mut rng = JavaRNG::new(xcoord, ycoord);
         dim.name
             .generate(&mut UnityRNG::new(rng.int_range(-0x80000000, 0x7fffffff)));
         // Fill out uninitialized memory instead of copying the struct
