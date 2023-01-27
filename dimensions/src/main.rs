@@ -82,6 +82,7 @@ struct Search {
     coord_max: Vec<i32>,
 
     #[arg(short, long)]
+    #[arg(default_value = "")]
     /// Regex that the dimension name must match. Implicitly includes starting/ending ^$
     name: String,
 }
