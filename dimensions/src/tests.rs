@@ -1,4 +1,4 @@
-use crate::JavaRNG;
+use crate::{Dimension, JavaRNG};
 
 /// Translates a "seed" value returned from next_uint() into the value that would be returned
 /// from int_range(-0x80000000, 0x7fffffff), which is how the UnityRNG gets seeded. Due to the
@@ -22,4 +22,35 @@ fn seeds_align() {
     for i in 0..(1 << 24) {
         assert_eq!(translate_seed_orig(i), JavaRNG::translate_seed(i), "{}", i);
     }
+}
+
+#[test]
+fn int_qty_int() {
+    let mut fails = 0;
+    const MAX: f32 = 8.5;
+    const MIN: f32 = 0.001;
+    const SIZE: f32 = MAX - MIN;
+    let shift = (-24f32).exp2();
+    for i in 000000..(1 << 24) {
+        let qty = Dimension::int_to_qty(i);
+        let res = Dimension::int_to_qty(Dimension::qty_to_int(qty.into()));
+        if qty != res || fails > 0 {
+            let mqty = (SIZE * shift) * (i as f32);
+            //let fsqueezed: f64 = f64::from(qty) - f64::from(MIN);
+            println!(
+                "{:.8} != {:.8}, {}, 0x{:08x} 0x{:08x} 0x{:016x}",
+                qty,
+                res,
+                i,
+                qty.to_bits(),
+                mqty.to_bits(),
+                (f64::from(SIZE * shift) * f64::from(i)).to_bits(),
+            );
+            fails += 1;
+        }
+        if fails > 20 {
+            panic!("Too many fails");
+        }
+    }
+    assert_eq!(fails, 0);
 }

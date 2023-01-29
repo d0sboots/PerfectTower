@@ -15,6 +15,18 @@ mod tests;
 
 pub mod stub;
 
+/// Needed because rust doesn't provide it.
+/// ONLY WORKS FOR NON-NEGATIVE NUMBERS
+/// adj is added to x, but constant-folded (if possible)
+pub fn round_ties_even(x: f64, adj: f64) -> f64 {
+    // Exploit the rounding mode of floating point math (specified as round-ties-to-even)
+    // to round our numbers, since f64::round does the wrong thing.
+    // A conditional is needed to handle possibly negative numbers, but we don't deal with those so
+    // that case isn't handled.
+    const BIG: f64 = 1.0 / f64::EPSILON;
+    (x + (adj + BIG)) - BIG
+}
+
 /// Random number implementation stolen from Java. Used for various operations,
 /// primarily to seed Unity's RNG.
 #[derive(Copy, Clone, Debug)]
@@ -65,10 +77,6 @@ impl JavaRNG {
         let fresult = (fmax - fmin) * f64::from(self.next_float());
         let iresult: i64 = unsafe { fresult.to_int_unchecked() };
         (iresult + i64::from(min)) as i32
-    }
-
-    pub fn float_range(&mut self, min: f32, max: f32) -> f32 {
-        (max - min) * self.next_float() + min
     }
 }
 
@@ -329,27 +337,20 @@ impl DimensionalResource {
             attribute_types = &mut attribute_types[..newlen];
 
             let val = f64::from(urng.next_float()) * 99.0 / flen;
-            // Exploit the rounding mode of floating point math (specified as round-ties-to-even)
-            // to round our numbers, since f64::round does the wrong thing.
-            // It's safe to fold the addition of 1.0 into BIG, because none of the reachable values
+            // It's safe to fold the addition of 1.0, because none of the reachable values
             // can end up rounding to x.5 after the addition of 1.0, unless they were already x.5.
-            const BIG: f64 = 1.0 / f64::EPSILON;
-            attr.count = unsafe { ((val + (1.0 + BIG)) - BIG).to_int_unchecked() };
+            attr.count = unsafe { round_ties_even(val, 1.0).to_int_unchecked() };
         }
     }
 
     pub fn write_compact<T: Write>(&self, writer: &mut T) -> io::Result<()> {
-        let fqty = (f64::from(self.qty) - f64::from(0.001f32))
-            * (24f64.exp2() / f64::from(8.5f32 - 0.001f32))
-            + 0.5;
-        let iqty: u32 = unsafe { fqty.to_int_unchecked() };
         write!(
             writer,
             "{}{}{} {:06x}",
             char::from(self.flavor_text_key + 64),
             self.name_scheme,
             self.name.as_ref(),
-            iqty,
+            Dimension::qty_to_int(self.qty.into()),
         )?;
         for attr in &self.attributes {
             write!(writer, " {}{}", char::from(attr.type_ + 65), attr.count,)?;
@@ -448,13 +449,69 @@ impl Dimension {
         }
         for stack in &mut dim.stacks {
             stack.generate(rng.int_range(-0x80000000, 0x7fffffff));
-            stack.qty = rng.float_range(0.001, 8.5);
+            stack.qty = Dimension::int_to_qty(rng.next_uint())
         }
         dim
     }
 
+    pub fn qty_to_int(qty: f64) -> u32 {
+        const MAX: f32 = 8.5;
+        const MIN: f32 = 0.001;
+        let size_inv = f64::from(1 << 24) / f64::from(MAX - MIN);
+
+        // We explicitly shrink the precision to f32 and then pop back to f64, because we *need* to
+        // perform that rounding step to properly reverse the addition at the end of int_to_qty.
+        // We could do the whole thing at f32 precision, except that our input is f64 so the
+        // subtraction needs to be done at f64 precision.
+        let fsqueezed: f32 = (qty - f64::from(MIN)) as f32;
+        // The squeezed subtraction is a one-to-one operation across most of our range. *However*,
+        // in the border areas where our input is just above an exponent breakpoint, but
+        // subtraction will bring it below, we hit an issue: The addition in int_to_qty() has
+        // irreversibly lost a bit in the lowest place! This causes issues when we invert the
+        // multiply, since we are counting on the error to be centered when we round at the end.
+        // To solve this, we need to re-bias the error by subtracting 0.25 ulp for these cases.
+        // However, the actual values needed are a bit squishy, so we choose "nice" values to help
+        // codegen.
+        // Also, we explicitly choose a larger-than-needed value for the > 8.001 case so that the
+        // largest float converts to 0xffffff instead of 0xfffffe.
+        let adj = if qty > 4.0 && qty < 4.001 {
+            0.25
+        } else if qty > 8.0 && qty < 8.001 {
+            0.375
+        } else {
+            0.5
+        };
+        // Multiply and round, taking into account the possible adjustments.
+        let fresult = f64::from(fsqueezed) * size_inv + adj;
+        unsafe { fresult.to_int_unchecked() }
+    }
+
+    pub fn int_to_qty(x: u32) -> f32 {
+        const MAX: f32 = 8.5;
+        const MIN: f32 = 0.001;
+        let shift = (-24f32).exp2();
+        ((MAX - MIN) * shift) * (x as f32) + MIN
+    }
+
     pub fn name(&self) -> &str {
         self.name.as_ref()
+    }
+
+    pub fn cost(&self) -> u32 {
+        // Explicitly unroll loop
+        let sum = match self.stacks.len() {
+            1.. => f64::from(self.stacks[0].qty),
+            _ => panic!("No resources"),
+        } + match self.stacks.len() {
+            2.. => f64::from(self.stacks[1].qty),
+            _ => 0.0,
+        } + match self.stacks.len() {
+            3.. => f64::from(self.stacks[2].qty),
+            _ => 0.0,
+        };
+        // Use powf even though it's an integer, 'cause that's what the source does
+        let fresult = round_ties_even((sum * 0.125 + 1.0).powf(6.0), 0.0);
+        unsafe { fresult.to_int_unchecked() }
     }
 
     /// A small format that's still human-readable

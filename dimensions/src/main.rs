@@ -9,7 +9,9 @@ use regex::bytes::Regex;
 use serde_json;
 use std::fs::File;
 use std::io::{self, BufWriter, Stdout, Write};
+use std::num::{ParseFloatError, ParseIntError};
 use std::path::PathBuf;
+use thiserror::Error;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, ValueEnum)]
 enum Format {
@@ -85,6 +87,53 @@ struct Search {
     #[arg(default_value = "")]
     /// Regex that the dimension name must match. Implicitly includes starting/ending ^$
     name: String,
+
+    #[arg(long)]
+    #[arg(default_value = "1")]
+    /// Minimum number of resource stacks (shown as "Resources" in-game) per dimension
+    stack_min: usize,
+
+    #[arg(long)]
+    #[arg(default_value = "3")]
+    /// Maximum number of resource stacks (shown as "Resources" in-game) per dimension, inclusive
+    stack_max: usize,
+
+    #[arg(long)]
+    #[arg(default_value = "any")]
+    /// How to filter resource stacks. "all" means all stacks must meet the critera, "any" means
+    /// at least one must.
+    filter: FilterType,
+
+    #[arg(long, value_parser = parse_qty)]
+    #[arg(default_value = "0.001")]
+    /// Minimum res/sec for resource stacks. Can also be specified in hex from 0x000000 to 0xffffff.
+    qty_min: u32,
+
+    #[arg(long, value_parser = parse_qty)]
+    #[arg(default_value = "8.5")]
+    /// Maximum res/sec for resource stacks. Can also be specified in hex from 0x000000 to 0xffffff. Inclusive.
+    qty_max: u32,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, ValueEnum)]
+enum FilterType {
+    All,
+    Any,
+}
+
+#[derive(Error, Debug)]
+#[error(transparent)]
+enum ParseQtyError {
+    Float(#[from] ParseFloatError),
+    Int(#[from] ParseIntError),
+}
+
+fn parse_qty(value: &str) -> Result<u32, ParseQtyError> {
+    if value.get(..2) == Some("0x") {
+        Ok(u32::from_str_radix(&value[2..], 16)?)
+    } else {
+        Ok(Dimension::qty_to_int(value.parse::<f64>()?))
+    }
 }
 
 fn make_progress(size: u64) -> ProgressBar {
@@ -151,22 +200,52 @@ fn main() {
             let y_total = u64::try_from(y_max - y_min + 1).unwrap();
             let x_total = u64::try_from(x_max - x_min + 1).unwrap();
             let progress = make_progress(y_total * x_total);
+            let all_default = search.stack_min <= 1
+                && search.stack_max >= 3
+                && search.qty_min <= 0
+                && search.qty_max >= 0xffffff
+                && hash.is_empty();
             for y in y_min..=y_max {
-                if hash.is_empty() {
+                if all_default {
                     // Raw loop, no filtering
                     for x in x_min..=x_max {
-                        let dim = Dimension::new(x, y);
-                        print_dim(&dim, &mut writer, args.format);
+                        print_dim(&Dimension::new(x, y), &mut writer, args.format);
                     }
                 } else {
-                    // Use filtered results by testing a stub dimension first
-                    for x in x_min..=x_max {
+                    // Create stubs just to filter the fields we can see
+                    'outer: for x in x_min..=x_max {
                         let stub = StubDimension::new(x, y);
-                        if !hash.contains(&stub.name) {
+                        if !(hash.is_empty() || hash.contains(&stub.name)) {
                             continue;
                         }
-                        let dim = Dimension::new(x, y);
-                        print_dim(&dim, &mut writer, args.format);
+                        if stub.stacks.len() < search.stack_min
+                            || stub.stacks.len() > search.stack_max
+                        {
+                            continue;
+                        }
+                        match search.filter {
+                            FilterType::Any => {
+                                let mut any = false;
+                                for stack in stub.stacks {
+                                    if stack.qty < search.qty_min || stack.qty > search.qty_max {
+                                        continue;
+                                    }
+                                    any = true;
+                                    break;
+                                }
+                                if !any {
+                                    continue;
+                                }
+                            }
+                            FilterType::All => {
+                                for stack in stub.stacks {
+                                    if stack.qty < search.qty_min || stack.qty > search.qty_max {
+                                        continue 'outer;
+                                    }
+                                }
+                            }
+                        }
+                        print_dim(&Dimension::new(x, y), &mut writer, args.format);
                     }
                 }
                 progress.inc(x_total);

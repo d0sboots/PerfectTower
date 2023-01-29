@@ -16,7 +16,8 @@ Commands:
   help    Print this message or the help of the given subcommand(s)
 
 Options:
-  -f, --format <FORMAT>  Format output according to the given formatter [default: pretty] [possible values: pretty, json, json-pretty, debug, compact]
+  -f, --format <FORMAT>  Format output according to the given formatter [default: pretty]
+                         [possible values: pretty, json, json-pretty, debug, compact]
   -o, --out <OUT>        Output file to write to
   -h, --help             Print help information
   -V, --version          Print version information
@@ -28,9 +29,22 @@ Search for specific dimensions
 Usage: dimensions search [OPTIONS]
 
 Options:
-      --coord-min <X> <Y>  Minimum bound for coords
-      --coord-max <X> <Y>  Maximum bound for coords, inclusive
-  -h, --help               Print help information
+      --coord-min <X> <Y>      Minimum bound for coords
+      --coord-max <X> <Y>      Maximum bound for coords, inclusive
+  -n, --name <NAME>            Regex that the dimension name must match. Implicitly includes
+                               starting/ending ^$ [default: ]
+      --stack-min <STACK_MIN>  Minimum number of resource stacks (shown as "Resources" in-game) per
+                               dimension [default: 1]
+      --stack-max <STACK_MAX>  Maximum number of resource stacks (shown as "Resources" in-game) per
+                               dimension, inclusive [default: 3]
+      --filter <FILTER>        How to filter resource stacks. "all" means all stacks must meet the
+                               critera, "any" means at least one must [default: any] [possible
+                               values: all, any]
+      --qty-min <QTY_MIN>      Minimum res/sec for resource stacks. Can also be specified in hex
+                               from 0x000000 to 0xffffff [default: 0.001]
+      --qty-max <QTY_MAX>      Maximum res/sec for resource stacks. Can also be specified in hex
+                               from 0x000000 to 0xffffff. Inclusive [default: 8.5]
+  -h, --help                   Print help information
 ```
 
 ## The compact format
