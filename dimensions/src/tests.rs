@@ -1,4 +1,4 @@
-use crate::{Dimension, JavaRNG};
+use crate::{int_to_qty, qty_to_int, JavaRNG};
 
 /// Translates a "seed" value returned from next_uint() into the value that would be returned
 /// from int_range(-0x80000000, 0x7fffffff), which is how the UnityRNG gets seeded. Due to the
@@ -32,8 +32,8 @@ fn int_qty_int() {
     const SIZE: f32 = MAX - MIN;
     let shift = (-24f32).exp2();
     for i in 000000..(1 << 24) {
-        let qty = Dimension::int_to_qty(i);
-        let res = Dimension::int_to_qty(Dimension::qty_to_int(qty.into()));
+        let qty = int_to_qty(i);
+        let res = int_to_qty(qty_to_int(qty.into()));
         if qty != res || fails > 0 {
             let mqty = (SIZE * shift) * (i as f32);
             //let fsqueezed: f64 = f64::from(qty) - f64::from(MIN);

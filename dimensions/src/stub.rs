@@ -1,4 +1,5 @@
 use super::JavaRNG;
+use crate::int_to_qty;
 use arrayvec::ArrayVec;
 
 /// Represents the same thing as super::Dimension, but without generating all the fields.
@@ -34,5 +35,24 @@ impl Dimension {
             stack.qty = rng.next_uint();
         }
         dim
+    }
+
+    pub fn qty_sum(&self) -> f64 {
+        // Explicitly unroll loop
+        let mut sum = f64::from(int_to_qty(self.stacks[0].qty));
+        if self.stacks.len() >= 3 {
+            sum += f64::from(int_to_qty(self.stacks[2].qty));
+        }
+        if self.stacks.len() >= 2 {
+            sum += f64::from(int_to_qty(self.stacks[1].qty));
+        }
+        sum
+    }
+
+    pub fn cost(&self) -> f64 {
+        // Hardcoded faster pow
+        let tmp = self.qty_sum() * 0.125 + 1.0;
+        let t2 = tmp * tmp * tmp;
+        t2 * t2
     }
 }

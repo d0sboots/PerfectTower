@@ -3,7 +3,7 @@
 use ahash::AHashSet;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use dimensions::stub::Dimension as StubDimension;
-use dimensions::{Dimension, ResourceName};
+use dimensions::{qty_to_int, round_ties_even, Dimension, ResourceName};
 use indicatif::{ProgressBar, ProgressStyle};
 use regex::bytes::Regex;
 use serde_json;
@@ -113,6 +113,19 @@ struct Search {
     #[arg(default_value = "8.5")]
     /// Maximum res/sec for resource stacks. Can also be specified in hex from 0x000000 to 0xffffff. Inclusive.
     qty_max: u32,
+
+    #[arg(long, default_value = "0.5")]
+    /// Search for dimensions with a cost within <tolerance> of x.5. This stress-tests the
+    /// generation algorithm, and is of little use otherwise.
+    tolerance: f64,
+
+    #[arg(long, default_value = "1")]
+    /// Minimum cost for dimensions.
+    cost_min: u32,
+
+    #[arg(long, default_value = "5392")]
+    /// Maximum cost for dimensions. Inclusive.
+    cost_max: u32,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, ValueEnum)]
@@ -132,7 +145,7 @@ fn parse_qty(value: &str) -> Result<u32, ParseQtyError> {
     if value.get(..2) == Some("0x") {
         Ok(u32::from_str_radix(&value[2..], 16)?)
     } else {
-        Ok(Dimension::qty_to_int(value.parse::<f64>()?))
+        Ok(qty_to_int(value.parse::<f64>()?))
     }
 }
 
@@ -200,11 +213,18 @@ fn main() {
             let y_total = u64::try_from(y_max - y_min + 1).unwrap();
             let x_total = u64::try_from(x_max - x_min + 1).unwrap();
             let progress = make_progress(y_total * x_total);
+
+            // Do we need to run the loop for checking resource stacks?
+            let needs_subfilter = search.qty_min > 1 || search.qty_max < 0xfffffe;
+            // Do we need to calculate cost? (Moderately expensive)
+            let needs_cost =
+                search.tolerance < 0.5 || search.cost_min > 1 || search.cost_max < 5392;
+
             let all_default = search.stack_min <= 1
                 && search.stack_max >= 3
-                && search.qty_min <= 0
-                && search.qty_max >= 0xffffff
-                && hash.is_empty();
+                && hash.is_empty()
+                && !needs_subfilter
+                && !needs_cost;
             for y in y_min..=y_max {
                 if all_default {
                     // Raw loop, no filtering
@@ -213,7 +233,7 @@ fn main() {
                     }
                 } else {
                     // Create stubs just to filter the fields we can see
-                    'outer: for x in x_min..=x_max {
+                    for x in x_min..=x_max {
                         let stub = StubDimension::new(x, y);
                         if !(hash.is_empty() || hash.contains(&stub.name)) {
                             continue;
@@ -223,26 +243,41 @@ fn main() {
                         {
                             continue;
                         }
-                        match search.filter {
-                            FilterType::Any => {
-                                let mut any = false;
-                                for stack in stub.stacks {
-                                    if stack.qty < search.qty_min || stack.qty > search.qty_max {
+                        if needs_subfilter {
+                            let fail_pred = |i: usize| {
+                                let stack = &stub.stacks[i];
+                                stack.qty < search.qty_min || stack.qty > search.qty_max
+                            };
+                            let len = stub.stacks.len();
+                            match search.filter {
+                                FilterType::Any => {
+                                    if fail_pred(0)
+                                        && (len < 3 || fail_pred(2))
+                                        && (len < 2 || fail_pred(1))
+                                    {
                                         continue;
                                     }
-                                    any = true;
-                                    break;
                                 }
-                                if !any {
-                                    continue;
-                                }
-                            }
-                            FilterType::All => {
-                                for stack in stub.stacks {
-                                    if stack.qty < search.qty_min || stack.qty > search.qty_max {
-                                        continue 'outer;
+                                FilterType::All => {
+                                    if fail_pred(0)
+                                        || (len > 2 && fail_pred(2))
+                                        || (len > 1 && fail_pred(1))
+                                    {
+                                        continue;
                                     }
                                 }
+                            }
+                        }
+                        if needs_cost {
+                            let cost = stub.cost();
+                            let icost: u32 = unsafe { round_ties_even(cost).to_int_unchecked() };
+                            if icost < search.cost_min || icost > search.cost_max {
+                                continue;
+                            }
+                            let cost_tol = cost + 0.5;
+                            let tol = round_ties_even(cost_tol) - cost_tol;
+                            if search.tolerance < tol.abs() {
+                                continue;
                             }
                         }
                         print_dim(&Dimension::new(x, y), &mut writer, args.format);

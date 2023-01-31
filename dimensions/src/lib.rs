@@ -9,6 +9,7 @@ use serde::Serialize;
 use std::io::{self, Write};
 use std::num::Wrapping;
 use std::{fmt, str};
+use stub::Dimension as StubDimension;
 
 #[cfg(test)]
 mod tests;
@@ -17,14 +18,56 @@ pub mod stub;
 
 /// Needed because rust doesn't provide it.
 /// ONLY WORKS FOR NON-NEGATIVE NUMBERS
-/// adj is added to x, but constant-folded (if possible)
-pub fn round_ties_even(x: f64, adj: f64) -> f64 {
+pub fn round_ties_even(x: f64) -> f64 {
     // Exploit the rounding mode of floating point math (specified as round-ties-to-even)
     // to round our numbers, since f64::round does the wrong thing.
     // A conditional is needed to handle possibly negative numbers, but we don't deal with those so
     // that case isn't handled.
     const BIG: f64 = 1.0 / f64::EPSILON;
-    (x + (adj + BIG)) - BIG
+    (x + BIG) - BIG
+}
+
+/// Convert an unsigned seed in the range 0..1<<24 to a qty/sec value
+pub fn int_to_qty(x: u32) -> f32 {
+    const MAX: f32 = 8.5;
+    const MIN: f32 = 0.001;
+    let shift = (-24f32).exp2();
+    ((MAX - MIN) * shift) * (x as f32) + MIN
+}
+
+/// Inverse of int_to_qty: Convert a qty/sec value to an unsigned seed in the range 0..1<<24.
+/// Guaranteed to be correct for all values produced by int_to_qty. (With the caveat that that
+/// function is not one-to-one: Above 8.0 there are two seeds per floating point output.)
+pub fn qty_to_int(qty: f64) -> u32 {
+    const MAX: f32 = 8.5;
+    const MIN: f32 = 0.001;
+    let size_inv = f64::from(1 << 24) / f64::from(MAX - MIN);
+
+    // We explicitly shrink the precision to f32 and then pop back to f64, because we *need* to
+    // perform that rounding step to properly reverse the addition at the end of int_to_qty.
+    // We could do the whole thing at f32 precision, except that our input is f64 so the
+    // subtraction needs to be done at f64 precision.
+    let fsqueezed: f32 = (qty - f64::from(MIN)) as f32;
+    // The squeezed subtraction is a one-to-one operation across most of our range. *However*,
+    // in the border areas where our input is just above an exponent breakpoint, but
+    // subtraction will bring it below, we hit an issue: The addition in int_to_qty() has
+    // irreversibly lost a bit in the lowest place! This causes issues when we invert the
+    // multiply, since we are counting on the error to be centered when we round at the end.
+    // To solve this, we need to re-bias the error by subtracting 0.25 ulp for these cases.
+    // However, the actual values needed are a bit squishy, so we choose "nice" values to help
+    // codegen.
+    // Also, we explicitly choose a larger-than-needed value for the > 8.001 case so that the
+    // largest float converts to 0xffffff instead of 0xfffffe.
+    let adj = if qty > 4.0 && qty < 4.001 {
+        0.25
+    } else if qty > 8.0 && qty < 8.001 {
+        0.375
+    } else {
+        0.5
+    };
+    // Multiply and round, taking into account the possible adjustments.
+    let fresult = f64::from(fsqueezed) * size_inv + adj;
+    unsafe { fresult.to_int_unchecked() }
 }
 
 /// Random number implementation stolen from Java. Used for various operations,
@@ -339,7 +382,11 @@ impl DimensionalResource {
             let val = f64::from(urng.next_float()) * 99.0 / flen;
             // It's safe to fold the addition of 1.0, because none of the reachable values
             // can end up rounding to x.5 after the addition of 1.0, unless they were already x.5.
-            attr.count = unsafe { round_ties_even(val, 1.0).to_int_unchecked() };
+            // Also only works because it's exactly representable when added to BIG.
+            // See comments on round_ties_even for how this works in general.
+            const BIG: f64 = 1.0 / f64::EPSILON;
+            let rounded = (val + (BIG + 1.0)) - BIG;
+            attr.count = unsafe { rounded.to_int_unchecked() };
         }
     }
 
@@ -350,7 +397,7 @@ impl DimensionalResource {
             char::from(self.flavor_text_key + 64),
             self.name_scheme,
             self.name.as_ref(),
-            Dimension::qty_to_int(self.qty.into()),
+            qty_to_int(self.qty.into()),
         )?;
         for attr in &self.attributes {
             write!(writer, " {}{}", char::from(attr.type_ + 65), attr.count,)?;
@@ -427,7 +474,7 @@ impl Serialize for DimensionalResource {
     }
 }
 
-#[derive(Default, Debug, Serialize)]
+#[derive(Default, Debug)]
 pub struct Dimension {
     x: i32,
     y: i32,
@@ -449,48 +496,9 @@ impl Dimension {
         }
         for stack in &mut dim.stacks {
             stack.generate(rng.int_range(-0x80000000, 0x7fffffff));
-            stack.qty = Dimension::int_to_qty(rng.next_uint())
+            stack.qty = int_to_qty(rng.next_uint())
         }
         dim
-    }
-
-    pub fn qty_to_int(qty: f64) -> u32 {
-        const MAX: f32 = 8.5;
-        const MIN: f32 = 0.001;
-        let size_inv = f64::from(1 << 24) / f64::from(MAX - MIN);
-
-        // We explicitly shrink the precision to f32 and then pop back to f64, because we *need* to
-        // perform that rounding step to properly reverse the addition at the end of int_to_qty.
-        // We could do the whole thing at f32 precision, except that our input is f64 so the
-        // subtraction needs to be done at f64 precision.
-        let fsqueezed: f32 = (qty - f64::from(MIN)) as f32;
-        // The squeezed subtraction is a one-to-one operation across most of our range. *However*,
-        // in the border areas where our input is just above an exponent breakpoint, but
-        // subtraction will bring it below, we hit an issue: The addition in int_to_qty() has
-        // irreversibly lost a bit in the lowest place! This causes issues when we invert the
-        // multiply, since we are counting on the error to be centered when we round at the end.
-        // To solve this, we need to re-bias the error by subtracting 0.25 ulp for these cases.
-        // However, the actual values needed are a bit squishy, so we choose "nice" values to help
-        // codegen.
-        // Also, we explicitly choose a larger-than-needed value for the > 8.001 case so that the
-        // largest float converts to 0xffffff instead of 0xfffffe.
-        let adj = if qty > 4.0 && qty < 4.001 {
-            0.25
-        } else if qty > 8.0 && qty < 8.001 {
-            0.375
-        } else {
-            0.5
-        };
-        // Multiply and round, taking into account the possible adjustments.
-        let fresult = f64::from(fsqueezed) * size_inv + adj;
-        unsafe { fresult.to_int_unchecked() }
-    }
-
-    pub fn int_to_qty(x: u32) -> f32 {
-        const MAX: f32 = 8.5;
-        const MIN: f32 = 0.001;
-        let shift = (-24f32).exp2();
-        ((MAX - MIN) * shift) * (x as f32) + MIN
     }
 
     pub fn name(&self) -> &str {
@@ -499,18 +507,15 @@ impl Dimension {
 
     pub fn cost(&self) -> u32 {
         // Explicitly unroll loop
-        let sum = match self.stacks.len() {
-            1.. => f64::from(self.stacks[0].qty),
-            _ => panic!("No resources"),
-        } + match self.stacks.len() {
-            2.. => f64::from(self.stacks[1].qty),
-            _ => 0.0,
-        } + match self.stacks.len() {
-            3.. => f64::from(self.stacks[2].qty),
-            _ => 0.0,
-        };
+        let mut sum = f64::from(self.stacks[0].qty);
+        if self.stacks.len() >= 3 {
+            sum += f64::from(self.stacks[2].qty);
+        }
+        if self.stacks.len() >= 2 {
+            sum += f64::from(self.stacks[1].qty);
+        }
         // Use powf even though it's an integer, 'cause that's what the source does
-        let fresult = round_ties_even((sum * 0.125 + 1.0).powf(6.0), 0.0);
+        let fresult = round_ties_even((sum * 0.125 + 1.0).powf(6.0));
         unsafe { fresult.to_int_unchecked() }
     }
 
@@ -532,10 +537,36 @@ impl Dimension {
 
 impl fmt::Display for Dimension {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{{{} {}}} {}", self.x, self.y, self.name())?;
+        let stub = StubDimension::new(self.x, self.y);
+        write!(
+            f,
+            "{{{} {}}} {}  Cost:{} QtySum:{:.17} CostDbg:{:.12}",
+            self.x,
+            self.y,
+            self.name(),
+            self.cost(),
+            stub.qty_sum(),
+            stub.cost(),
+        )?;
         for stack in &self.stacks {
             write!(f, "\n{}", stack)?;
         }
         Ok(())
+    }
+}
+
+/// Needed in order to add cost to the output
+impl Serialize for Dimension {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut state = serializer.serialize_struct("Dimension", 5)?;
+        state.serialize_field("x", &self.x)?;
+        state.serialize_field("y", &self.y)?;
+        state.serialize_field("name", self.name.as_ref())?;
+        state.serialize_field("cost", &self.cost())?;
+        state.serialize_field("stacks", &self.stacks)?;
+        state.end()
     }
 }
