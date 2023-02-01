@@ -9,6 +9,7 @@ rust-version = "1.63"
 ahash = "0.8.3"
 clap = { version = "=4.0.32", features = ["derive", "wrap_help"] }
 clap_lex = { version = "=0.3.0" }
+dpc-pariter = "0.5.1"
 indicatif = "0.17.3"
 regex = { version = "1.7.1", default-features = false, features = ["perf", "std"] }
 serde = { version = "1.0.152", features = ["derive"] }

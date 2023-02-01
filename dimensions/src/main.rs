@@ -6,6 +6,7 @@ use dimensions::stub::Dimension as StubDimension;
 use dimensions::{
     qty_to_int, round_ties_even, Dimension, DimensionalResource, ResourceFilterOpts, ResourceName,
 };
+use dpc_pariter::IteratorExt;
 use indicatif::{ProgressBar, ProgressStyle};
 use regex::bytes::Regex;
 use serde_json;
@@ -84,6 +85,10 @@ struct Search {
     #[arg(requires = "coord_min")]
     /// Maximum bound for coords, inclusive
     coord_max: Vec<i32>,
+
+    #[arg(short, long)]
+    /// Number of threads to use when searching. Default is based on the number of cores.
+    threads: Option<usize>,
 
     #[arg(short, long)]
     #[arg(default_value = "")]
@@ -208,12 +213,12 @@ fn main() {
             stdout = io::stdout();
             &mut stdout
         }
-        Some(path) => {
+        Some(ref path) => {
             file = File::create(path).unwrap();
             &mut file
         }
     });
-    match &args.command {
+    match args.command {
         Command::Show(Show { show }) => {
             if let [x, y] = show[..] {
                 let dim = Dimension::new(x, y);
@@ -232,7 +237,7 @@ fn main() {
                 let mut i = 0u32;
                 while i < (1 << 24) {
                     progress.set_position(i.into());
-                    for _ in 0..(1 << 16) {
+                    for _ in 0..(1 << 17) {
                         ResourceName::filter(&re, i, &mut name_hash);
                         i += 1
                     }
@@ -277,7 +282,7 @@ fn main() {
                 let mut i = 0u32;
                 while i < (1 << 24) {
                     progress.set_position(i.into());
-                    for _ in 0..(1 << 16) {
+                    for _ in 0..(1 << 17) {
                         DimensionalResource::filter(&opts, i, &mut resource_hash);
                         i += 1
                     }
@@ -313,14 +318,18 @@ fn main() {
                 && name_hash.is_empty()
                 && !needs_subfilter
                 && !needs_cost;
-            for y in y_min..=y_max {
-                if all_default {
-                    // Raw loop, no filtering
+            if all_default {
+                // Raw loop, no filtering
+                for y in y_min..=y_max {
                     for x in x_min..=x_max {
                         print_dim(&Dimension::new(x, y), &mut writer, args.format);
                     }
-                } else {
-                    // Create stubs just to filter the fields we can see
+                    progress.inc(x_total);
+                }
+            } else {
+                // Create stubs just to filter the fields we can see
+                let process_fn = move |y| {
+                    let mut found = Vec::<StubDimension>::new();
                     for x in x_min..=x_max {
                         let stub = StubDimension::new(x, y);
                         if !(name_hash.is_empty() || name_hash.contains(&stub.name)) {
@@ -371,10 +380,32 @@ fn main() {
                                 continue;
                             }
                         }
-                        print_dim(&Dimension::new(x, y), &mut writer, args.format);
+                        found.push(stub);
                     }
-                }
-                progress.inc(x_total);
+                    found
+                };
+                (y_min..=y_max)
+                    .parallel_map_custom(
+                        |builder| match search.threads {
+                            None => builder,
+                            Some(x) => builder.threads(x),
+                        },
+                        process_fn,
+                    )
+                    .for_each(|arr| {
+                        progress.inc(x_total);
+                        // This part is single-threaded, in original order.
+                        for stub in &arr {
+                            print_dim(&Dimension::new(stub.x, stub.y), &mut writer, args.format);
+                        }
+                        if args.out == None {
+                            // When writing to stdout, flush after every chunk, so we see results faster.
+                            // We assume results are uncommon, so this won't be a bottleneck.
+                            progress.suspend(|| {
+                                writer.flush().unwrap();
+                            });
+                        }
+                    });
             }
         }
     }

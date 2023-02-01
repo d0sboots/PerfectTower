@@ -31,6 +31,8 @@ Usage: dimensions search [OPTIONS]
 Options:
       --coord-min <X> <Y>              Minimum bound for coords
       --coord-max <X> <Y>              Maximum bound for coords, inclusive
+  -t, --threads <THREADS>              Number of threads to use when searching. Default is based on
+                                       the number of cores
   -n, --name <NAME>                    Regex that the dimension name must match. Case-insensitive.
                                        Implicitly includes starting/ending ^$ [default: ]
       --stack-min <MIN>                Minimum number of resource stacks (shown as "Resources"

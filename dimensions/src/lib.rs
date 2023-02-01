@@ -2,7 +2,6 @@
 //! dimensions, letting you find them more efficiently than clicking around.
 
 use ahash::AHashSet;
-use tinyvec::ArrayVec;
 use regex::bytes::Regex;
 use serde::ser::{SerializeMap, SerializeStruct, Serializer};
 use serde::Serialize;
@@ -10,6 +9,7 @@ use std::io::{self, Write};
 use std::num::Wrapping;
 use std::{fmt, str};
 use stub::Dimension as StubDimension;
+use tinyvec::ArrayVec;
 
 #[cfg(test)]
 mod tests;
