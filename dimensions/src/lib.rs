@@ -253,6 +253,18 @@ pub struct DimensionalResource {
     qty: f32,
 }
 
+pub struct ResourceFilterOpts {
+    pub name: Option<Regex>,
+    pub properties_min: usize,
+    pub properties_max: usize,
+    pub anyprop_min: u8,
+    pub anyprop_max: u8,
+    pub allprop_min: u8,
+    pub allprop_max: u8,
+    pub sumprop_min: u8,
+    pub sumprop_max: u8,
+}
+
 impl DimensionalResource {
     pub const ATTRIBUTES: [&'static str; 21] = [
         "Cool",
@@ -387,6 +399,38 @@ impl DimensionalResource {
             const BIG: f64 = 1.0 / f64::EPSILON;
             let rounded = (val + (BIG + 1.0)) - BIG;
             attr.count = unsafe { rounded.to_int_unchecked() };
+        }
+    }
+
+    pub fn filter(opts: &ResourceFilterOpts, i: u32, hash: &mut AHashSet<u32>) {
+        let mut stack = DimensionalResource::default();
+        stack.generate(JavaRNG::translate_seed(i));
+        if let Some(re) = &opts.name {
+            if !re.is_match(stack.full_name().as_bytes()) {
+                return;
+            }
+        }
+        if stack.attributes.len() < opts.properties_min
+            || stack.attributes.len() > opts.properties_max
+        {
+            return;
+        }
+        let mut any_ok = false;
+        let mut sum = 0u8;
+        for attr in &stack.attributes {
+            if attr.count < opts.allprop_min || attr.count > opts.allprop_max {
+                return;
+            }
+            if attr.count >= opts.anyprop_min && attr.count <= opts.anyprop_max {
+                any_ok = true;
+            }
+            sum += attr.count;
+        }
+        if !any_ok {
+            return;
+        }
+        if sum >= opts.sumprop_min && sum <= opts.sumprop_max {
+            hash.insert(i);
         }
     }
 

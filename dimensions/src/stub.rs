@@ -10,11 +10,11 @@ pub struct Dimension {
     pub x: i32,
     pub y: i32,
     pub name: u32,
-    pub stacks: ArrayVec<DimensionResource, 3>,
+    pub stacks: ArrayVec<DimensionalResource, 3>,
 }
 
 #[derive(Default, Debug)]
-pub struct DimensionResource {
+pub struct DimensionalResource {
     pub seed: u32,
     pub qty: u32,
 }

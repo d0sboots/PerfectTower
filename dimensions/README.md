@@ -29,22 +29,48 @@ Search for specific dimensions
 Usage: dimensions search [OPTIONS]
 
 Options:
-      --coord-min <X> <Y>      Minimum bound for coords
-      --coord-max <X> <Y>      Maximum bound for coords, inclusive
-  -n, --name <NAME>            Regex that the dimension name must match. Implicitly includes
-                               starting/ending ^$ [default: ]
-      --stack-min <STACK_MIN>  Minimum number of resource stacks (shown as "Resources" in-game) per
-                               dimension [default: 1]
-      --stack-max <STACK_MAX>  Maximum number of resource stacks (shown as "Resources" in-game) per
-                               dimension, inclusive [default: 3]
-      --filter <FILTER>        How to filter resource stacks. "all" means all stacks must meet the
-                               critera, "any" means at least one must [default: any] [possible
-                               values: all, any]
-      --qty-min <QTY_MIN>      Minimum res/sec for resource stacks. Can also be specified in hex
-                               from 0x000000 to 0xffffff [default: 0.001]
-      --qty-max <QTY_MAX>      Maximum res/sec for resource stacks. Can also be specified in hex
-                               from 0x000000 to 0xffffff. Inclusive [default: 8.5]
-  -h, --help                   Print help information
+      --coord-min <X> <Y>              Minimum bound for coords
+      --coord-max <X> <Y>              Maximum bound for coords, inclusive
+  -n, --name <NAME>                    Regex that the dimension name must match. Case-insensitive.
+                                       Implicitly includes starting/ending ^$ [default: ]
+      --stack-min <MIN>                Minimum number of resource stacks (shown as "Resources"
+                                       in-game) per dimension [default: 1]
+      --stack-max <MAX>                Maximum number of resource stacks (shown as "Resources"
+                                       in-game) per dimension, inclusive [default: 3]
+      --filter <FILTER>                How to filter resource stacks. "all" means all stacks must
+                                       meet the critera, "any" means at least one must [default: any]
+                                       [possible values: all, any]
+      --qty-min <MIN>                  Minimum res/sec for resource stacks. Can also be specified in
+                                       hex from 0x000000 to 0xffffff [default: 0.001]
+      --qty-max <MAX>                  Maximum res/sec for resource stacks. Can also be specified in
+                                       hex from 0x000000 to 0xffffff. Inclusive [default: 8.5]
+      --tolerance <TOLERANCE>          Search for dimensions with a cost within <tolerance> of x.5.
+                                       This stress-tests the generation algorithm, and is of little
+                                       use otherwise [default: 0.5]
+      --cost-min <MIN>                 Minimum cost for dimensions [default: 1]
+      --cost-max <MAX>                 Maximum cost for dimensions. Inclusive [default: 5392]
+      --resource-name <RESOURCE_NAME>  Regex that the resource name must match. This matches the
+                                       full name, including flavor text bits like "Ore" or "Droplets
+                                       of". Case-insensitive. Implicitly includes starting/ending ^$
+                                       [default: ]
+      --properties-min <MIN>           Minimum number of properties on a resource [default: 1]
+      --properties-max <MAX>           Maximum number of properties on a resource. Set this to 1 to
+                                       find "pures". Inclusive [default: 5]
+      --anyprop-min <MIN>              Minimum value that *some* property much achieve to be a valid
+                                       resource [default: 1]
+      --anyprop-max <MAX>              Maximum value that *some* property much achieve to be a valid
+                                       resource. Inclusive [default: 100]
+      --allprop-min <MIN>              Minimum value that *all* properties much achieve to be a
+                                       valid resource [default: 1]
+      --allprop-max <MAX>              Maximum value that *all* properties much achieve to be a
+                                       valid resource. Inclusive [default: 100]
+      --sumprop-min <MIN>              Minimum sum of all property values. Note that as there are
+                                       more properties, their maximum decreases, so that the sum
+                                       stays roughly in the same range [default: 1]
+      --sumprop-max <MAX>              Minimum sum of all property values. Note that as there are
+                                       more properties, their maximum decreases, so that the sum
+                                       stays roughly in the same range [default: 105]
+  -h, --help                           Print help information
 ```
 
 ## The compact format

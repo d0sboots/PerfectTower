@@ -3,7 +3,9 @@
 use ahash::AHashSet;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use dimensions::stub::Dimension as StubDimension;
-use dimensions::{qty_to_int, round_ties_even, Dimension, ResourceName};
+use dimensions::{
+    qty_to_int, round_ties_even, Dimension, DimensionalResource, ResourceFilterOpts, ResourceName,
+};
 use indicatif::{ProgressBar, ProgressStyle};
 use regex::bytes::Regex;
 use serde_json;
@@ -85,15 +87,16 @@ struct Search {
 
     #[arg(short, long)]
     #[arg(default_value = "")]
-    /// Regex that the dimension name must match. Implicitly includes starting/ending ^$
+    /// Regex that the dimension name must match. Case-insensitive.
+    /// Implicitly includes starting/ending ^$
     name: String,
 
-    #[arg(long)]
+    #[arg(long, value_name = "MIN")]
     #[arg(default_value = "1")]
     /// Minimum number of resource stacks (shown as "Resources" in-game) per dimension
     stack_min: usize,
 
-    #[arg(long)]
+    #[arg(long, value_name = "MAX")]
     #[arg(default_value = "3")]
     /// Maximum number of resource stacks (shown as "Resources" in-game) per dimension, inclusive
     stack_max: usize,
@@ -104,12 +107,12 @@ struct Search {
     /// at least one must.
     filter: FilterType,
 
-    #[arg(long, value_parser = parse_qty)]
+    #[arg(long, value_parser = parse_qty, value_name = "MIN")]
     #[arg(default_value = "0.001")]
     /// Minimum res/sec for resource stacks. Can also be specified in hex from 0x000000 to 0xffffff.
     qty_min: u32,
 
-    #[arg(long, value_parser = parse_qty)]
+    #[arg(long, value_parser = parse_qty, value_name = "MAX")]
     #[arg(default_value = "8.5")]
     /// Maximum res/sec for resource stacks. Can also be specified in hex from 0x000000 to 0xffffff. Inclusive.
     qty_max: u32,
@@ -119,13 +122,52 @@ struct Search {
     /// generation algorithm, and is of little use otherwise.
     tolerance: f64,
 
-    #[arg(long, default_value = "1")]
+    #[arg(long, value_name = "MIN", default_value = "1")]
     /// Minimum cost for dimensions.
     cost_min: u32,
 
-    #[arg(long, default_value = "5392")]
+    #[arg(long, value_name = "MAX", default_value = "5392")]
     /// Maximum cost for dimensions. Inclusive.
     cost_max: u32,
+
+    #[arg(long, default_value = "")]
+    /// Regex that the resource name must match. This matches the full name, including flavor text
+    /// bits like "Ore" or "Droplets of". Case-insensitive. Implicitly includes starting/ending ^$
+    resource_name: String,
+
+    #[arg(long, value_name = "MIN", default_value = "1")]
+    /// Minimum number of properties on a resource.
+    properties_min: usize,
+
+    #[arg(long, value_name = "MAX", default_value = "5")]
+    /// Maximum number of properties on a resource. Set this to 1 to find "pures". Inclusive.
+    properties_max: usize,
+
+    #[arg(long, value_name = "MIN", default_value = "1")]
+    /// Minimum value that *some* property much achieve to be a valid resource.
+    anyprop_min: u8,
+
+    #[arg(long, value_name = "MAX", default_value = "100")]
+    /// Maximum value that *some* property much achieve to be a valid resource. Inclusive.
+    anyprop_max: u8,
+
+    #[arg(long, value_name = "MIN", default_value = "1")]
+    /// Minimum value that *all* properties much achieve to be a valid resource.
+    allprop_min: u8,
+
+    #[arg(long, value_name = "MAX", default_value = "100")]
+    /// Maximum value that *all* properties much achieve to be a valid resource. Inclusive.
+    allprop_max: u8,
+
+    #[arg(long, value_name = "MIN", default_value = "1")]
+    /// Minimum sum of all property values. Note that as there are more properties, their maximum
+    /// decreases, so that the sum stays roughly in the same range.
+    sumprop_min: u8,
+
+    #[arg(long, value_name = "MAX", default_value = "105")]
+    /// Minimum sum of all property values. Note that as there are more properties, their maximum
+    /// decreases, so that the sum stays roughly in the same range.
+    sumprop_max: u8,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, ValueEnum)]
@@ -181,7 +223,7 @@ fn main() {
             }
         }
         Command::Search(search) => {
-            let mut hash = AHashSet::<u32>::with_capacity(512);
+            let mut name_hash = AHashSet::<u32>::with_capacity(512);
             if !search.name.is_empty() {
                 let re =
                     Regex::new(&format!("(?i-u)^{}$", search.name)).expect("Failed to parse name");
@@ -191,13 +233,58 @@ fn main() {
                 while i < (1 << 24) {
                     progress.set_position(i.into());
                     for _ in 0..(1 << 16) {
-                        ResourceName::filter(&re, i, &mut hash);
+                        ResourceName::filter(&re, i, &mut name_hash);
                         i += 1
                     }
                 }
                 progress.finish_and_clear();
-                eprintln!("Found {} matching names.\n", hash.len());
-                if hash.is_empty() {
+                eprintln!("Found {} matching names.\n", name_hash.len());
+                if name_hash.is_empty() {
+                    return;
+                }
+            }
+            let needs_resource = !search.resource_name.is_empty()
+                || search.properties_min > 1
+                || search.properties_max < 5
+                || search.anyprop_min > 1
+                || search.anyprop_max < 100
+                || search.allprop_min > 1
+                || search.allprop_max < 100
+                || search.sumprop_min > 1
+                || search.sumprop_max < 105;
+            let mut resource_hash = AHashSet::<u32>::with_capacity(512);
+            if needs_resource {
+                let opts = ResourceFilterOpts {
+                    name: if search.resource_name.is_empty() {
+                        None
+                    } else {
+                        Some(
+                            Regex::new(&format!("(?i-u)^{}$", search.resource_name))
+                                .expect("Failed to parse resource name"),
+                        )
+                    },
+                    properties_min: search.properties_min,
+                    properties_max: search.properties_max,
+                    anyprop_min: search.anyprop_min,
+                    anyprop_max: search.anyprop_max,
+                    allprop_min: search.allprop_min,
+                    allprop_max: search.allprop_max,
+                    sumprop_min: search.sumprop_min,
+                    sumprop_max: search.sumprop_max,
+                };
+                eprintln!("Finding matching resources...");
+                let progress = make_progress(1 << 24);
+                let mut i = 0u32;
+                while i < (1 << 24) {
+                    progress.set_position(i.into());
+                    for _ in 0..(1 << 16) {
+                        DimensionalResource::filter(&opts, i, &mut resource_hash);
+                        i += 1
+                    }
+                }
+                progress.finish_and_clear();
+                eprintln!("Found {} matching resources.\n", resource_hash.len());
+                if resource_hash.is_empty() {
                     return;
                 }
             }
@@ -215,14 +302,15 @@ fn main() {
             let progress = make_progress(y_total * x_total);
 
             // Do we need to run the loop for checking resource stacks?
-            let needs_subfilter = search.qty_min > 1 || search.qty_max < 0xfffffe;
+            let needs_subfilter =
+                search.qty_min > 1 || search.qty_max < 0xfffffe || !resource_hash.is_empty();
             // Do we need to calculate cost? (Moderately expensive)
             let needs_cost =
                 search.tolerance < 0.5 || search.cost_min > 1 || search.cost_max < 5392;
 
             let all_default = search.stack_min <= 1
                 && search.stack_max >= 3
-                && hash.is_empty()
+                && name_hash.is_empty()
                 && !needs_subfilter
                 && !needs_cost;
             for y in y_min..=y_max {
@@ -235,7 +323,7 @@ fn main() {
                     // Create stubs just to filter the fields we can see
                     for x in x_min..=x_max {
                         let stub = StubDimension::new(x, y);
-                        if !(hash.is_empty() || hash.contains(&stub.name)) {
+                        if !(name_hash.is_empty() || name_hash.contains(&stub.name)) {
                             continue;
                         }
                         if stub.stacks.len() < search.stack_min
@@ -246,7 +334,10 @@ fn main() {
                         if needs_subfilter {
                             let fail_pred = |i: usize| {
                                 let stack = &stub.stacks[i];
-                                stack.qty < search.qty_min || stack.qty > search.qty_max
+                                if stack.qty < search.qty_min || stack.qty > search.qty_max {
+                                    return true;
+                                }
+                                !(resource_hash.is_empty() || resource_hash.contains(&stack.seed))
                             };
                             let len = stub.stacks.len();
                             match search.filter {
