@@ -2,7 +2,7 @@
 //! dimensions, letting you find them more efficiently than clicking around.
 
 use ahash::AHashSet;
-use arrayvec::ArrayVec;
+use tinyvec::ArrayVec;
 use regex::bytes::Regex;
 use serde::ser::{SerializeMap, SerializeStruct, Serializer};
 use serde::Serialize;
@@ -249,7 +249,7 @@ pub struct DimensionalResource {
     name: ResourceName,
     name_scheme: u8,
     flavor_text_key: u8,
-    attributes: ArrayVec<Attribute, 5>,
+    attributes: ArrayVec<[Attribute; 5]>,
     qty: f32,
 }
 
@@ -379,9 +379,7 @@ impl DimensionalResource {
         for i in 0..attribute_types.len() {
             attribute_types[i] = i as u8;
         }
-        unsafe {
-            self.attributes.set_len(urng.int_range(1, 6) as usize);
-        }
+        self.attributes.set_len(urng.int_range(1, 6) as usize);
         let flen = self.attributes.len() as f64;
         for attr in &mut self.attributes {
             let idx = urng.int_range(0, attribute_types.len() as i32) as usize;
@@ -523,7 +521,7 @@ pub struct Dimension {
     x: i32,
     y: i32,
     name: ResourceName,
-    stacks: ArrayVec<DimensionalResource, 3>,
+    stacks: ArrayVec<[DimensionalResource; 3]>,
 }
 
 impl Dimension {
@@ -534,10 +532,7 @@ impl Dimension {
         let mut rng = JavaRNG::new(xcoord, ycoord);
         dim.name
             .generate(&mut UnityRNG::new(rng.int_range(-0x80000000, 0x7fffffff)));
-        // Fill out uninitialized memory instead of copying the struct
-        unsafe {
-            dim.stacks.set_len(rng.int_range(1, 4) as usize);
-        }
+        dim.stacks.set_len(rng.int_range(1, 4) as usize);
         for stack in &mut dim.stacks {
             stack.generate(rng.int_range(-0x80000000, 0x7fffffff));
             stack.qty = int_to_qty(rng.next_uint())

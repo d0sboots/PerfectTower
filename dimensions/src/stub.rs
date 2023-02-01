@@ -1,6 +1,6 @@
 use super::JavaRNG;
 use crate::int_to_qty;
-use arrayvec::ArrayVec;
+use tinyvec::ArrayVec;
 
 /// Represents the same thing as super::Dimension, but without generating all the fields.
 /// Instead they are left in "stub" form: Just the RNG seeds that allow them to be tested against
@@ -10,7 +10,7 @@ pub struct Dimension {
     pub x: i32,
     pub y: i32,
     pub name: u32,
-    pub stacks: ArrayVec<DimensionalResource, 3>,
+    pub stacks: ArrayVec<[DimensionalResource; 3]>,
 }
 
 #[derive(Default, Debug)]
@@ -26,10 +26,7 @@ impl Dimension {
         dim.y = ycoord;
         let mut rng = JavaRNG::new(xcoord, ycoord);
         dim.name = rng.next_uint();
-        // Fill out uninitialized memory instead of copying the struct
-        unsafe {
-            dim.stacks.set_len(rng.int_range(1, 4) as usize);
-        }
+        dim.stacks.set_len(rng.int_range(1, 4) as usize);
         for stack in &mut dim.stacks {
             stack.seed = rng.next_uint();
             stack.qty = rng.next_uint();
