@@ -263,6 +263,8 @@ pub struct ResourceFilterOpts {
     pub allprop_max: u8,
     pub sumprop_min: u8,
     pub sumprop_max: u8,
+    pub invsum_min: f64,
+    pub invsum_max: f64,
 }
 
 impl DimensionalResource {
@@ -415,6 +417,7 @@ impl DimensionalResource {
         }
         let mut any_ok = false;
         let mut sum = 0u8;
+        let mut invsum = 0f64;
         for attr in &stack.attributes {
             if attr.count < opts.allprop_min || attr.count > opts.allprop_max {
                 return;
@@ -423,13 +426,19 @@ impl DimensionalResource {
                 any_ok = true;
             }
             sum += attr.count;
+            invsum += 1.0 / f64::from(attr.count);
         }
         if !any_ok {
             return;
         }
-        if sum >= opts.sumprop_min && sum <= opts.sumprop_max {
-            hash.insert(i);
+        if sum < opts.sumprop_min || sum > opts.sumprop_max {
+            return;
         }
+        invsum = 1.0 / invsum;
+        if invsum < opts.invsum_min || invsum > opts.invsum_max {
+            return;
+        }
+        hash.insert(i);
     }
 
     pub fn write_compact<T: Write>(&self, writer: &mut T) -> io::Result<()> {

@@ -173,6 +173,18 @@ struct Search {
     /// Minimum sum of all property values. Note that as there are more properties, their maximum
     /// decreases, so that the sum stays roughly in the same range.
     sumprop_max: u8,
+
+    #[arg(long, value_name = "MIN", default_value = "0.2")]
+    /// Minimum of the inverse sum of reciprocals of property values. This is equal to the harmonic
+    /// mean divided by the number of properties. This is a good measure of the "value" of a
+    /// resource, with higher being linearly better.
+    invsum_min: f64,
+
+    #[arg(long, value_name = "MAX", default_value = "100")]
+    /// Maximum of the inverse sum of reciprocals of property values. This is equal to the harmonic
+    /// mean divided by the number of properties. This is a good measure of the "value" of a
+    /// resource, with higher being linearly better.
+    invsum_max: f64,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, ValueEnum)]
@@ -256,7 +268,9 @@ fn main() {
                 || search.allprop_min > 1
                 || search.allprop_max < 100
                 || search.sumprop_min > 1
-                || search.sumprop_max < 105;
+                || search.sumprop_max < 105
+                || search.invsum_min > 0.2
+                || search.invsum_max < 100.0;
             let mut resource_hash = AHashSet::<u32>::with_capacity(512);
             if needs_resource {
                 let opts = ResourceFilterOpts {
@@ -276,6 +290,8 @@ fn main() {
                     allprop_max: search.allprop_max,
                     sumprop_min: search.sumprop_min,
                     sumprop_max: search.sumprop_max,
+                    invsum_min: search.invsum_min,
+                    invsum_max: search.invsum_max,
                 };
                 eprintln!("Finding matching resources...");
                 let progress = make_progress(1 << 24);
