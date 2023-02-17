@@ -265,6 +265,23 @@
 {component(10, shaper, 1)}
 {component(10, belt, 1)}
 
+{recipe(acceleration_booster)}
+{component(2 3 5, chip, 1 4 6)}
+{component(4, plate, 4 0 0)}
+{component(1, rainbow_plate, 0 2 4)}
+{component(4 8 0, circuit, 4 8 0)}
+{component(10, dense_block, 0 0 12)}
+{component(1, void_essence, 0 0 4)}
+{component(-1, acceleration_booster, 2)}
+
+{recipe(production_booster)}
+{component(1 3 0, chip, 4)}
+{component(2 7 0, plate, 4 6 0)}
+{component(2 7 10, circuit, 1 4 4)}
+{component(10, dense_block, 0 0 12)}
+{component(1, void_essence, 0 0 4)}
+{component(-1, production_booster, 0 1 4)}
+
 {recipe(oven)}
 {component(0, plate, 4 6 8 8 8 8 8 8 8 8)}
 {component(0, insul_cable, 2 2 3 3 3 4 4 4 4 4)}
@@ -342,6 +359,18 @@
 {component(0, pump, 1)}
 {component(-1, boiler, 1)}
 
+{recipe(rainbow_dust)}
+{component(1, dust, 1)}
+{component(2, dust, 1)}
+{component(3, dust, 1)}
+{component(4, dust, 1)}
+{component(5, dust, 1)}
+{component(6, dust, 1)}
+{component(7, dust, 1)}
+{component(8, dust, 1)}
+{component(9, dust, 1)}
+{component(10, dust, 1)}
+
 {recipe(chip)}
 {component(1 3 5 7 9, circuit, 2)}
 {component(2 4 6 8 10, circuit, 2 4 4 2 2)}
@@ -380,6 +409,10 @@
 {recipe(rubber_sapling)}
 {component(0, rubber, 8)}
 {component(9, ore, 1)}
+
+{recipe(void_sapling)}
+{component(1, rainbow_dust, 9)}
+{component(1, rubber_sapling, 1)}
 
 {recipe(producers)}
 #recipe_producers(x) \
@@ -475,8 +508,14 @@
 {recipe(ingot)}
 {component(0, dust, 1)}
 
+{recipe(rainbow_ingot)}
+{component(0, rainbow_dust, 1)}
+
 {recipe(plate)}
 {component(0, ingot, 1)}
+
+{recipe(rainbow_plate)}
+{component(0, rainbow_ingot, 1)}
 
 {recipe(dense_plate)}
 {component(0, stacked_plate, 1)}
@@ -508,10 +547,12 @@
 {recipe(circuit)}
 {component(0, cable, 1)}
 
-; Rubber is a terminal, unable to be crafted.
-{recipe(rubber)}
-
 {recipe(rubber_plate)}
 {component(0, rubber, 1)}
+
+; Terminal items, unable to be crafted.
+{recipe(rubber)}
+{recipe(void_essence)}
+{recipe(resource_booster)}
 
 ; ===== END RECIPES =====

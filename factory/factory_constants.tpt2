@@ -1,6 +1,6 @@
 :import factory macros
 
-#version v3.0.5
+#version v3.1.0
 
 ; Everything in the list below is a valid target for automation, and can be
 ; assigned to the "target_type" variable in "lanuch factory craft".
@@ -38,8 +38,10 @@
 {make(red_producer, 5, "producer.factory")}
 {make(white_producer, 5, "producer.town")}
 {make(yellow_producer, 5, "producer.powerplant")}
+{make(acceleration_booster, 3, "booster.acceleration")}
+{make(production_booster, 3, "booster.production.regular")}
 
-{category(prod, white_producer, black_producer, yellow_producer)}
+{category(prod, white_producer, black_producer, production_booster)}
 
 ; Machines, tiers 1-10
 {make(assembly, 10, "machine.assembler")}
@@ -62,10 +64,12 @@
 {make(insul_cable, 10, "cable.insulated")}
 {make(motor, 10, "motor")}
 {make(pump, 10, "pump")}
+{make(rainbow_dust, 1, "dust.rainbow")}
 {make(rubber_sapling, 1, "sapling.rubber")}
 {make(stacked_plate, 10, "plate.stack")}
+{make(void_sapling, 1, "sapling.void")}
 
-{category(crft, chip, block, stacked_plate)}
+{category(crft, chip, block, void_sapling)}
 
 ; Transforms ore into dust, tiers 1-10
 ; Because of an implementation detail, this must come before any
@@ -131,6 +135,8 @@
 {item(ingot, 10, "ingot")}
 {item(pipe, 10, "pipe")}
 {item(plate, 10, "plate")}
+{item(rainbow_ingot, 1, "ingot.rainbow")}
+{item(rainbow_plate, 1, "plate.rainbow")}
 {item(ring, 10, "ring")}
 {item(rod, 10, "rod")}
 {item(rubber_plate, 1, "plate.rubber")}
@@ -148,6 +154,14 @@
 ; There is no "only make ore lumps, without mixing them" option right now.
 ; Doesn't appear in the UI
 {special(lump, 9, "lump")}
+
+; Can only be made from saplings
+; Doesn't appear in the UI
+{item(void_essence, 1, "essence.void")}
+
+; I don't know how you get this?
+; Doesn't appear in the UI
+{item(resource_booster, 3, "booster.resource.drops")}
 
 ; Rubber, tier 1 only
 ; Doesn't appear in the UI

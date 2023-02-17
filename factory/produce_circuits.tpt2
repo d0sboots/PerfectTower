@@ -20,4 +20,8 @@ previous_amount = count("plate", _tier)
 produce("plate", _tier, min(previous_amount, {get_queue(_tier, board)}), "refinery")
 {subtract_queue(_tier, board, (previous_amount - count("plate", _tier)))}
 
+previous_amount = count(concat("dust.rainbow", ""), 1)
+produce(concat("dust.rainbow", ""), 1, min(previous_amount, {get_queue(1, rainbow_ingot)}), "oven")
+{subtract_queue(1, rainbow_ingot, (previous_amount - count(concat("dust.rainbow", ""), 1)))}
+
 wait(0.0)
