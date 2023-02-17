@@ -29,9 +29,9 @@ key.o()
 #click_launch click(\
   if(repeat % 5000 == 4999,\
     vec(-1., -1.),\
-    {wide_or_tall(\
-      vec(height.d() * 0.56, height.d() * 0.1),\
-      vec(width.d() * 0.32, width.d() * 0.054)\
+    vec(ui.size(), ui.size()) * {wide_or_tall(\
+      vec(height.d() * 0.208, height.d() * 0.07),\
+      vec(width.d() * 0.117, width.d() * 0.039)\
     )}\
   )\
 )
