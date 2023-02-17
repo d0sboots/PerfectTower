@@ -20,7 +20,7 @@ key.b()
 
 show("tradingpost", false)
 show("towertesting", true)
-execute("D0S.Idler_Crates_v2")
+execute("D0S.Crates:Idler_v2")
 next_time = now()
 end_time = next_time + {seconds(15)}
 
