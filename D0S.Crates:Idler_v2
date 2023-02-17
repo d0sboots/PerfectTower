@@ -27,7 +27,7 @@ key.o()
 
 ; The ternary is for memory relief, see below.
 #click_launch click(\
-  if(repeat % 5000 == 4999,\
+  if(repeat % 2 == 0 || repeat % 5000 == 4999,\
     vec(-1., -1.),\
     vec(ui.size(), ui.size()) * {wide_or_tall(\
       vec(height.d() * 0.208, height.d() * 0.07),\
@@ -65,7 +65,7 @@ main_loop:
 ; turbo.
 turbo.cycles.max = max(turbo.cycles.max, 10000)
 
-; This loop is unrolled by three iterations to reduce the overhead of the
+; This loop is unrolled by four iterations to reduce the overhead of the
 ; looping constructs. We spend most of our time in this loop (even with
 ; turbo, and accounting for the fact that we spend an entire frame elsewhere),
 ; so it pays to keep it efficient.
