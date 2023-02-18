@@ -411,7 +411,7 @@
 {component(9, ore, 1)}
 
 {recipe(void_sapling)}
-{component(1, rainbow_dust, 9)}
+{component(1, rainbow_dust, 8)}
 {component(1, rubber_sapling, 1)}
 
 {recipe(producers)}
