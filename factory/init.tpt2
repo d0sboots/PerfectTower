@@ -69,7 +69,7 @@ executesync(if(\
   "{script_name(craft)}",\
   "###badname###"\
 ))
-stop(if(target_value > 0., "{script_name(craft)}", ""))
+stop(if(target_value > 0., "{script_name(craft)}", "###badname###"))
 
 ; Clear factory_target to indicate that crafting is done, if it is, in fact, done.
 factory_target = if({get_raw(factory_target)} > 0., factory_target, 0)

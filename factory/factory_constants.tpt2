@@ -1,6 +1,6 @@
 :import factory macros
 
-#version v3.1.1
+#version v3.2.1
 
 ; Everything in the list below is a valid target for automation, and can be
 ; assigned to the "target_type" variable in "lanuch factory craft".
@@ -40,8 +40,9 @@
 {make(yellow_producer, 5, "producer.powerplant")}
 {make(acceleration_booster, 3, "booster.acceleration")}
 {make(production_booster, 3, "booster.production.regular")}
+{make(resource_booster, 3, "booster.resource.drops")}
 
-{category(prod, white_producer, black_producer, production_booster)}
+{category(prod, white_producer, black_producer, resource_booster)}
 
 ; Machines, tiers 1-10
 {make(assembly, 10, "machine.assembler")}
@@ -158,10 +159,6 @@
 ; Can only be made from saplings
 ; Doesn't appear in the UI
 {item(void_essence, 1, "essence.void")}
-
-; I don't know how you get this?
-; Doesn't appear in the UI
-{item(resource_booster, 3, "booster.resource.drops")}
 
 ; Rubber, tier 1 only
 ; Doesn't appear in the UI

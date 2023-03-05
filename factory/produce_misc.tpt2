@@ -21,8 +21,8 @@ previous_amount = count("rod", _tier)
 produce("rod", _tier, min(previous_amount, {get_queue(_tier, ring)}), "shaper")
 {subtract_queue(_tier, ring, (previous_amount - count("rod", _tier)))}
 
-previous_amount = count(concat("ingot.rainbow", ""), 1)
-produce(concat("ingot.rainbow", ""), 1, min(previous_amount, {get_queue(1, rainbow_plate)}), "presser")
-{subtract_queue(1, rainbow_plate, (previous_amount - count(concat("ingot.rainbow", ""), 1)))}
+previous_amount = count("ingot.rainbow", 1)
+produce("ingot.rainbow", 1, min(previous_amount, {get_queue(1, rainbow_plate)}), "presser")
+{subtract_queue(1, rainbow_plate, (previous_amount - count("ingot.rainbow", 1)))}
 
 wait(0.0)

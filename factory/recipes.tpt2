@@ -282,6 +282,15 @@
 {component(1, void_essence, 0 0 4)}
 {component(-1, production_booster, 0 1 4)}
 
+{recipe(resource_booster)}
+{component(3, plate, 6 0 0)}
+{component(1, rainbow_plate, 0 0 2)}
+{component(1 3 4, chip, 2 2 6)}
+{component(4 8 0, circuit, 1 2 0)}
+{component(0 7 10, block, 0 4 4)}
+{component(1, void_essence, 0 0 1)}
+{component(-1, resource_booster, 0 1 2)}
+
 {recipe(oven)}
 {component(0, plate, 4 6 8 8 8 8 8 8 8 8)}
 {component(0, insul_cable, 2 2 3 3 3 4 4 4 4 4)}
@@ -553,6 +562,5 @@
 ; Terminal items, unable to be crafted.
 {recipe(rubber)}
 {recipe(void_essence)}
-{recipe(resource_booster)}
 
 ; ===== END RECIPES =====

@@ -195,7 +195,20 @@ gss({action}, gsg({action}))
 #valid_start contains(factory_target . impulse(), "0key.")
 ; This (maybe) launches the factory. We need to do it soon enough to not
 ; interrupt turbo, see the comment on "TE2.2:stop", below.
-factory_target_amount = if({valid_start}, count, factory_target_amount)
+{lua(\
+  for i = 1, #factory.categories do\
+    if factory.categories[i].name == "grup" then\
+      grup_cat = i - 1;\
+      return;\
+    end\
+  end\
+  return "Couldn't find grup"\
+)}
+factory_target_amount = if(\
+  {valid_start},\
+  count,\
+  factory_target_amount\
+)
 
 ; Only set factory_target if it's zero, which indicates that the factory is idle.
 ; This prevents repeated keypresses from messing things up.
@@ -218,6 +231,9 @@ factory_target = if({valid_start}, (item + 1) * 10 + visible_tier, factory_targe
 ; "cursor" by highlighting a specific part of the result in green. This involves
 ; a great deal more complexity.
 #curs_col 2f4
+; For later - scanning rework
+;count_string if(category == {lua(return grup_cat)}, "  -SCAN-", d2s(10000000. + count))
+#count_string d2s(10000000. + count)
 
 gss({status}, if(\
   worker_slot == 200,\
@@ -226,11 +242,11 @@ gss({status}, if(\
     turbo.cycles == 0,\
     "</size>error=<color=#fb3>Turbo exec is not working</color>",\
     "</size>make=<color=#fff>" .\
-    sub(d2s(10000000. + count), 1, 9 - cursor) .\
+    sub({count_string}, 1, 9 - cursor) .\
     "</color><color=#{curs_col}>".\
-    sub(d2s(10000000. + count), 10 - cursor, 1) .\
+    sub({count_string}, 10 - cursor, 1) .\
     "</color><color=#fff>".\
-    sub(d2s(10000000. + count), 11 - cursor, 10) .\
+    sub({count_string}, 11 - cursor, 10) .\
     "<smallcaps>x</smallcaps><color=#" .\
     if(cursor == 2, "{curs_col}>T", "fff>T") .\
     (visible_tier + 1) .\
