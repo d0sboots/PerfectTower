@@ -5,6 +5,8 @@
 ;
 ; Turbo Exec v2.2 is *required*!
 
+:name D0S.Crates:Idler_v2
+
 isopen("towertesting") || isopen("tradingpost")
 
 key.o()

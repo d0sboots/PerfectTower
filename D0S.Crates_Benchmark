@@ -3,6 +3,8 @@
 ;
 ; Use Full Precision for maximum resolution in benchmarking.
 
+:name D0S.Crates:Benchmark
+
 isopen("tradingpost")
 
 key.b()
