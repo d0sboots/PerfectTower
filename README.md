@@ -190,6 +190,18 @@ If you want to use a different worker, name one of them `[museum]` and delete/re
 the old name. You can also manually change the budget by editing the value stored
 here, which can be faster than hitting "W" or "S" a lot of times.
 
+### Why are my gems stuck at T12?
+
+The combiner can only increase tiers 11 levels. This is a time-based
+limitation: Every additional tier requires 3x as many gems, and thus takes 3x
+as long. Beyond 11, it starts taking too long to be practical.
+
+Thus, without offshore market the maximum tier will be 12. With offshore
+market you can go higher, but only when useful gems appear in the market. It
+may take a few cycles for that to happen for all your gems. (You can influence
+the chances by enabling/disabling specific elements in "Preferences" in the
+Shop.)
+
 ### Transmuting
 
 The script won't transmute for you. With the new museum design, you only need
