@@ -42,6 +42,14 @@ goto(if(i%10 != 0,\
      if(i < {items_count} * 10, craftitems_loop, crafting_done)))
 crafting_done:
 
+; Uncomment these lines for runtime item quantity debugging.
+; You will also need to uncomment the line in run_recipes that unhides debug.
+;i = 10
+;debug_loop:
+;gss("debug", if(i == 10, "", gsg("debug") . if({get_raw(i)} > 0., "<br>" . i . " " . {get_raw(i)}, "")))
+;i += 1
+;gotoif(debug_loop, i < {lua(return #factory.items)} * 10 + 10)
+
 group_data = "{lua(\
   acc = {}\
   for i = 1, #factory.items do\
