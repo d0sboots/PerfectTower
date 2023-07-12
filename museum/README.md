@@ -22,6 +22,14 @@ changing them.
 
 ## Changelog
 
+### v4.5
+
+Throttling is now time-based instead of turbo-cycles-based. All players should
+experience the same amount of jank, instead of it being much worse for people
+with slow/old computers.
+Also, the throttle was adjusted to 5 FPS, which should be enough to not appear
+super-janky.
+
 ### v4.4
 
 Fix an issue that occured without the Offshore Market: The script would
