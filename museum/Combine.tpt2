@@ -15,6 +15,8 @@
 :global int turbo.cycles
 :global int turbo.register
 
+:local double end_time
+
 ; Stop our parent. If we're invoking ourselves, this is a wasted cycle.
 stop("{script(Calculate)}")
 
@@ -51,18 +53,22 @@ execute("{script(Buy)}")
 ; (and discussed more) in Calculate. We can never be in the race condition
 ; internally, because it does not take nearly 200 cycles to get from the
 ; "turbo stop" to this line.
-turbo.cycles.max = max(turbo.cycles.max, turbo.cycles + 1050)
+turbo.cycles.max = max(turbo.cycles.max, turbo.cycles + 2050)
+
+; Calculate a time to end the loop at. This is 1/3 of a second in the future,
+; so it should reliably be 5 FPS.
+end_time = now() + 10000000. / 5.
 
 ; The core condition to wait for. This condition needs to be as minimal as
 ; possible, because it is draining CPU time away from the important combine/buy
 ; tasks every cycle. (So is the turbo exec machinery, but we can't help that.)
-waituntil(tier("inventory", 0) >= target_tier || turbo.cycles >= 1000)
+waituntil(tier("inventory", 0) >= target_tier || now() > end_time)
 
 ; If we are done, stop the buyers ASAP, to avoid wasting money. The condition
 ; here relies on the condition above for correctness, but is simpler.
 ; (Technically there's an edge case if it finishes right at the end, but the
 ; number of cycles required means that won't happen.)
-stop(if(turbo.cycles >= 1000, "", "{script(Buy)}"))
+stop(if(now() > end_time, "", "{script(Buy)}"))
 
 ; We restart turbo by changing the variable directly, so that there isn't a
 ; "turbo start" script taking up cycles. In comparison, we stop turbo with
