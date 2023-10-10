@@ -72,6 +72,16 @@
 
 {category(crft, chip, block, void_sapling)}
 
+; ----- EVENT ITEMS -----
+
+{make(anti_pumpkin, 1, "pumpkin.anti")}
+{make(carved_pumpkin, 1, "pumpkin.carved")}
+{make(pumpkin_plate, 1, "pumpkin.plate")}
+{make(pumpkin_producer, 1, "pumpkin.producer")}
+{make(pumpkin_stack, 1, "pumpkin.stack")}
+
+{category(evnt, pumpkin_producer, anti_pumpkin, pumpkin_stack)}
+
 ; Transforms ore into dust, tiers 1-10
 ; Because of an implementation detail, this must come before any
 ; scannable items.
@@ -163,5 +173,10 @@
 ; Rubber, tier 1 only
 ; Doesn't appear in the UI
 {item(rubber, 1, "rubber")}
+
+; Pumpkin, tier 1 only
+; Doesn't appear in the UI
+; Only obtained during the Halloween event
+{item(pumpkin, 1, "pumpkin")}
 
 ; ===== END OF VALID IDS =====
