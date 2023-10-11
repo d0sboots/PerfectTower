@@ -79,10 +79,10 @@ gds({budget}, if(\
   -1.,\
   if(\
     contains(impulse(), "key."),\
-    (10. ^ 0.5) ^ max(10., \
+    (10. ^ 0.5) ^ max(10., min(560.,\
       round(worker_val // (10. ^ 0.5)) +\
       if(contains(impulse(), "key.{up}"), 1., -1.)\
-    ),\
+    )),\
     worker_val\
   )\
 ))
