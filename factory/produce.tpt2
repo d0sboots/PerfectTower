@@ -21,6 +21,9 @@ previous_amount = count("rubber", 1)
 produce("rubber", 1, {get_queue(1, rubber_plate)}, "presser")
 {subtract_queue(1, rubber_plate, (previous_amount - count("rubber", 1)))}
 
+executesync("{script_name(produce holiday)}")
+stop("{script_name(produce holiday)}")
+
 _tier = 1
 tierloop:
 

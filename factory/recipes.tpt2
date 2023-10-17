@@ -146,6 +146,30 @@
 
 ; ===== BEGIN RECIPES =====
 
+; ===== Event Items =====
+
+{recipe(pumpkin_stack)}
+{component(0, pumpkin, 9)}
+
+{recipe(carved_pumpkin)}
+{component(0, pumpkin, 1)}
+
+{recipe(anti_pumpkin)}
+{component(0, pumpkin, 1)}
+
+{recipe(pumpkin_plate)}
+{component(0, pumpkin_stack, 1)}
+
+{recipe(pumpkin_producer)}
+{component(0, anti_pumpkin, 6)}
+{component(0, carved_pumpkin, 6)}
+{component(0, pumpkin_plate, 20)}
+
+; Terminal item
+{recipe(pumpkin)}
+
+; ===== Normal Items =====
+
 {recipe(white_producer)}
 {component(2 3 5 7 9, screw, 2 4 4 4 4)}
 {component(2 0 0 0 0, plate, 2 0 0 0 0)}

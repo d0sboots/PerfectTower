@@ -335,7 +335,11 @@ gss(\
       if(\
         {get_queue(1, void_essence)} > 0.,\
         "<color=#fb3>Missing " . {get_queue(1, void_essence)} . " void essence!</color>",\
-        ""\
+        if(\
+          {get_queue(1, pumpkin)} > 0.,\
+          "<color=#fb3>Missing " . {get_queue(1, pumpkin)} . " pumpkin(s)!</color>",\
+          ""\
+        )\
       )\
     )\
   )\

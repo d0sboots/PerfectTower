@@ -41,8 +41,9 @@
 {make(acceleration_booster, 3, "booster.acceleration")}
 {make(production_booster, 3, "booster.production.regular")}
 {make(resource_booster, 3, "booster.resource.drops")}
+{make(pumpkin_producer, 1, "pumpkin.producer")}
 
-{category(prod, white_producer, black_producer, resource_booster)}
+{category(prod, white_producer, black_producer, pumpkin_producer)}
 
 ; Machines, tiers 1-10
 {make(assembly, 10, "machine.assembler")}
@@ -69,8 +70,9 @@
 {make(rubber_sapling, 1, "sapling.rubber")}
 {make(stacked_plate, 10, "plate.stack")}
 {make(void_sapling, 1, "sapling.void")}
+{make(pumpkin_stack, 1, "pumpkin.stack")}
 
-{category(crft, chip, block, void_sapling)}
+{category(crft, chip, block, pumpkin_stack)}
 
 ; Transforms ore into dust, tiers 1-10
 ; Because of an implementation detail, this must come before any
@@ -143,8 +145,11 @@
 {item(rubber_plate, 1, "plate.rubber")}
 {item(screw, 10, "screw")}
 {item(wire, 10, "wire")}
+{item(anti_pumpkin, 1, "pumpkin.anti")}
+{item(carved_pumpkin, 1, "pumpkin.carved")}
+{item(pumpkin_plate, 1, "pumpkin.plate")}
 
-{category(part, circuit, board, wire)}
+{category(part, circuit, board, pumpkin_plate)}
 
 ;Tries to make dust from ores and lower-tier dusts, tiers 1-10
 ; Doesn't appear in the UI
@@ -163,5 +168,10 @@
 ; Rubber, tier 1 only
 ; Doesn't appear in the UI
 {item(rubber, 1, "rubber")}
+
+; Pumpkin, tier 1 only
+; Doesn't appear in the UI
+; Only obtained during the Halloween event
+{item(pumpkin, 1, "pumpkin")}
 
 ; ===== END OF VALID IDS =====
