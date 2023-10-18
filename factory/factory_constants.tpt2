@@ -1,6 +1,6 @@
 :import factory macros
 
-#version v3.1.2
+#version v3.2.0
 
 ; Everything in the list below is a valid target for automation, and can be
 ; assigned to the "target_type" variable in "lanuch factory craft".
@@ -21,29 +21,30 @@
 
 ; ----- CRAFTED ITEMS -----
 
-; Producers, tiers 1-5
-; Special producers, tier 1 only
-{make(black_producer, 5, "producer.statueofcubos")}
-{make(blue_producer, 5, "producer.workshop")}
-{make(brown_producer, 5, "producer.constructionFirm")}
-{make(cyan_producer, 5, "producer.shipyard")}
+; Producers, named by building, tiers 1-5
+{make(arcade_producer, 5, "producer.arcade")}
+{make(construction_firm_producer, 5, "producer.constructionFirm")}
 {make(exotic_producer, 1, "producer.exoticgems")}
+{make(factory_producer, 5, "producer.factory")}
 {make(gem_producer, 1, "producer.gems")}
-{make(green_producer, 5, "producer.laboratory")}
-{make(grey_producer, 5, "producer.museum")}
-{make(lightblue_producer, 5, "producer.tradingpost")}
-{make(orange_producer, 5, "producer.mine")}
-{make(pink_producer, 5, "producer.arcade")}
-{make(purple_producer, 5, "producer.headquarters")}
-{make(red_producer, 5, "producer.factory")}
-{make(white_producer, 5, "producer.town")}
-{make(yellow_producer, 5, "producer.powerplant")}
+{make(headquarters_producer, 5, "producer.headquarters")}
+{make(laboratory_producer, 5, "producer.laboratory")}
+{make(mine_producer, 5, "producer.mine")}
+{make(museum_producer, 5, "producer.museum")}
+{make(powerplant_producer, 5, "producer.powerplant")}
+{make(pumpkin_producer, 1, "pumpkin.producer")}
+{make(shipyard_producer, 5, "producer.shipyard")}
+{make(statue_of_cubos_producer, 5, "producer.statueofcubos")}
+{make(town_producer, 5, "producer.town")}
+{make(tradingpost_producer, 5, "producer.tradingpost")}
+{make(workshop_producer, 5, "producer.workshop")}
+
+; Boosters, tiers 1-3
 {make(acceleration_booster, 3, "booster.acceleration")}
 {make(production_booster, 3, "booster.production.regular")}
 {make(resource_booster, 3, "booster.resource.drops")}
-{make(pumpkin_producer, 1, "pumpkin.producer")}
 
-{category(prod, white_producer, black_producer, pumpkin_producer)}
+{category(prod, town_producer, arcade_producer, resource_booster)}
 
 ; Machines, tiers 1-10
 {make(assembly, 10, "machine.assembler")}
@@ -69,10 +70,10 @@
 {make(rainbow_dust, 1, "dust.rainbow")}
 {make(rubber_sapling, 1, "sapling.rubber")}
 {make(stacked_plate, 10, "plate.stack")}
+{make(stacked_pumpkin, 1, "pumpkin.stack")}
 {make(void_sapling, 1, "sapling.void")}
-{make(pumpkin_stack, 1, "pumpkin.stack")}
 
-{category(crft, chip, block, pumpkin_stack)}
+{category(crft, chip, block, void_sapling)}
 
 ; Transforms ore into dust, tiers 1-10
 ; Because of an implementation detail, this must come before any
@@ -130,14 +131,17 @@
 ; ----- INGREDIENTS AND PRODUCED PARTS -----
 
 ; Parts, tiers 1-10
+{item(anti_pumpkin, 1, "pumpkin.anti")}
 {item(board, 10, "plate.circuit")}
 {item(cable, 10, "cable")}
+{item(carved_pumpkin, 1, "pumpkin.carved")}
 {item(circuit, 10, "circuit")}
 {item(dense_block, 10, "block.dense")}
 {item(dense_plate, 10, "plate.dense")}
 {item(ingot, 10, "ingot")}
 {item(pipe, 10, "pipe")}
 {item(plate, 10, "plate")}
+{item(pumpkin_plate, 1, "pumpkin.plate")}
 {item(rainbow_ingot, 1, "ingot.rainbow")}
 {item(rainbow_plate, 1, "plate.rainbow")}
 {item(ring, 10, "ring")}
@@ -145,11 +149,8 @@
 {item(rubber_plate, 1, "plate.rubber")}
 {item(screw, 10, "screw")}
 {item(wire, 10, "wire")}
-{item(anti_pumpkin, 1, "pumpkin.anti")}
-{item(carved_pumpkin, 1, "pumpkin.carved")}
-{item(pumpkin_plate, 1, "pumpkin.plate")}
 
-{category(part, circuit, board, pumpkin_plate)}
+{category(part, circuit, anti_pumpkin, wire)}
 
 ;Tries to make dust from ores and lower-tier dusts, tiers 1-10
 ; Doesn't appear in the UI
@@ -165,13 +166,12 @@
 ; Doesn't appear in the UI
 {item(void_essence, 1, "essence.void")}
 
+; Can only be gotten through the Halloween event
+; Doesn't appear in the UI
+{item(pumpkin, 1, "pumpkin")}
+
 ; Rubber, tier 1 only
 ; Doesn't appear in the UI
 {item(rubber, 1, "rubber")}
-
-; Pumpkin, tier 1 only
-; Doesn't appear in the UI
-; Only obtained during the Halloween event
-{item(pumpkin, 1, "pumpkin")}
 
 ; ===== END OF VALID IDS =====

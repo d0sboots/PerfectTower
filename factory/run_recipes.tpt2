@@ -305,10 +305,9 @@ i = i + 1
 ;gss("debug", gsg("debug") . if(gdg({queue_str} . {recipe_item}) > 0., "<br>" . {recipe_item} . " " . gdg({queue_str} . {recipe_item}), ""))
 gotoif(loop, i < {recipe_limit})
 
-; We use a global variable when a local variable would do just fine,
-; because we want to initialize this particular global variable inside
-; the variable-hiding block. It will be used later in the produce scripts.
-:global int _tier
+; This used to be a global variable, but we don't need that anymore now that
+; production is algorithmic.
+:local int _tier
 
 _tier = 10
 tierloop:

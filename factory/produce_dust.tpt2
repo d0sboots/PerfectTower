@@ -2,17 +2,16 @@
 
 :name {script_name(produce dust)}
 
-:global int _tier
+:local int _tier
 :local double previous_amount
 
-gotoif(noprocessores, active("crusher"))
+_tier = _tier + 1
 previous_amount = count("ore", _tier)
 produce("ore", _tier, {get_queue(_tier, ore)}, "crusher")
 {subtract_queue(_tier, dust, (previous_amount - count("ore", _tier)) * 2.)}
 {subtract_queue(_tier, ore, previous_amount - count("ore", _tier))}
-noprocessores:
 
-gotoif(notierupdust, _tier == 10 | active("mixer"))
+gotoif(notierupdust, _tier >= 10 || {get_queue(_tier, lump)} <= 0. || active("mixer"))
 craft("lump", _tier, min(\
   min(\
     (count("dust", _tier) - 1.) / 4.,\
@@ -32,4 +31,4 @@ produce("dust", _tier, min(previous_amount - 1., {get_queue(_tier, ingot)}), "ov
 {subtract_queue(_tier, ingot, previous_amount - count("dust", _tier))}
 noproduceingot:
 
-wait(0.0)
+goto(if(_tier >= 10, 99, 1))

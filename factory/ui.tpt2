@@ -53,7 +53,7 @@ count = min(9999999., max(1.,\
 
 #num_categories {lua(return #factory.categories)}
 category = (\
-  s2i(sub(worker.name(worker_slot), {len({worker_prefix})} + 8, 1), 0) +\
+  s2i(sub(worker.name(worker_slot), {len({worker_prefix})} + 8, 1), 0) -\
   if({is_ud(1)}, {action_num}, 0) +\
   {num_categories}\
 ) % {num_categories}
@@ -90,6 +90,9 @@ category = (\
 
 ; Items in this variable are zero-indexed, as opposed to their regular ids, which
 ; start from 1.
+; We increment the items in the opposite direction from the action, because pressing
+; up (action 1) *increments* numerical values but *decrements* elements in an
+; alphabetically sorted list.
 item = s2i(\
   if({is_ud(1)},\
     sub(\
@@ -101,8 +104,8 @@ item = s2i(\
       if({is_ud(0)},\
         if(\
           contains(gsg({action}), "-1"),\
-          "{item_inc_table(-1)}",\
-          "{item_inc_table(1)}"\
+          "{item_inc_table(1)}",\
+          "{item_inc_table(-1)}"\
         ),\
         "{item_inc_table(0)}"\
       ),\

@@ -49,6 +49,8 @@
   factory.items = {};\
   factory.item_names = {};\
   factory.categories = {};\
+  factory.prods = {};\
+  factory.prod_machines = {};\
   factory.name_max_size = 0;\
   factory.game_name_sizes = {};\
   factory.game_name_sizes.item = 0;\
