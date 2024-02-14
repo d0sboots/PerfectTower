@@ -1,0 +1,119 @@
+key.p()
+
+:local vector room
+:local vector scale
+:local vector offset
+:local double incr
+:local int state
+:global int turbo.cycles.max
+
+#name D0S.DungeonMap 1.0
+:name {name}
+
+; Make it easy to customize the colors
+#complete "#008000"
+#black    "#000000"
+#player   "#FFFFFF"
+
+; The overall strategy here is to recursively break down the problem:
+; First, draw 1 square for the entire map, then divide that into 4 subsquares,
+; then divide each of those into 4 subsquares, etc. This works out nicely since
+; the map is a nicely-divisible 256x256.
+;
+; We use the lower-lefthand corner (the smallest coordinates) to represent the
+; color of the entire box. This has efficiency benefits: When we go to draw the
+; four subsquares, we already know that they are already painted the same color
+; as the lower-left square, so we use that to optimize and avoid drawing when we
+; don't have to. This is a win, since the draw calls (as opposed to the number
+; of pixels filled) are slow.
+;
+; The recursive strategy means we can use the identical optimization logic at
+; every scale, from the topmost down to the 2x2 room level, which is the last
+; level that needs to be drawn. It also means that a rough map gets drawn in
+; very quickly, since only 25% of the time is spent on *all* the higher layers
+; and 75% is spent on the final 2x2 pass.
+
+#varname "<size=0>^adv#"
+
+reexec:
+execute(if(\
+  contains(impulse(), "{name}") ||\
+    utcnow() - s2d(sub(gsg({varname}), 0, index(gsg({varname}), "<", 0)), 0.) < 5000000.,\
+  "{name}",\
+  "TE2.2:start"\
+))
+scale = vec(min(height.d(), width.d()) / 256., min(height.d(), width.d()) / 256.)
+offset = vec(\
+  round(max(0., width.d() - height.d()) * 0.5),\
+  round(max(0., height.d() - width.d()) * 0.5)\
+)
+; We jump back here to make use of this statement for drawing the
+; player's position
+; We draw nothing if we are crashing the AI or this is a spurious impulse
+toprect:
+canvas.rect(\
+  if(incr == 0., offset, offset + adventure.roomCoords() * scale),\
+  if(\
+    incr == 0.,\
+    if(\
+      contains(impulse(), "{name}") || contains(gsg({varname}), "<color"),\
+      vec(0., 0.),\
+      scale * vec(256., 256.)\
+    ),\
+    (adventure.roomCoords() + vec(1., 1.)) * scale - vec(\
+      round(x(adventure.roomCoords() * scale)),\
+      round(y(adventure.roomCoords() * scale))\
+    )\
+  ),\
+  if(incr == 0., if(adventure.isCompleted(room), {complete}, {black}), {player})\
+)
+goto(if(contains(impulse(), "{name}"), reexec, if(contains(gsg({varname}), "<color"), done, draw)))
+draw:
+gss({varname}, utcnow() . "</size><color=#FFFFFF>Dungeon Map drawing...</color>")
+
+top:
+incr = if(incr == 0., 128., incr * 0.5)
+room = vec(0., 0.)
+
+loop:
+turbo.cycles.max = max(turbo.cycles.max, 3000)
+; Store the 2x2 state of rooms bitwise in "state". We will use this to index
+; various lookup tables when it comes time to draw the results.
+state = if(adventure.isCompleted(room), 1, 0) +\
+  if(adventure.isCompleted(room + vec(incr, 0.)), 2, 0) +\
+  if(adventure.isCompleted(room + vec(0., incr)), 4, 0) +\
+  if(adventure.isCompleted(room + vec(incr, incr)), 8, 0)
+
+; Depending on the pattern, we need to draw 2, 1, or even 0 rects.
+; These tables are hand-generated because they're small and I CBA to write
+; code to autogenerate them.
+goto(s2i(sub("2011110110111102", state, 1), 99) + draws)
+
+draws:
+; The 2 rects case. This one is optimized so that it is *always* the upper-left corner.
+canvas.rect(\
+  offset + (room + vec(0., incr)) * scale,\
+  (room + vec(incr, 2. * incr)) * scale - vec(\
+    round(x(room * scale)),\
+    round((y(room) + incr) * y(scale))\
+  ),\
+  if(adventure.isCompleted(room), {black}, {complete})\
+)
+; The 1 rect case (and 2nd part of 2 rects). This is much more complicated
+; because we need lookup tables for the positions and sizes.
+#lut(table, choice1, choice2) if(contains(sub("{table}", state, 1), "0"),{choice1},{choice2})
+canvas.rect(\
+  offset + (room + vec({lut(0110011111100110, 0., incr)}, {lut(0001100110011000, 0., incr)})) * scale,\
+  (room + vec({lut(0111011111101110, incr, 2. * incr)}, {lut(0101110110111010, incr, 2. * incr)})) * scale - vec(\
+    round((x(room) + {lut(0110011111100110, 0., incr)}) * x(scale)),\
+    round((y(room) + {lut(0001100110011000, 0., incr)}) * y(scale))\
+  ),\
+  if(adventure.isCompleted(room), {black}, {complete})\
+)
+room = vec((x(room) + 2. * incr) % 256., y(room) + if(x(room) + 2. * incr >= 256., 2. * incr, 0.))
+goto(if(y(room) < 256., loop, if(incr > 1., top, toprect)))
+
+done:
+executesync("TE2.2:stop")
+; Don't unset the var if we're not the master script
+gss({varname}, if(incr == 0., gsg({varname}), "</size>"))
