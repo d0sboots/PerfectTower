@@ -8,7 +8,7 @@
 - [Auto mining script V2](#auto-mining-script-v2)
 - [Turbo miner](#turbo-miner)
 - [Museum combiner v4](#museum-combiner-v4)
-- [Adventure Map] (#adventure-map)
+- [Adventure Map](#adventure-map)
 - [Timed Task Looping](#timed-task-looping)
 - [Autoclicker](#autoclicker)
 - [Factory auto-trasher](#factory-auto-trasher)
@@ -224,6 +224,7 @@ Combine" skill?
 
 ## Adventure Map
 Draws the entire 256x256 adventure map at once, so you can see what you've cleared and what you're missing.
+![fullmap](https://github.com/d0sboots/PerfectTower/assets/459704/917ba9b3-5464-4c55-954a-087844b5372d)
 
 `Import code:`
 ```
