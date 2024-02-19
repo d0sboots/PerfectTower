@@ -7,13 +7,19 @@ key.p()
 :local int state
 :global int turbo.cycles.max
 
-#name D0S.DungeonMap 1.0
+#name D0S.DungeonMap 1.1
 :name {name}
 
 ; Make it easy to customize the colors
 #complete "#008000"
 #black    "#000000"
 #player   "#FFFFFF"
+
+; This is abstracted out to make it easier to test.
+#isCompleted(room) adventure.isCompleted({room})
+; Swap the names of these macros to draw a big inverted circle instead.
+; This doesn't require any adventure progress to test the drawing parts of the script.
+#isCompletedTest(room) (x({room}) - 127.) ^ 2. + (y({room}) - 127.) ^ 2. > 10000.
 
 ; The overall strategy here is to recursively break down the problem:
 ; First, draw 1 square for the entire map, then divide that into 4 subsquares,
@@ -42,10 +48,18 @@ execute(if(\
   "{name}",\
   "TE2.2:start"\
 ))
+
+; This adjustment value breaks ties when rounding. Computer arithmetic does
+; round-to-even in the case of exact X.5 values; this causes issues for some
+; of the mathematical optimizations we've done inside the canvas.draw() calls.
+; We could properly round all parts of the expression, but it's (slightly)
+; cheaper to add this adjustment in the appropriate place to ensure there will
+; never be ties.
+#adj (1. / (2048. * 3.))
 scale = vec(min(height.d(), width.d()) / 256., min(height.d(), width.d()) / 256.)
 offset = vec(\
-  round(max(0., width.d() - height.d()) * 0.5),\
-  round(max(0., height.d() - width.d()) * 0.5)\
+  round(max(0., width.d() - height.d()) * 0.5) + {adj},\
+  round(max(0., height.d() - width.d()) * 0.5) + {adj}\
 )
 ; We jump back here to make use of this statement for drawing the
 ; player's position
@@ -65,7 +79,7 @@ canvas.rect(\
       round(y(adventure.roomCoords() * scale))\
     )\
   ),\
-  if(incr == 0., if(adventure.isCompleted(room), {complete}, {black}), {player})\
+  if(incr == 0., if({isCompleted(room)}, {complete}, {black}), {player})\
 )
 goto(if(contains(impulse(), "{name}"), reexec, if(contains(gsg({varname}), "<color"), done, draw)))
 draw:
@@ -79,10 +93,10 @@ loop:
 turbo.cycles.max = max(turbo.cycles.max, 3000)
 ; Store the 2x2 state of rooms bitwise in "state". We will use this to index
 ; various lookup tables when it comes time to draw the results.
-state = if(adventure.isCompleted(room), 1, 0) +\
-  if(adventure.isCompleted(room + vec(incr, 0.)), 2, 0) +\
-  if(adventure.isCompleted(room + vec(0., incr)), 4, 0) +\
-  if(adventure.isCompleted(room + vec(incr, incr)), 8, 0)
+state = if({isCompleted(room)}, 1, 0) +\
+  if({isCompleted(room + vec(incr, 0.))}, 2, 0) +\
+  if({isCompleted(room + vec(0., incr))}, 4, 0) +\
+  if({isCompleted(room + vec(incr, incr))}, 8, 0)
 
 ; Depending on the pattern, we need to draw 2, 1, or even 0 rects.
 ; These tables are hand-generated because they're small and I CBA to write
@@ -93,22 +107,28 @@ draws:
 ; The 2 rects case. This one is optimized so that it is *always* the upper-left corner.
 canvas.rect(\
   offset + (room + vec(0., incr)) * scale,\
-  (room + vec(incr, 2. * incr)) * scale - vec(\
-    round(x(room * scale)),\
-    round((y(room) + incr) * y(scale))\
+  (room + vec(incr, 2. * incr)) * scale + vec({adj}, {adj}) - vec(\
+    round(x(room * scale) + {adj}),\
+    round((y(room) + incr) * y(scale) + {adj})\
   ),\
-  if(adventure.isCompleted(room), {black}, {complete})\
+  if({isCompleted(room)}, {black}, {complete})\
 )
 ; The 1 rect case (and 2nd part of 2 rects). This is much more complicated
 ; because we need lookup tables for the positions and sizes.
 #lut(table, choice1, choice2) if(contains(sub("{table}", state, 1), "0"),{choice1},{choice2})
 canvas.rect(\
-  offset + (room + vec({lut(0110011111100110, 0., incr)}, {lut(0001100110011000, 0., incr)})) * scale,\
-  (room + vec({lut(0111011111101110, incr, 2. * incr)}, {lut(0101110110111010, incr, 2. * incr)})) * scale - vec(\
-    round((x(room) + {lut(0110011111100110, 0., incr)}) * x(scale)),\
-    round((y(room) + {lut(0001100110011000, 0., incr)}) * y(scale))\
+  offset + (room + vec(\
+    {lut(0110011111100110, 0., incr)},\
+    {lut(0001100110011000, 0., incr)}\
+  )) * scale,\
+  (room + vec(\
+    {lut(0111011111101110, incr, 2. * incr)},\
+    {lut(0101110110111010, incr, 2. * incr)}\
+  )) * scale + vec({adj}, {adj}) - vec(\
+    round((x(room) + {lut(0110011111100110, 0., incr)}) * x(scale) + {adj}),\
+    round((y(room) + {lut(0001100110011000, 0., incr)}) * y(scale) + {adj})\
   ),\
-  if(adventure.isCompleted(room), {black}, {complete})\
+  if({isCompleted(room)}, {black}, {complete})\
 )
 room = vec((x(room) + 2. * incr) % 256., y(room) + if(x(room) + 2. * incr >= 256., 2. * incr, 0.))
 goto(if(y(room) < 256., loop, if(incr > 1., top, toprect)))
