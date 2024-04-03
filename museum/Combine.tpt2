@@ -12,7 +12,6 @@
 :global int museum_pos
 
 :global int turbo.cycles.max
-:global int turbo.cycles
 :global int turbo.register
 
 :local double end_time
@@ -53,9 +52,16 @@ execute("{script(Buy)}")
 ; (and discussed more) in Calculate. We can never be in the race condition
 ; internally, because it does not take nearly 200 cycles to get from the
 ; "turbo stop" to this line.
-turbo.cycles.max = max(turbo.cycles.max, turbo.cycles + 2050)
+;
+; Normally we would calculate this based on cycles and cycles.max, but here
+; we're just setting it to the maximum that turbo supports. We rely on our own
+; fps-based throttling, instead. If we *do* manage to go the whole 50000 cycles
+; in less than 200ms, there's an interesting timing effect where we will execute
+; TE2.2:stop *exactly* as the next turbo cycle is beginning, leading to a wasted
+; turbo cycle and drastically slower execution.
+turbo.cycles.max = 50000
 
-; Calculate a time to end the loop at. This is 1/3 of a second in the future,
+; Calculate a time to end the loop at. This is 1/5 of a second in the future,
 ; so it should reliably be 5 FPS.
 end_time = now() + 10000000. / 5.
 
