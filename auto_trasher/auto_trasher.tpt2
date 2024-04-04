@@ -43,6 +43,11 @@
 {auto_trash("producer.town", "1234")}
 {auto_trash("producer.powerplant", "1234")}
 
+; Boosters
+{auto_trash("booster.resource.drops", "")}
+{auto_trash("booster.production.regular", "")}
+{auto_trash("booster.acceleration", "")}
+
 ; Machines
 {auto_trash("machine.assembler", "123456789")}
 {auto_trash("machine.transportbelt", "123456789")}
@@ -63,6 +68,7 @@
 {auto_trash("motor", "1234567890")}
 {auto_trash("pump", "1234567890")}
 {auto_trash("sapling.rubber", "1")}
+{auto_trash("sapling.void", "1")}
 {auto_trash("plate.stack", "1234567890")}
 
 {auto_trash("plate.circuit", "1234567890")}
@@ -74,16 +80,28 @@
 {auto_trash("plate", "1234567890")}
 {auto_trash("ring", "1234567890")}
 {auto_trash("rod", "1234567890")}
-{auto_trash("plate.rubber", 1)}
+{auto_trash("plate.rubber", "1")}
+{auto_trash("plate.rainbow", "")}
 {auto_trash("screw", "1234567890")}
 {auto_trash("wire", "1234567890")}
 
+; Pumpkin stuff
+{auto_trash("pumpkin", "")}
+{auto_trash("pumpkin.plate", "")}
+{auto_trash("pumpkin.carved", "")}
+{auto_trash("pumpkin.anti", "")}
+{auto_trash("pumpkin.stack", "")}
+{auto_trash("pumpkin.producer", "")}
+
 ; Ingredients
 {auto_trash("dust", "")}
+{auto_trash("dust.rainbow", "")}
 {auto_trash("ore", "")}
 {auto_trash("lump", "")}
 {auto_trash("rubber", "")}
 {auto_trash("ingot", "1234567")}
+{auto_trash("ingot.rainbow", "")}
+{auto_trash("essence.void", "")}
 
 ; ===========================================================================
 ;              CONFIGURATION ENDS / AI SCRIPT CODE BEGINS
@@ -113,7 +131,7 @@ main_loop:
 ; alongside the factory - instead of running all our instructions, we'll
 ; spend most of our time in 'executesync("turbo stop")', which is much faster
 ; to run.
-executesync("turbo start")
+executesync("TE2.2:start")
 
 ; Abort execution if the factory is active. This ensures that we cause neither
 ; problems nor lag for the factory, at the expense of an additional frame of
@@ -145,7 +163,7 @@ gotoif(tier_loop, contains(" 1234567890", sub(trash_data, i, 1)))
 i = if(index(trash_data, ":", i) < 0, 0, i + 1)
 
 end_frame:
-executesync("turbo stop")
+executesync("TE2.2:stop")
 
 ; This is safe to re-execute if we're still in turbo.
 gotoif(main_loop, isopen("factory"))
