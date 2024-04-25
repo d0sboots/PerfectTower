@@ -36,7 +36,7 @@ Fix a minor recipe bug that led to overproduction of high-tech chips when
 making T3 production boosters.
 
 ```
-Bundle size: 69505   Scripts: 6   Max lines: 16
+Bundle size: 21544  (69505 uncompressed)   Scripts: 6   Max lines: 16
 ```
 
 ### V3.2.0
