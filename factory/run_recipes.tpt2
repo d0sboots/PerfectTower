@@ -305,22 +305,21 @@ i = i + 1
 ;gss("debug", gsg("debug") . if(gdg({queue_str} . {recipe_item}) > 0., "<br>" . {recipe_item} . " " . gdg({queue_str} . {recipe_item}), ""))
 gotoif(loop, i < {recipe_limit})
 
-; This used to be a global variable, but we don't need that anymore now that
-; production is algorithmic.
-:local int _tier
+; inv_tier = 10 - tier. Represented this way so we can use the fact that locals
+; automatically start at 0.
+:local int inv_tier
 
-_tier = 10
 tierloop:
 
-{add_queue(_tier, dust, max(0., ({get_queue(_tier, lump)} - if(_tier == 10, 0., count("lump", min(9, _tier)))) * 4.0))}
-{add_queue(_tier, ore, max(0., min(count("ore", _tier), ceil({get_queue(_tier, dust)} / 2.))))}
+{add_queue(10 - inv_tier, dust, max(0., ({get_queue(10 - inv_tier, lump)} - count("lump", 10 - inv_tier)) * 4.0))}
+{add_queue(10 - inv_tier, ore, max(0., min(count("ore", 10 - inv_tier), ceil({get_queue(10 - inv_tier, dust)} / 2.))))}
 
-gotoif(nolumps, _tier == 1 | count("ore", _tier) + count("dust", _tier) == 0.)
-{add_queue(-1 + _tier, lump, max(0., {get_queue(_tier, dust)} - {get_queue(_tier, ore)} * 2.))}
+gotoif(nolumps, inv_tier == 9 || count("ore", 10 - inv_tier) + count("dust", 10 - inv_tier) == 0.)
+{add_queue(9 - inv_tier, lump, max(0., {get_queue(10 - inv_tier, dust)} - {get_queue(10 - inv_tier, ore)} * 2.))}
 nolumps:
 
-_tier -= 1
-gotoif(tierloop, _tier > 0)
+inv_tier += 1
+gotoif(tierloop, inv_tier < 10)
 
 ; If we're missing the resources needed to complete the recipe, set error.
 gss(\
@@ -344,14 +343,23 @@ gss(\
   )\
 )
 
-; This must come before the unset, to avoid ordering mishaps.
-gss("fhide2", "</line-height></size>")
+:local int k
+unset_loop:
+; If there's an error, clear the queue. We take advantage of initial value being 0 to
+; cut down on lines. The first item is (raw) id 110, corresponding to
+; 100 offset + 1 * 10, so we start at 109 as a no-op. We don't use unset here to avoid
+; reordering issues with other scripts; all the global variables we will ever need to
+; hide will have been set by this point, and we don't want to leave holes.
 
-; If there's an error, unset target to cancel crafting and clean up future
-; iterations. (This leaves some mess behind if the target is changed to something
-; else without resetting AI, but it should be good enough.)
-{set_raw(factory_target, if(\
-  contains(gsg({action}), "<"),\
-  0.,\
-  {get_raw(factory_target)}\
-))}
+; Note that it is important to skip setting variables that are 0, since those might
+; be tiers that are never calculated - in those cases, they would be new variables
+; outside the hiding block if we set them here (after the first run of the factory).
+global.double.set({queue_str} . (109 + k), 0.)
+skip_unset:
+k += 1
+gotoif(\
+  if(global.double.get({queue_str} . (109 + k)) == 0., skip_unset, unset_loop),\
+  contains(gsg({action}), "<") && k < {lua(return #factory.items * 10 + 1)}\
+)
+
+gss("fhide2", "</line-height></size>")
