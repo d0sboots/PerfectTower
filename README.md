@@ -9,6 +9,7 @@
 - [Turbo miner](#turbo-miner)
 - [Museum combiner v4](#museum-combiner-v4)
 - [Adventure Map](#adventure-map)
+- [Adventure AI v3.3](#adventure-ai)
 - [Timed Task Looping](#timed-task-looping)
 - [Autoclicker](#autoclicker)
 - [Factory auto-trasher](#factory-auto-trasher)
@@ -40,9 +41,8 @@ All this does is use the first active skill, constantly, as long as you are in t
 lZFNb5tAEIb/i6++wBIqb6UcAIeFBCOg5rPqYWc3MtBdjIwBQ9T/XmG3UizlkOxpdt7RzDvPvK06dqrac7f6/nO1VcIxnvQ9TdURSLKnSHRguIZhGIQj+1RkybhNeQlp3INMNCaxCjI0l4IndMvTzI9B44KJSDAtakEye9G3kguQyUTTXV8grAAS0iL+AI2v5KmuGHK3lEU5wmdG7Ilm/gCVPnPneekRFegy5NLuvMZXmBR9MelNkYVujnDPtKiEJnyy6stMs1YEe2PNlO5OM2oFv59nWseNp/ntq4zXwZIneAoyfqRZJALhn2h66dhkTjzVe5rqTWDhGtBlYPXDR17mr3h5qceBIfGt2D9scoQ70FzMUdlyEq9jdG6BXGbXeVZB6svuGw/981dy5cq20s+AIhVI3PPMFzTVZ07snhtlDeh/7Jqf4n74kPtv0JIKSBxygrUic3tKkhKc6OhJtXy9mxOaweH9/9rv9ky7AYKrPB2X3aeFo9f44t5n+BI41zvg3Vaff4x3mhNY+Mbx8Pi4+vXnLw==
 ```
 
-It's not hard to make this yourself, but it's a bit tricky to get the conditions right so you don't
-get extra copies when clicking "restart," so here's a canonical example. It's
-straightforward to edit this to change or add more abilities if you need to.
+It's not hard to make this yourself, but it's a bit tricky to get the conditions right so you don't get extra copies when clicking "restart," so here's a canonical example.\
+It's straightforward to edit this to change or add more abilities if you need to.
 
 ## Factory automation
 **v3.2.3**
@@ -55,8 +55,8 @@ This set of scripts manages auto-crafting of everything in the factory. It is an
 ```
 **This requires `turbo exec v2.2` to function, found here: https://github.com/d0sboots/TPT2_scripts/blob/main/common/turbo_exec/README.md**
 
-┌─────────────────────────────────────────────────┐<br>
-│ The list of all valid items can be found in the source code of [factory_constants](factory/factory_constants.tpt2). │<br>
+┌─────────────────────────────────────────────────┐\
+│ The list of all valid items can be found in the source code of [factory_constants](factory/factory_constants.tpt2). │\
 └─────────────────────────────────────────────────┘
 
 ### Details
@@ -243,6 +243,10 @@ To run, go to the Arcade and press **P**. It requires the compass and map to fun
 If *nothing shows up* when you press P (and the AI overlay is on), you may not have the `boots.d0s` special software. You can acquire it by turning on the debug overlay (F2) and then crashing the AI. The script includes a "crash the AI" function for this purpose - press P twice quickly.
 
 It should take a second or two to draw the whole map. Much longer than that indicates an issue with turbo exec.
+
+## Adventure AI
+This is an updated version of leon.adventure AI.\
+You can find the AI [here](https://github.com/d0sboots/TPTAdventure#arcade-adventure-full-auto-script)
 
 ## Timed Task Looping
 Do you constantly find yourself forgetting to check the Trading Post, or the Museum? This is the script for you!
