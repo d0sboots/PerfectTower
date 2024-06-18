@@ -2,6 +2,7 @@
 ; Since this is :imported, it can't produce any instructions.
 
 #script_name(name) D0S.factory {version}:{name}
+#garbage_requested {script_name(###badname###)}
 
 ; Key assignments. You can edit these here, or you can edit them later in the
 ; generated script (but you will have more places to modify).

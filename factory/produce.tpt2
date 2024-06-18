@@ -219,11 +219,11 @@ goto(if(\
 
 end:
 gss({action}, if(\
- contains(impulse(), "key."),\
- if(\
-   contains(impulse(), "key.{left}"),\
-   "1",\
-   "-1"\
- ),\
- gsg({action})\
+  contains(impulse(), "key."),\
+  if(\
+    contains(impulse(), "key.{left}"),\
+    "1",\
+    "-1"\
+  ),\
+  gsg({action})\
 ))

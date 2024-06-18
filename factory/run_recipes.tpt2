@@ -10,16 +10,20 @@
     local item = factory.items[i];\
     acc[#acc+1] = string.format("%02d %-18s [", i, item.name);\
     for j = 1, item.tier do\
-      if j ~= 1 then acc[#acc+1] = string.format("\n%23s", "") end\
-      acc[#acc+1] = "(";\
+      if j ~= 1 then \
+        acc[#acc+1] = string.format("\n%23s", "");\
+    end\
+      acc[#acc+1] = [[(]];\
       local recipe = factory.recipes[i * 10 + j - 1];\
       for k = 1, #recipe do\
-        if k ~= 1 then acc[#acc+1] = " " end\
+        if k ~= 1 then \
+          acc[#acc+1] = " ";\
+        end\
         acc[#acc+1] = recipe[k];\
       end\
-      acc[#acc+1] = ")";\
+      acc[#acc+1] = [[)]];\
     end\
-    acc[#acc+1] = "]\n";\
+    acc[#acc+1] = [[]\n]];\
   end\
   return table.concat(acc);\
 )}
@@ -48,6 +52,7 @@
   local recipes = factory.recipes;\
   local graph = {};\
   local queue = {};\
+  \
   for tier = 10, 1, -1 do\
     for item_id = 1, #items do\
       local item = items[item_id];\
@@ -56,12 +61,14 @@
       if not recipe then\
         goto continue;\
       end\
+      \
       local entry = graph[id];\
       if not entry then\
         entry = {};\
         entry.blocking = {};\
         graph[id] = entry;\
       end\
+      \
       local blockers = 0;\
       if recipe then\
         for i = 1, #recipe, 2 do\
@@ -89,6 +96,7 @@
         id = queue[q_front];\
         entry = graph[id];\
         recipes_list[#recipes_list + 1] = id;\
+        \
         for i = 1, #entry.blocking do\
           local other = graph[entry.blocking[i]];\
           other.blockers = other.blockers - 1;\
@@ -136,16 +144,20 @@
   \
   local multipliers = "0123a   b   c   d   e   f   g   h   i   j   k   l   m   n   o   p   q   r   s   t   u   v   w   x   y   z";\
   local mult_max = {};\
+  \
   for i = 1, num_terms do\
     mult_max[i] = 0;\
   end\
+  \
   acc_main[1] = [["___]];\
   for i = 1, #factory.recipes_list do\
     local id = factory.recipes_list[i];\
     local recipe = factory.recipes[id];\
     local item_id = id // 10;\
     local limit = (#recipe - 1) // num_terms_2;\
-    if limit < 0 then limit = 0 end;\
+    if limit < 0 then\
+      limit = 0;\
+    end;\
     for j = 1, (limit + 1) * num_terms_2, 2 do\
       acc_main[#acc_main + 1] = (j < #recipe) and recipe[j] + 100 or "   ";\
       local mod = (j // 2) % num_terms + 1;\
@@ -162,10 +174,11 @@
   end\
   \
   factory.main_size = 4 * num_terms + 3;\
-  acc_main[#acc_main + 1] = '"';\
+  acc_main[#acc_main + 1] = [["]];\
   factory.multipliers = {};\
   factory.num_terms = num_terms;\
   factory.recipe_limit = recipe_limit;\
+  \
   for i = 1, num_terms do\
     if mult_max[i] >= #multipliers then\
       return "Multiplier limit exceeded at " .. i;\
@@ -193,8 +206,9 @@
   acc = {};\
   for i = 1, factory.num_terms do\
     if i ~= 1 then\
-      acc[#acc + 1] = " + ";\
+      acc[#acc + 1] = [[ + ]];\
     end\
+    \
     acc[#acc + 1] = string.format(\
       [[max(0., ceil(gdg({queue_str} . sub(loop_data, %d, 3)) *\
         i2d(index("%s", sub(loop_data, %d, 1), 0)) * 0.25))]],\
@@ -284,11 +298,11 @@ loop_data = {lookup_item} . sub(\
 ; We also skip the count if the item is a group, since those don't have valid
 ; items to count anyway.
 ; In this way, we efficiently encode a sum that requires multiple passes.
-global.double.set({queue_str} . {recipe_item},\
+{set_raw((-100) . {recipe_item}, \
   if({recipe_item} == i2s(factory_target + 100),\
     factory_target_amount,\
     (\
-      if({prev_item} == {recipe_item}, global.double.get({queue_str} . {recipe_item}), 0.) +\
+      if({prev_item} == {recipe_item}, {get_raw((-100) . {recipe_item})}, 0.) +\
       {recipe_terms} -\
       if(\
         {prev_item} == {recipe_item} || {item_type} == "2",\
@@ -297,7 +311,8 @@ global.double.set({queue_str} . {recipe_item},\
       )\
     )\
   )\
-)
+)}
+
 i = i + 1
 ; Uncomment this line for debugging. It will show the quantities and ids of all
 ; items that need to be produced. (The ids will be +100, because of internal reasons.)

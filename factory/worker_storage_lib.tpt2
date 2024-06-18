@@ -42,4 +42,5 @@ find_worker_slot_loop: worker_slot = worker_slot + if({worker_lacks_prefix}, 1, 
 ; in that case.
 #worker_lib_line_2 gotoif(find_worker_slot_loop,\
   worker_slot < 100 && {worker_lacks_prefix} ||\
-  worker_slot >= 100 && worker_slot < 200 && (worker.group(worker_slot - 100) == -1 || contains(sub(worker.name(worker_slot - 100), 0, 1), "[")))
+  worker_slot >= 100 && worker_slot < 200 && (worker.group(worker_slot - 100) == -1 || contains("[", sub(worker.name(worker_slot - 100), 0, 1)))\
+)

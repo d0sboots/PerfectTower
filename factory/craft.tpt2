@@ -38,8 +38,8 @@ inc:
 ; tier data embedded in "itemdata".
 i = i + if(i2s(i%10) == {tiers_char}, 10 - i%10, 1)
 goto(if(i%10 != 0,\
-     if({get_raw(10 + i)} > 0., do_craft, inc),\
-     if(i < {items_count} * 10, craftitems_loop, crafting_done)))
+    if({get_raw(10 + i)} > 0., do_craft, inc),\
+    if(i < {items_count} * 10, craftitems_loop, crafting_done)))
 crafting_done:
 
 ; Uncomment these lines for runtime item quantity debugging.
@@ -86,11 +86,11 @@ group_complete:
 {set_raw(factory_target, 0.)}
 group_abort:
 gss({action}, if(\
- contains(impulse(), "key."),\
- if(\
-   contains(impulse(), "key.{up}"),\
-   "1",\
-   "-1"\
- ),\
- gsg({action})\
+  contains(impulse(), "key."),\
+  if(\
+    contains(impulse(), "key.{up}"),\
+    "1",\
+    "-1"\
+  ),\
+  gsg({action})\
 ))
