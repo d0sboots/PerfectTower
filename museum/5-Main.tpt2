@@ -47,8 +47,8 @@ offer_tiers = "0101010101010101-1"
 ; doesn't have the offshore market and is getting the default value. In this case,
 ; reset museum tier so that the script stops properly.
 museum_tier = if(\
-  museum_tier == -2 && {timer} == 60. * 60.,\
-  0,\
+  museum_tier == -2 && {timer} == 60.0 ^ 2.0, \
+  0, \
   museum_tier\
 )
 
@@ -66,22 +66,22 @@ target_tier = 0
 ; have to consider them as an exponent higher already.
 ; The parameter is to allow for the injection of a constant for constant
 ; folding in later expressions.
-#adjusted_exp(x) floor(gdg({budget}) // 10. - (0.9995 // 10. + {x}))
+#adjusted_exp(x) floor(gdg({budget}) // 10.0 - (0.9995 // 10.0 + {x}))
 
 ; Stringify the budget in rounded-scientific notation, rounded to 3 digits
 ; (2 after the decimal place). This is an awkwardly large expression, but
 ; it's really the best we can do with the tools we have.
 ; The "2" passed to adjusted_exp subtracts 2 from the exponent, so the
 ; overall effect is to multiply by 100 (before rounding).
-#rounded_budget round(gdg({budget}) / (10. ^ {adjusted_exp(2.)})) / 100. .\
-  "e". {adjusted_exp(0.)}
+#rounded_budget round(gdg({budget}) / (10.0 ^ {adjusted_exp(2.0)})) / 100.0 \
+  . "e" . {adjusted_exp(0.0)}
 
 ; Normally we would take the ceiling of the time remaining, because that's
 ; how timers work. (You show 1 second left until the time hits 0.)
 ; However, the display timer in the museum uses floor, and we want to match
 ; that, so we use floor too.
 ; The parameter is a divisor, to make dealing with minutes easier.
-#time_floor(x) floor({timer}/ {x})
+#time_floor(x) floor({timer} / {x})
 
 ; Set the status. There's a lot of cases to this:
 ; * Error for no workers available.
@@ -99,20 +99,21 @@ target_tier = 0
 ; We don't bother doing anything special when the museum isn't open, since
 ; we'll handle that at the bottom of the script.
 museum_status = if(\
-  gdg({budget}) < 0.,\
-  "</size>error=<color=#fb3>No available workers!</color>",\
+  gdg({budget}) < 0.0, \
+  "</size>error=<color=#fb3>No available workers!</color>", \
   if(\
-    turbo.cycles == 0,\
-    "</size>error=<color=#fb3>Turbo exec is not working</color>",\
-    "</size>museum=<color=#2f4>" .\
-    {rounded_budget} .\
-    "</color> <color=#fff>budget</color><br>\
-<color=#0df><color=#2f4>{up}</color>/<color=#2f4>{down}</color> changes, <color=#2f4>{start}</color> " .\
+    turbo.cycles == 0, \
+    "</size>error=<color=#fb3>Turbo exec is not working</color>", \
+    "</size>museum=<color=#2f4>" . \
+    {rounded_budget} . \
+    "</color> <color=#fff>budget</color><br>" . \
+    "<color=#0df><color=#2f4>{up}</color>/<color=#2f4>{down}</color>" . \
+    "changes, <color=#2f4>{start}</color> " . \
     if(\
-      museum_tier != -2,\
-      "begins</color>",\
-      "stops</color><br><color=#fff>Waiting " .\
-      {time_floor(60.)} . ":" . sub(d2s({time_floor(1.)} % 60. + 100.), 1, 2) .\
+      museum_tier != -2, \
+      "begins</color>", \
+      "stops</color><br><color=#fff>Waiting " . \
+      {time_floor(60.)} . ":" . sub(d2s({time_floor(1.)} % 60. + 100.), 1, 2) . \
       "</color>"\
     )\
   )\
@@ -136,10 +137,10 @@ museum_status = if(\
 ; target_tier) we jump back to executing Buy, which will reset museum_tier
 ; (and also do other things, which we don't care about) in that case.
 goto(if(\
-  isopen("museum"),\
+  isopen("museum"), \
   if(\
-    museum_tier == -2 && {timer} >= 59. * 60. + 59.,\
-    start_museum,\
+    museum_tier == -2 && {timer} >= 59.0 * 60.0 + 59.0, \
+    start_museum, \
     s2i(sub(if(museum_tier == -2, "41 5", "47 5"), target_tier + 3, 1), 99)\
   ),\
   end\
@@ -172,12 +173,12 @@ museum_pos += 1
 ;
 ; The condition for displaying Combining is reversed, since it's usual
 ; here, and if {start} is pressed it means we should exit.
-museum_status = "</size>museum=<color=#2f4>" .\
-  {rounded_budget} .\
-  "</color> <color=#fff>budget</color><br>" .\
+museum_status = "</size>museum=<color=#2f4>" . \
+  {rounded_budget} . \
+  "</color> <color=#fff>budget</color><br>" . \
   if(\
-    target_tier != -2,\
-    "<color=#ff0>Combining... [" . museum_pos . "] <color=#2f4>{start}</color> stops</color>",\
+    target_tier != -2, \
+    "<color=#ff0>Combining... [" . museum_pos . "] <color=#2f4>{start}</color> stops</color>", \
     "<color=#0df><color=#2f4>{up}</color>/<color=#2f4>{down}</color> changes, <color=#2f4>{start}</color> begins</color>"\
   )
 
@@ -189,8 +190,8 @@ stop_turbo:
 ; Note that if we jumped to stop_turbo directly, museum_status can never
 ; contain "Combining".
 executesync(if(\
-  isopen("museum") && museum_pos < 130 && contains(museum_status, "Combining"),\
-  "%%museum-nop%%",\
+  isopen("museum") && museum_pos < 130 && contains(museum_status, "Combining"), \
+  "{garbage_requested}", \
   "TE2.2:stop"\
 ))
 
@@ -204,8 +205,8 @@ executesync(if(\
 ; part of the grid is empty, to avoid executing the sub-scripts.
 gotoif(\
   if(\
-    museum_pos < 130 && contains(museum_status, "Combining"),\
-    if(tier("loadout", museum_pos) == -1, skip, upgrade_loop),\
+    museum_pos < 130 && contains(museum_status, "Combining"), \
+    if(tier("loadout", museum_pos) == -1, skip, upgrade_loop), \
     top\
   ),\
   isopen("museum")\
@@ -217,3 +218,5 @@ end:
 ; this point. Even if it is, we're the only ones who set museum_status, so
 ; it's still safe.
 museum_status = "</size>"
+
+; Space for convenience

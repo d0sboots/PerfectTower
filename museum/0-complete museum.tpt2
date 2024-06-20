@@ -1,0 +1,711 @@
+D0S.Museum: {
+  museum_macros: {
+    ; Standardized (package) naming across all the scripts
+    #script(name) D0S.Museum v4.7:{name}
+    #garbage_requested {script(%%museum-nop%%)}
+
+    ; Keybindings. You can edit these here, or edit them in the scripts directly
+    ; (but it will be much more error-prone).
+    #up w
+    #down s
+    #start m
+
+    ; Name of the budget variable, which begins the script-hiding block.
+    #budget "<size=0>mb**"
+
+    ; Turn an element string into an index. For our purpose, all the indexes
+    ; need to be multiplied by two, so we look for the index of the first two
+    ; characters of the element.
+    ; The "offset" string allows us to concatenate on a string and thus add a
+    ; constant to the result.
+    #element_to_index_base(ele, offset) index({offset} . "lielfidanaaiwaeaun", sub({ele}, 0, 2), 0)
+
+    ; Macro for determining the number of tiers we can boost, given our budget and
+    ; stones of "in_tier".
+    ; We allocate 1% of budget to each stone. Based on the tier of the stones we
+    ; can buy, they cost 2000 * 18^in_tier / 18 each. (We ignore the extra cost
+    ; of universal stones.) This determines how many stones we can buy, and thus,
+    ; the max tier.
+    ; There is an extra division by 9 and a floor. This means that if the level can't
+    ; be raised by at least 2 levels, the quantity in the log will be rounded down to 0,
+    ; and thus the log will result in -infinity. We add back the 2 levels on the outside.
+    #up_tiers(in_tier) floor(\
+      gdg({budget}) / (100.0 * 2000.0 * 9.0 / 18.0) / (18.0 ^ ({in_tier}))\
+    ) // 3.0 + 2.0
+
+    ; The top tier that can be achieved, given input stones of "in_tier". Capped
+    ; either at +11 levels, or by the budget function of up_tiers.
+    ; If we can't reach +2 levels, up_tiers returns -inf, which will result in -1.
+    ; from this function.
+    #top_tier(in_tier) max(-1.0, min(50.0, min(11.0, {up_tiers({in_tier})}) + ({in_tier})))
+  }
+  Buy: {
+    :import museum_macros
+    :name {script(Buy)}
+
+    ; This script is responsible for buying all stones.
+    ;
+    ; It also contains initialization logic for variables. They must be set in the
+    ; proper order, so that the remain hidden inside our <size=0> block. This also
+    ; reads/writes the budget from worker storage, and increment/decrements it
+    ; if the right keys are pressed.
+
+    key.{up}()
+    key.{down}()
+
+    isopen("museum")
+
+    :global string museum_status
+    :global string offer_tiers
+    :global int museum_tier
+    :global int target_tier
+    :global int museum_pos
+
+    :global int turbo.register
+    :global int turbo.cycles
+
+    :local string local_elem
+    :local int local_buy_amount
+    :local double worker_val
+
+    ; If we're being called from Combine, we're a buyer.
+    ; Otherwise, if we're being invoked due to key-impulse, but the combiner is
+    ; currently running, abort. We don't want to change the budget in the middle
+    ; of things.
+    goto(if(\
+      contains("{script(Combine)}", impulse()), \
+      buy, \
+      if(\
+        contains("key.{up}|key.{down}", impulse()) &&\
+          contains(museum_status, "Combining"),\
+        end,\
+        init\
+      )\
+    ))
+
+    init:
+
+    ; We do *not* direct-start turbo, because we want to detect broken turbo installs.
+    ; In particular, if someone has turbo v2.1 still installed, that would break, but in a way
+    ; that's not easy to programatically detect if we direct-start at this point.
+    executesync("TE2.2:start")
+
+    ; This isn't included in this subdirectory, but comes from the factory/ directory.
+    :import worker_storage_lib
+    ; Use worker_storage_lib to find a worker_slot to use for permanent storage.
+    #prefix [museum]
+    :local int worker_slot
+    {worker_lib_line_1({prefix})}
+    {worker_lib_line_2}
+
+    ; Fetch the budget from the chosen worker. The s2d fallback handles the case
+    ; where we're allocating new storage, as well.
+    worker_val = s2d(sub(worker.name(worker_slot), {len({prefix})}, 99), 1e11)
+
+    ; Ensure this value is set before we start hiding variables.
+    ; If we're launching on wakeup(), the other turbo variables will get set
+    ; in time, but this one might not.
+    turbo.cycles = turbo.cycles
+
+    ; If we're incrementing or decrementing the budget, round it to a fixed
+    ; amount. This allows users to set it to a specific amount by modifying the
+    ; worker if they wish, but we'll always get clean set-points when changing
+    ; via the UI.
+    ; The lower bound is 1e5, since at that point you can't buy any stones
+    ; (according to our budget).
+    ; Also, set budget to -1 if there are no worker slots available. This is our
+    ; signal to Main, so that it can display an appropriate error message.
+    gds({budget}, if(\
+      worker_slot == 200, \
+      -1.0, \
+      if(\
+        contains(impulse(), "key."), \
+        (10.0 ^ 0.5) ^ max(10.0, min(560.0, \
+          round(worker_val // (10.0 ^ 0.5)) + \
+          if(contains(impulse(), "key.{up}"), 1.0, -1.0)\
+        )), \
+        worker_val\
+      )\
+    ))
+    ; Save the budget back. There's always enough room for the full value.
+    worker.setName(\
+      worker_slot - if(worker_slot < 100, 0, 100), \
+      "{prefix}" . gdg({budget})\
+    )
+
+    ; Set other variables that need to happen before we close the script block.
+
+    ; If target_tier is -2, we're being invoked because start was pressed: Either
+    ; during the timer countdown, or to abort a running combine. Either way,
+    ; museum_tier needs to be set to 0 to signal no countdown.
+    ;
+    ; Otherwise, we leave it unchanged, which will usually mean the countdown remains
+    ; in effect.
+    museum_tier = if(target_tier == -2, 0, museum_tier)
+    museum_pos = -1
+
+    ; Signal Main to wake up. We only want to override target_tier if it's idle,
+    ; i.e. set to 0 - other situations show that it's in use, and notifying about
+    ; changing budget is the lowest priority.
+    target_tier = if(target_tier == 0, -3, target_tier)
+
+    ; Time for more ugly math! When we set preferred tier to "pref", we get stones in
+    ; the range [pref-10, pref], at uniform. We want our best stone to be in that
+    ; range - the one that we can *just* afford to do +11 levels from. Stones smaller
+    ; than that fall off at a rate of 1 tier/level, and stones higher fall off at a
+    ; rate of (18 log 3 - 1), or ~1.63 tiers/level. To maximize the potential of the
+    ; range, we want the top and bottom of the range to have equally high max_tiers,
+    ; so max_tier(pref - 10.5) = max_tier(pref + .5). (The halves make the range of
+    ; size 11, which is needed to properly match the actual integer-sized range.)
+    ;
+    ; Substituting gives pref - 10.5 + 11 = log_3(budget / (2000*100/18) / 18^(pref+.5)) + pref+.5,
+    ; 0 = log_3(budget / K) - (pref + .5) * log_3(18),
+    ; pref + .5 = log_3(budget / K) / log_3(18),
+    ; pref = log_18(budget / K) - .5,
+    ; pref = log_18(budget / (2000*100/18) / 18^.5),
+    ; pref = log_18(budget / (2000*100/18^.5))
+    ;
+    ; The result ends up being intuitive - since the range of stones spans 11 tiers, and
+    ; our uptiers is also +11 tiers, we want to match the preferred tier to the point where
+    ; we can just barely afford to buy the stone.
+    museum.setPreferredTier(max(1, min(50, d2i((gdg({budget}) / (2000.0 * 100.0 / (18.0 ^ 0.5))) // 18.0))))
+
+    ; We don't care about waiting for the frame break, so manipulate the value
+    ; directly instead of using "turbo stop".
+    ; This also gives some (useful) extra turbo frames to our caller, Main.
+    turbo.register -= 1
+
+    buy:
+    ; If we're only upgrading 5 or fewer levels, we buy one-at-a-time to avoid
+    ; overbuying. The number of operations is so small that it won't be slow.
+    ; This actually maxes out on speed at +7 levels, because at that point we are
+    ; buying 6 each cycle, which matches the amount the combines use.
+    local_buy_amount = max(1, (target_tier - museum_tier - 5) * 3)
+
+    ; If we're a buyer, use the stone in inventory.
+    ; Otherwise, buy nothing until we can exit normally.
+    local_elem = if(\
+      contains("{script(Combine)}", impulse()), \
+      element("inventory", 0), \
+      ""\
+    )
+
+    ; Because of turbo exec, this script will keep running every cycle, until
+    ; the frame pause. At that point, it will exit, and we rely on Combine to
+    ; restart it.
+    ;
+    ; Everything is very carefully engineered to make this expression as minimal
+    ; as possible. It's worth spending extra cycles in set-up in order to remove
+    ; a single node from this expression.
+    museum.buyTier(local_elem, museum_tier, local_buy_amount)
+
+    end:
+
+    ; Space for convenience
+  }
+  Combine: {
+    :import museum_macros
+    :name {script(Combine)}
+
+    ; This script is responsible for actually combining gems.
+    ;
+    ; That's true in two senses: It both has the actual call to Combine(), and
+    ; also the logic immediately surrounding it that runs the combines and checks
+    ; to see if the loop is done.
+
+    :global int museum_tier
+    :global int target_tier
+    :global int museum_pos
+
+    :global int turbo.cycles.max
+    :global int turbo.register
+
+    :local double end_time
+
+    ; Stop our parent. If we're invoking ourselves, this is a wasted cycle.
+    stop("{script(Calculate)}")
+
+    ; If we're invoking ourselves, we're a dedicated Combine()er.
+    ; Otherwise, check to see if we've already reached our goal.
+    ; If we have, we can exit early, otherwise fall through to the main logic.
+    goto(if(\
+      contains(impulse(), "{script(Combine)}"), \
+      combine, \
+      if(tier("inventory", 0) >= target_tier, done, restart_loop)\
+    ))
+
+    ; Keep restarting the buy and combine scripts whenever the turbo frame ends.
+    ; They rely on the 1-cycle-end-of-script-loop property of turbo to function,
+    ; so we also keep the cycle max up for efficiency.
+    restart_loop:
+
+    ; We start 3 copies of combine, because each combine only combines 3 gems.
+    ; (As opposed to when you do it manually: then it does 2 combines, once on
+    ; mousedown and one on mouseup.) 3 is roughly optimal: there are very few
+    ; positions the inventory can be in that don't support 3 combines between buys,
+    ; whereas there are significantly more for 4. And combine is one of the most
+    ; time-expensive operations in the loop, so we don't want to run it pointlessly.
+    execute("{script(Combine)}")
+    execute("{script(Combine)}")
+    execute("{script(Combine)}")
+
+    ; Start the buyer. By running this after the combiners, we'll always
+    ; end each cycle with a full inventory, which is important for the check below.
+    execute("{script(Buy)}")
+
+    ; Extend the max duration. There is a possible race condition where we might
+    ; already be exiting turbo due to being at too many cycles; this is dealt with
+    ; (and discussed more) in Calculate. We can never be in the race condition
+    ; internally, because it does not take nearly 200 cycles to get from the
+    ; "turbo stop" to this line.
+    ;
+    ; Normally we would calculate this based on cycles and cycles.max, but here
+    ; we're just setting it to the maximum that turbo supports. We rely on our own
+    ; fps-based throttling, instead. If we *do* manage to go the whole 50000 cycles
+    ; in less than 200ms, there's an interesting timing effect where we will execute
+    ; TE2.2:stop *exactly* as the next turbo cycle is beginning, leading to a wasted
+    ; turbo cycle and drastically slower execution.
+    turbo.cycles.max = 50000
+
+    ; Calculate a time to end the loop at. This is 1/5 of a second in the future,
+    ; so it should reliably be 5 FPS.
+    end_time = now() + 10000000.0 / 5.0
+
+    ; The core condition to wait for. This condition needs to be as minimal as
+    ; possible, because it is draining CPU time away from the important combine/buy
+    ; tasks every cycle. (So is the turbo exec machinery, but we can't help that.)
+    waituntil(tier("inventory", 0) >= target_tier || now() > end_time)
+
+    ; If we are done, stop the buyers ASAP, to avoid wasting money. The condition
+    ; here relies on the condition above for correctness, but is simpler.
+    ; (Technically there's an edge case if it finishes right at the end, but the
+    ; number of cycles required means that won't happen.)
+    stop(if(now() > end_time, "", "{script(Buy)}"))
+
+    ; We restart turbo by changing the variable directly, so that there isn't a
+    ; "turbo start" script taking up cycles. In comparison, we stop turbo with
+    ; executesync(), because we want to block until the end of the frame, and
+    ; the end of the frame will naturally clean up the script.
+    executesync("TE2.2:stop")
+    turbo.register += 1
+
+    ; Do another loop if we're not done yet.
+    ; Abort if the 3rd-to-last power stone is not the tier we expect it to be.
+    ; Because Buy runs after the combines, and won't have been stopped
+    ; in the case where we're not done yet, we can expect the "fill inventory" buy
+    ; to have left the final position with our target tier. Checking this way
+    ; catches both museum rollover and out-of-resources.
+    ;
+    ; The reason for checking the 3rd-to-last slot, and not the last slot, has to
+    ; do with the way combine processing is run: It starts checking for combinable
+    ; stuff from the first slot down. So it's possible for two base-tier stones to
+    ; be left in the last two slots, but there can't be *3* in the last 3, because
+    ; they would be combine-eligible. *Unless* they were just bought. (This isn't
+    ; quite true, because the combines might be occupied with higher-tier stones,
+    ; but if we've exausted resources or had rollover, it will rapidly become true.)
+    ;
+    ; This also interacts in predictable ways with another couple of common issues:
+    ; lacking the "quick combine" skill and not having all the inventory slots.
+    ; If all the slots aren't purchased, this condition will always fail immediately.
+    ; The symptom will be that the combiners seems to "never do anything."
+    ; Conversely, without quick combine no progress will ever be made. As soon
+    ; as a power stone is hit that needs fast leveling, it will get "stuck" there.
+    ; This is a sure sign of lacking quick-combine.
+    ;
+    ; If we are doing a "careful" combine without fill-inventory, it shouldn't take
+    ; more than 1000 cycles, so this condition won't be a problem.
+    gotoif(restart_loop,\
+      tier("inventory", 0) < target_tier && tier("inventory", 27) == museum_tier)
+
+    done:
+    ; This is the signal for Main that it should continue.
+    museum_tier = -2
+
+    ; Now that we're done, move the finished stone back to "equipped". This also
+    ; moves partial/original stones back, if we cancelled via {start}.
+    ;
+    ; Even though this happens after signalling, we get one extra cycle as a
+    ; "delay slot" before we're stopped by Main.
+    museum.moveTo("inventory", 0, "loadout", museum_pos)
+
+    combine:
+    ; Because of turbo exec, this script will keep running every cycle, until
+    ; the frame pause. At that point, it will exit, and we rely on Combine to
+    ; restart it.
+
+    ; There's no point in using a variable for the combine limit; halting the
+    ; combines is handled by the end of turbo. Having the limit be a constant
+    ; removes one node from the hottest execution path.
+    combine(50)
+
+    ; Space for convenience
+  }
+  Calculate: {
+    :import museum_macros
+    :name {script(Calculate)}
+
+    ; This script contains (stub) logic for handling key.{start}. This would be part
+    ; of Main normally, but there can only be 2 impulses per script at the
+    ; resource-cost-levels we're targeting.
+    ;
+    ; The final (bulk) of the logic deals with buying test stones from the
+    ; offshore market and doing calculations/preparations for the actual
+    ; combining, which is handled by Combine. This script sets museum_tier
+    ; and target_tier, which directly drive the combining process.
+
+    key.{start}()
+
+    :global int museum_tier
+    :global int target_tier
+    :global int museum_pos
+    :global double budget
+    :global string offer_tiers
+
+    :global int turbo.register
+    :global int turbo.cycles
+    :global int turbo.cycles.max
+
+    :local int offer_idx
+
+    ; If we're called from key.{start}, then check if the museum
+    ; is open. If it is, signal Main, otherwise exit. We can't just set a
+    ; condition on the script, because that would possibly mess up scripts
+    ; that execute us, on exiting the museum.
+    ; This will overwrite target_tier if we are currently combining,
+    ; causing an early exit and leading to main resuming - which is what we
+    ; want.
+    ; If we're called from Main, then we need to set museum_tier to 0, because it
+    ; serves as a signal variable. Main waits on it for BuyOffshore/Combine to be done.
+    ;
+    ; It's ugly to fold this up into a single conditional set, but between the fact that
+    ; we need museum_tier reset on the first instruction, and some of the other conditions
+    ; involved, it wouldn't be less complicated to do it as two instructions.
+    global.int.set(\
+      if(contains("key.{start}", impulse()), "target_tier", "museum_tier"), \
+      if(\
+        contains("key.{start}", impulse()), \
+        if(isopen("museum"), -2, target_tier), \
+        0\
+      )\
+    )
+    ; If we're called from key.{start}, we're done now. Otherwise, if offer_tiers is
+    ; the default, calculate it now, but don't bother re-doing work if we don't have to.
+    ; (This would be easier to do at the top, but there's no room in Main.)
+    goto(if(\
+      contains("key.{start}", impulse()), \
+      end, \
+      if(\
+        contains(offer_tiers, "0101010101010101-1"), \
+        get_offers, \
+        skip_offers\
+      )\
+    ))
+
+    ; This loop calculates the best stone to buy, for each element.
+    get_offers:
+
+    ; Turn an element string into an index. The base version is defined in museum_macros.
+    #element_to_index(offset) {element_to_index_base(museum.slotElement(offer_idx), {offset})}
+
+    ; This monstrousity updates the value of the best tier to use for an element.
+    ; The element is the element in slot [offer_idx], and we're assessing whether
+    ; that offer will be an improvement.
+    ; The base logic relies on the top_tier formula.
+    offer_tiers = if(\
+      museum.slotElement(offer_idx) == "" ||\
+        {top_tier(i2d(museum.slotTier(offer_idx)))} <=\
+          {top_tier(s2d(sub(offer_tiers, {element_to_index("")}, 2), -1.))}, \
+      offer_tiers, \
+      sub(offer_tiers, 0, {element_to_index("")}) . \
+        sub(i2s(100 + museum.slotTier(offer_idx)), 1, 2) . \
+        sub(offer_tiers, {element_to_index("  ")}, 99)\
+    )
+    ; There are max 10 offer slots, numbered 0 through 9. We'll exit after #9.
+    offer_idx = offer_idx + 1
+    gotoif(get_offers, offer_idx < 10)
+
+    skip_offers:
+    clear("inventory")
+
+    ; Load the pre-calculated tier of stone we are buying.
+    museum_tier = s2i(sub(\
+      offer_tiers, \
+      {element_to_index_base(element("loadout", museum_pos), "")}, \
+      2\
+    ), -1)
+
+    ; Determine "target_tier", the level we are trying to upgrade to. In the
+    ; best case, we can upgrade 11 levels past the tier of the stones we can
+    ; buy from the museum. (Which may only be tier 1.)
+    target_tier = if(\
+      min(tier("loadout", museum_pos), museum_tier) < 0, \
+      -1, \
+      d2i({top_tier(i2d(museum_tier))})\
+    )
+    ; If tier(museum_pos) < museum_tier, buy one of the target stone.
+    ; In this case, we're about to move our stone into the 0th slot, and
+    ; if it's below the base level it will never get combined with, so
+    ; the combine loop will never end.
+    ; It's OK to still move it, because there's enough room in the inventory
+    ; for an extra stone.
+    ; If we can't afford the stone, or for some other reason are unable to buy
+    ; it, then we'll also fall through in Combine and move the original stone
+    ; back when we're done. In this way, we can always avoid eating stones,
+    ; no matter what happens.
+    museum.buyTier(\
+      element("loadout", museum_pos), \
+      museum_tier, \
+      if(tier("loadout", museum_pos) < museum_tier, 1, 0)\
+    )
+    move("loadout", museum_pos, "inventory")
+
+    ; Extend turbo for a little longer. There's a race condition where we might
+    ; run out of cycles and start a new frame, but even if we do that on this
+    ; line, the new frame will start in time for the Combiners to loop properly,
+    ; and for the max-setting line in Combine to set the max to its proper value.
+    ;
+    ; Otherwise, this ensures that we stay in the current loop until the line
+    ; in Combine sets cycles.max to its full value.
+    ; This is a small enough extension so that if we never enter the main loop
+    ; of Combine, we'll still eventually hit turbo.cycles.max and start a new frame.
+    ; (I.e. we can't loop indefinitely with this extension alone.)
+    turbo.cycles.max = max(turbo.cycles.max, turbo.cycles + 15)
+
+    ; executesync() is used here to pause us until our child Combine stops us.
+    ; If we jump from the top, we have to be prepared to loop back to this instruction.
+    ; in that case, this needs to be a no-op.
+    executesync(if(\
+      contains("key.{start}", impulse()), \
+      "{garbage_requested}", \
+      "{script(Combine)}"\
+    ))
+
+    end:
+
+    ; Space for convenience
+  }
+  Main: {
+    :import museum_macros
+    :name {script(Main)}
+
+    ; The "main" script of the combiner. It starts on wakeup/entry into the
+    ; museum, and keeps running until the user leaves the museum. This is because
+    ; it is responsible for maintaining the UI global "museum_status", which
+    ; both conveys information to the user and also ends a <size=0> block that
+    ; hides our internal global variables. When we leave the museum, this is
+    ; set to "</size>" to blank the display and leave no clutter.
+    ;
+    ; This script also runs the outer part of the loop, which updates the
+    ; position of the combiner. It is well-suited to this, because it is the
+    ; only script that doesn't get stop()'ed at some point.
+
+    :global int max_craft_tier
+    :global int museum_pos
+
+    :global string museum_status
+    :global string offer_tiers
+    :global int museum_tier
+    :global int target_tier
+
+    :global int turbo.cycles
+    :global int turbo.register
+
+    wakeup()
+    open.museum()
+
+    isopen("museum")
+
+    top:
+    ; Launch Buy to initialize the global variables in the proper order.
+    ; We re-do this after every run, because it resets museum_pos for us.
+    executesync("{script(Buy)}")
+
+    ; Two characters per tier. Universal is last. These are initialized to what can
+    ; be bought from the store.
+    ; This logically belongs in "Buy", but is moved out of there to make space.
+    offer_tiers = "0101010101010101-1"
+
+    ; Macro-substitution for the museum timer, allows mocking it out easily for
+    ; testing.
+    #timer museum.timer()
+
+    ; No-offshore-market fix: If we get here with museum_tier == -2 (which is the
+    ; waiting-to-start state), but the timer is *exactly* 1 hour, this means the user
+    ; doesn't have the offshore market and is getting the default value. In this case,
+    ; reset museum tier so that the script stops properly.
+    museum_tier = if(\
+      museum_tier == -2 && {timer} == 60.0 ^ 2.0, \
+      0, \
+      museum_tier\
+    )
+
+    ; This loop usually runs without turbo, although it can have lingering
+    ; turbo from other scripts without bad effects. It keeps the status line
+    ; up-to-date while the museum is not running.
+    status_loop:
+    ; We use target_tier to receive signals from other scripts. 0 means nothing
+    ; is hapenning, so we always reset to 0 at the top.
+    target_tier = 0
+
+    ; This is a useful sub-expression when displaying numbers in rounded
+    ; scientific notation. We want to extract the exponent, but for numbers like
+    ; .9996, we know they'll round up to 1.00 (when rounded to 3 places), so we
+    ; have to consider them as an exponent higher already.
+    ; The parameter is to allow for the injection of a constant for constant
+    ; folding in later expressions.
+    #adjusted_exp(x) floor(gdg({budget}) // 10.0 - (0.9995 // 10.0 + {x}))
+
+    ; Stringify the budget in rounded-scientific notation, rounded to 3 digits
+    ; (2 after the decimal place). This is an awkwardly large expression, but
+    ; it's really the best we can do with the tools we have.
+    ; The "2" passed to adjusted_exp subtracts 2 from the exponent, so the
+    ; overall effect is to multiply by 100 (before rounding).
+    #rounded_budget round(gdg({budget}) / (10.0 ^ {adjusted_exp(2.0)})) / 100.0 \
+      . "e" . {adjusted_exp(0.0)}
+
+    ; Normally we would take the ceiling of the time remaining, because that's
+    ; how timers work. (You show 1 second left until the time hits 0.)
+    ; However, the display timer in the museum uses floor, and we want to match
+    ; that, so we use floor too.
+    ; The parameter is a divisor, to make dealing with minutes easier.
+    #time_floor(x) floor({timer} / {x})
+
+    ; Set the status. There's a lot of cases to this:
+    ; * Error for no workers available.
+    ;   - We don't have direct visibilty to worker_slot, but Buy will signal the
+    ;     error by setting budget to negative, which will never happen otherwise.
+    ; * Error for a bad Turbo install. This is disturbingly frequent.
+    ; * Show our current budget, with green highlighting to prompt that this
+    ;   can be adjusted.
+    ; * Show a brief help line, also with green highlighting to link the keys
+    ;   to the budget.
+    ; * If we've pressed {start}, show the Combining message instead. This is
+    ;   important because certain things key off of it. target_tier = -2 is the
+    ;   signal for this.
+    ;
+    ; We don't bother doing anything special when the museum isn't open, since
+    ; we'll handle that at the bottom of the script.
+    museum_status = if(\
+      gdg({budget}) < 0.0, \
+      "</size>error=<color=#fb3>No available workers!</color>", \
+      if(\
+        turbo.cycles == 0, \
+        "</size>error=<color=#fb3>Turbo exec is not working</color>", \
+        "</size>museum=<color=#2f4>" . \
+        {rounded_budget} . \
+        "</color> <color=#fff>budget</color><br>" . \
+        "<color=#0df><color=#2f4>{up}</color>/<color=#2f4>{down}</color>" . \
+        "changes, <color=#2f4>{start}</color> " . \
+        if(\
+          museum_tier != -2, \
+          "begins</color>", \
+          "stops</color><br><color=#fff>Waiting " . \
+          {time_floor(60.)} . ":" . sub(d2s({time_floor(1.)} % 60. + 100.), 1, 2) . \
+          "</color>"\
+        )\
+      )\
+    )
+    ; The s2i()/sub() expression is a jump-table, where the string values are
+    ; line numbers.
+    ; The values that target_tier can have when we get here are 0
+    ; (if it hasn't been set to anything since it was cleared at the top of
+    ; status_loop), -2 (set when key.{start} is pressed), and -3 (set when
+    ; budget is adjusted via key.{up}/key.{down}).
+    ;
+    ; -2 finishes the loop. -3 should reset target_tier and update status by
+    ; jumping two lines back. 0 *could* repeat the same line, except sometimes
+    ; we have to update status, so we jump one back, to set status.
+    ; We can't merge the -3 and 0 cases, because setting target_tier over-frequently
+    ; makes keystrokes flaky.
+    ;
+    ; We use a modified jump table when museum_tier is -2, which indicates that
+    ; we are synced to the refresh timer. In that case, we abort when the timer is
+    ; 59:59 (meaning the refresh just hapenned), and when start is pressed (-2 for
+    ; target_tier) we jump back to executing Buy, which will reset museum_tier
+    ; (and also do other things, which we don't care about) in that case.
+    goto(if(\
+      isopen("museum"), \
+      if(\
+        museum_tier == -2 && {timer} >= 59.0 * 60.0 + 59.0, \
+        start_museum, \
+        s2i(sub(if(museum_tier == -2, "41 5", "47 5"), target_tier + 3, 1), 99)\
+      ),\
+      end\
+    ))
+
+    start_museum:
+    ; Now that we're in the active part of the script, start turbo. We want
+    ; minimal overhead, so don't execute an extra script, just increment
+    ; the variable.
+    turbo.register += 1
+
+    upgrade_loop:
+    ; Go to the next script to perform the actual upgrade.
+    ; We run this even when museum_pos is -1, in order to set all the variables
+    ; properly. Combine will exit immediately in that case, without a frame break,
+    ; so we will fall down below and set the status correctly within the frame
+    ; that it starts.
+    execute("{script(Calculate)}")
+
+    ; Combine (which gets run from Calculate) will signal us when it's done.
+    ; It must be stopped for proper cleanup.
+    waituntil(museum_tier == -2)
+    stop("{script(Combine)}")
+
+    skip:
+    museum_pos += 1
+    ; While running, we have fewer conditions to check, since the errors were
+    ; already signaled at the top. (There's nothing actually stopping the user
+    ; from starting the script anyway, but that's on them at that point.)
+    ;
+    ; The condition for displaying Combining is reversed, since it's usual
+    ; here, and if {start} is pressed it means we should exit.
+    museum_status = "</size>museum=<color=#2f4>" . \
+      {rounded_budget} . \
+      "</color> <color=#fff>budget</color><br>" . \
+      if(\
+        target_tier != -2, \
+        "<color=#ff0>Combining... [" . museum_pos . "] <color=#2f4>{start}</color> stops</color>", \
+        "<color=#0df><color=#2f4>{up}</color>/<color=#2f4>{down}</color> changes, <color=#2f4>{start}</color> begins</color>"\
+      )
+
+    stop_turbo:
+    ; Most of the time, we do not want to stop turbo. We only want to do it in
+    ; the specific cases where we'll be ending the loop. So, this duplicates a lot
+    ; of the logic in the loop below, all for the benefit of saving a line.
+    ;
+    ; Note that if we jumped to stop_turbo directly, museum_status can never
+    ; contain "Combining".
+    executesync(if(\
+      isopen("museum") && museum_pos < 130 && contains(museum_status, "Combining"), \
+      "{garbage_requested}", \
+      "TE2.2:stop"\
+    ))
+
+    ; This very complicated gotoif consolidates the ends of lots of loops into
+    ; one statement.
+    ; If the museum is closed, fall through to exit the script.
+    ; If we're through all the positions, or if we're no longer "Combining"
+    ; (which means {start} was pressed), go to the top to reset our state.
+    ;
+    ; Otherwise, continue the loop: Either normally, or via a shortcut if this
+    ; part of the grid is empty, to avoid executing the sub-scripts.
+    gotoif(\
+      if(\
+        museum_pos < 130 && contains(museum_status, "Combining"), \
+        if(tier("loadout", museum_pos) == -1, skip, upgrade_loop), \
+        top\
+      ),\
+      isopen("museum")\
+    )
+
+    end:
+    ; Before we exit, blank the status so that there isn't clutter on the screen.
+    ; This is safe to do in the last slot because turbo shouldn't be running by
+    ; this point. Even if it is, we're the only ones who set museum_status, so
+    ; it's still safe.
+    museum_status = "</size>"
+
+    ; Space for convenience
+  }
+}

@@ -2237,4 +2237,204 @@ D0S.Factory: {
       sub(i2s(100 + item), 1, 2) . sub(i2s (100 + cursor), 1, 2)\
     )
   }
+  DOS.DustManager: {
+
+    ; Space for convenience
+
+    :local int dust_tier
+    :local string dust_multipliers
+    :local double acc
+    :local int i
+    :local int state
+
+    :local double ore_buffer
+    :local double power
+
+    #storage_limitation (10 ^ 4)
+
+    wakeup()
+    open.factory()
+
+    isopen("factory")
+
+    {lua(\
+      function compose_ratio(value)\
+        return math.floor(value * {storage_limitation}) / {storage_limitation}\
+      end\
+      function create_ratios(ratio_count, ratio1, ratio2, ratio3, ending_ratio)\
+        local ratios = {};\
+        local average_ratio = (ratio2 * ratio2 + ratio1 * ratio3) / (2 * ratio1 * ratio2);\
+        ratios[#ratios + 1] = ratio1;\
+        ratios[#ratios + 1] = ratio2;\
+        ratios[#ratios + 1] = ratio3;\
+        for i = #ratios, ratio_count do\
+          ratios[#ratios + 1] = ratios[#ratios] * average_ratio;\
+        end\
+        for i = 1, ratio_count do\
+          ratios[i] = [[concat("]] .. compose_ratio(ratios[i]) .. [[", " ") . ]];\
+        end\
+        if ending_ratio ~= nil then\
+          if ratio_count == 10 then\
+            ratios[#ratios] = ending_ratio;\
+          else \
+            ratios[#ratios] = [[concat("]] .. compose_ratio(ratios[#ratios]) .. [[", " ") . "]] .. ending_ratio .. [["]];\
+          end\
+        end\
+        return table.concat(ratios);\
+      end\
+    )}
+
+    ; Amount of ore to save at each tier. Ore will only be saved if there is
+    ; more dust than ore, otherwise it will be crushed anyway (so that saving
+    ; ore doesn't prevent you from progressing.) This function exists to allow
+    ; for scanning ore with the Crafter.
+    ore_buffer = 0.0
+    power = 1.35
+
+    ; Initialize multipliers from a string. This used to be much worse, but is
+    ; easy now that there is native s2d().
+    ; 
+    ; Use this macro to make the list of all dust multipliers
+    ; Here is what each parameter means
+    ; How many tiers of dust do you want to be made
+    ; By default, it's 8, meaning that the dust multipliers will
+    ; create ratios for tiers 1 through 8
+    ; 
+    ; Afterwords, input the ratio you want to be made
+    ; By default
+    ; dust of tier 1 will have a 1:1 ratio
+    ; dust of tier 2 will have a 1:0.862 ratio
+    ; dust of tier 3 will have a 1:0.7316 ratio
+    ; Then, the create_ratios function will calculate the remaining
+    ; ratios for tiers 4 to 8
+    ; 
+    ; And finally, provide an end block
+    ; This value will mark the final ratio
+    ; By default, tiers 9 and 10 have a 1:0 ratio, because
+    ; I do not want them to be crafted
+    dust_multipliers = {lua(return create_ratios(\
+      10, \
+      1.0, \
+      1.0, \
+      0.605,\
+      0.001\
+    ))}
+
+    ; "i" combines the position in the string with
+    ; the tier currently being initialized.
+    ; The encoding is pos + tier * {storage_limitation}.
+    ; (I.e. the string can only be {storage_limitation} long.)
+    #pos (i % {storage_limitation})
+    #tier (i / {storage_limitation})
+    #nextspace index(dust_multipliers . " ", " ", {pos})
+
+
+    ; This is a simple loop: Each iteration converts one number and advances
+    ; both the read position "pos" and the "tier" appropriately. The only subtle
+    ; wrinkle is that once it gets to the end of the list, it will keep reading
+    ; the same entry to fill in the remaining tiers.
+    init_multipliers:
+    lds("buffer".({tier} + 1), s2d(sub(dust_multipliers, {pos}, {nextspace} - {pos}), 0.0/0.0))
+    i = i + {storage_limitation} + if(index(dust_multipliers, " ", {pos}) == -1, 0, {nextspace} + 1 - {pos})
+    gotoif(init_multipliers, i < {storage_limitation} * 10)
+
+    ; The overall plan is to count down through the ores
+    ; This way, the best ones are the ones with the least count get processed first
+    ; We also count down through the lumps as well.
+    ; 
+    ; We process lumps in "packets" that are based on a
+    ; power of the stack size
+    ; which ensures that uptiering doesn't consume too much dust while processing but
+    ; also allows for the chunks to process for a considerable time.
+    ; This also makes for a simple expression that equals 0 when the size
+    ; is 1 (so that we don't use the last dust), and 1 when the size is 2
+    ; (so that we do start immediately after that point.)
+
+    ; The tier variable is a local, so the process can be restarted from
+    ; the top if it's taking too long.
+    top:
+
+    ; Nested expressions for calculating the tier of ore to crush.
+    ; This factors in the need to save 1000 ore based on ore_buffer, and
+    ; returns 0 if there is no crushable ore.
+    #nest0_9(macro, final) {{macro}(0,{{macro}(1,{{macro}(2,{{macro}(3,{{macro}(4,{{macro}(5,{{macro}(6,{{macro}(7,{{macro}(8,{{macro}(9,{final})})})})})})})})})})}
+    #orecount_cond(value) (count("ore", {value}) <= min(ore_buffer, count("dust", {value})))
+    #orestate_nest(value, rest) if({orecount_cond(10 - {value})}, {rest}, 10 - {value})
+    #dust_inc if(active("mixer"), 0, 11)
+    #orestate if(active("crusher"), {dust_inc}, {nest0_9(orestate_nest,{dust_inc})})
+
+    ; The main state calculation.
+    ; We first calculate whether ore needs to be crushed
+    ; if it does not, we possibly increment the
+    ; current dust that is being mixed.
+    ; 
+    ; The dust_tier for mixing and ore_tier for crushing are stored together in state.
+    ; Mixing will only occur if ore_tier is 0, since crushing takes priority.
+    ; (Generally the mixing will happen in the next iteration.)
+
+    #raw_dust_tier (state / 11)
+    #prev_dust_tier ({raw_dust_tier} + 8) % 9
+    #curr_dust_tier 1 + (({raw_dust_tier} + 8) % 9)
+    #next_dust_tier 2 + (({raw_dust_tier} + 8) % 9)
+
+    #ore_tier (state % 11)
+    #has_ore ({ore_tier} > 0)
+    #has_lump (count("lump", {raw_dust_tier}) > 0.0) || active("mixer")
+
+    state = (state + {orestate}) % 99
+
+    ; These expressions calculate how much dust to uptier.
+    ; It used to be a more complicated expression that calculated everything
+    ; in T1-equivilant units, (i.e. if you down-converted it all), but
+    ; that isn't actually needed: Everything works (better actually) if you
+    ; just make local decisions based on the ratios
+    ; between the current and next tier.
+    ; 
+    ; Ore Lumps are also counted as dust, so that
+    ; unmixed lumps don't throw off the calculations.
+    ; 
+    ; We know that currently processing lumps won't be an issue,
+    ; because we only craft when the mixer is empty.
+
+    #count_dust_and_lumps(dust_tier) (if({dust_tier} == 1, 0.0, 2.0 * count("lump", max(1, -1 + {dust_tier}))) + count("dust", {dust_tier}))
+    #needed_by_ratio(dust_tier) (({count_dust_and_lumps({dust_tier})} * ldg("buffer" . (1 + {dust_tier}))\
+      - {count_dust_and_lumps(1 + {dust_tier})} * ldg("buffer" . {dust_tier}))\
+      / (ldg("buffer" . {dust_tier}) + 8.0 * ldg("buffer" . (1 + {dust_tier}))))
+
+    ; We always save one dust on the producing side, so that
+    ; dust ordering doesn't get messed up in the inventory.
+    ; 
+    ; We produce lumps in chunks. We consume up to 5% of the destination;
+    ; this allows for large-ish mixing regardless of stack size, and
+    ; dynamically adjusts well.
+    ; Not adding more to the mixer when it's running greatly reduces
+    ; complications. We just move on to the next tier when it's done,
+    ; and come back around soon enough.
+    ; The "+ 0.5" on the consuming side is to adjust for Chemical Lumps.
+    ; That way, in the terminal case it'll hit the safety target exactly. If you
+    ; don't have lumps, you'll be up to 3 under the target. However, we always
+    ; ensure that you'll leave one leftover no matter what.
+
+    craft(if(contains(machine.item("boiler"), i2s({raw_dust_tier})), "", "lump"), {curr_dust_tier}, if(\
+      {has_ore} || {has_lump}, \
+      0.0, \
+      min(count("dust", {next_dust_tier}) ^ (power * 0.5), {needed_by_ratio({curr_dust_tier})} + 0.5)\
+    ))
+
+    produce(if({has_ore}, "ore", "lump"), \
+      if({has_ore}, {ore_tier}, {curr_dust_tier}), \
+      if({has_ore}, max(count("ore", {ore_tier}) - ore_buffer, 1.0 + (count("ore", {ore_tier}) - count("dust", {ore_tier})) / 3.0), count("lump", {curr_dust_tier})), \
+      if({has_ore}, "crusher", "mixer")\
+    )
+
+    produce("dust",\
+      {curr_dust_tier}, \
+      if(active("boiler"), 0.0, max(0.0, -1.0 + {needed_by_ratio({curr_dust_tier})} - 4.0 * count("dust", {prev_dust_tier}))), \
+      "boiler"\
+    )
+
+    gotoif(top, isopen("factory"))
+
+    ; Space for convenience
+  }
 }

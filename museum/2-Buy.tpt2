@@ -1,9 +1,6 @@
 :import museum_macros
 :name {script(Buy)}
 
-; This isn't included in this subdirectory, but comes from the factory/ directory.
-:import worker_storage_lib
-
 ; This script is responsible for buying all stones.
 ;
 ; It also contains initialization logic for variables. They must be set in the
@@ -34,8 +31,8 @@ isopen("museum")
 ; currently running, abort. We don't want to change the budget in the middle
 ; of things.
 goto(if(\
-  contains("{script(Combine)}", impulse()),\
-  buy,\
+  contains("{script(Combine)}", impulse()), \
+  buy, \
   if(\
     contains("key.{up}|key.{down}", impulse()) &&\
       contains(museum_status, "Combining"),\
@@ -51,6 +48,8 @@ init:
 ; that's not easy to programatically detect if we direct-start at this point.
 executesync("TE2.2:start")
 
+; This isn't included in this subdirectory, but comes from the factory/ directory.
+:import worker_storage_lib
 ; Use worker_storage_lib to find a worker_slot to use for permanent storage.
 #prefix [museum]
 :local int worker_slot
@@ -75,20 +74,20 @@ turbo.cycles = turbo.cycles
 ; Also, set budget to -1 if there are no worker slots available. This is our
 ; signal to Main, so that it can display an appropriate error message.
 gds({budget}, if(\
-  worker_slot == 200,\
-  -1.,\
+  worker_slot == 200, \
+  -1.0, \
   if(\
-    contains(impulse(), "key."),\
-    (10. ^ 0.5) ^ max(10., min(560.,\
-      round(worker_val // (10. ^ 0.5)) +\
-      if(contains(impulse(), "key.{up}"), 1., -1.)\
-    )),\
+    contains(impulse(), "key."), \
+    (10.0 ^ 0.5) ^ max(10.0, min(560.0, \
+      round(worker_val // (10.0 ^ 0.5)) + \
+      if(contains(impulse(), "key.{up}"), 1.0, -1.0)\
+    )), \
     worker_val\
   )\
 ))
 ; Save the budget back. There's always enough room for the full value.
 worker.setName(\
-  worker_slot - if(worker_slot < 100, 0, 100),\
+  worker_slot - if(worker_slot < 100, 0, 100), \
   "{prefix}" . gdg({budget})\
 )
 
@@ -127,7 +126,7 @@ target_tier = if(target_tier == 0, -3, target_tier)
 ; The result ends up being intuitive - since the range of stones spans 11 tiers, and
 ; our uptiers is also +11 tiers, we want to match the preferred tier to the point where
 ; we can just barely afford to buy the stone.
-museum.setPreferredTier(max(1, min(50, d2i((gdg({budget}) / (2000. * 100. / (18. ^ 0.5))) // 18.))))
+museum.setPreferredTier(max(1, min(50, d2i((gdg({budget}) / (2000.0 * 100.0 / (18.0 ^ 0.5))) // 18.0))))
 
 ; We don't care about waiting for the frame break, so manipulate the value
 ; directly instead of using "turbo stop".
@@ -144,8 +143,8 @@ local_buy_amount = max(1, (target_tier - museum_tier - 5) * 3)
 ; If we're a buyer, use the stone in inventory.
 ; Otherwise, buy nothing until we can exit normally.
 local_elem = if(\
-  contains("{script(Combine)}", impulse()),\
-  element("inventory", 0),\
+  contains("{script(Combine)}", impulse()), \
+  element("inventory", 0), \
   ""\
 )
 
@@ -159,3 +158,5 @@ local_elem = if(\
 museum.buyTier(local_elem, museum_tier, local_buy_amount)
 
 end:
+
+; Space for convenience

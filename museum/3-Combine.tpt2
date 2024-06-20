@@ -23,8 +23,8 @@ stop("{script(Calculate)}")
 ; Otherwise, check to see if we've already reached our goal.
 ; If we have, we can exit early, otherwise fall through to the main logic.
 goto(if(\
-  contains(impulse(), "{script(Combine)}"),\
-  combine,\
+  contains(impulse(), "{script(Combine)}"), \
+  combine, \
   if(tier("inventory", 0) >= target_tier, done, restart_loop)\
 ))
 
@@ -63,7 +63,7 @@ turbo.cycles.max = 50000
 
 ; Calculate a time to end the loop at. This is 1/5 of a second in the future,
 ; so it should reliably be 5 FPS.
-end_time = now() + 10000000. / 5.
+end_time = now() + 10000000.0 / 5.0
 
 ; The core condition to wait for. This condition needs to be as minimal as
 ; possible, because it is draining CPU time away from the important combine/buy
@@ -131,3 +131,5 @@ combine:
 ; combines is handled by the end of turbo. Having the limit be a constant
 ; removes one node from the hottest execution path.
 combine(50)
+
+; Space for convenience

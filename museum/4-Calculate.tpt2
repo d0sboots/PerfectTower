@@ -38,9 +38,10 @@ key.{start}()
 ; we need museum_tier reset on the first instruction, and some of the other conditions
 ; involved, it wouldn't be less complicated to do it as two instructions.
 global.int.set(\
-  if(contains("key.{start}", impulse()), "target_tier", "museum_tier"),\
-  if(contains("key.{start}", impulse()),\
-    if(isopen("museum"), -2, target_tier),\
+  if(contains("key.{start}", impulse()), "target_tier", "museum_tier"), \
+  if(\
+    contains("key.{start}", impulse()), \
+    if(isopen("museum"), -2, target_tier), \
     0\
   )\
 )
@@ -48,11 +49,11 @@ global.int.set(\
 ; the default, calculate it now, but don't bother re-doing work if we don't have to.
 ; (This would be easier to do at the top, but there's no room in Main.)
 goto(if(\
-  contains("key.{start}", impulse()),\
-  end,\
+  contains("key.{start}", impulse()), \
+  end, \
   if(\
-    contains(offer_tiers, "0101010101010101-1"),\
-    get_offers,\
+    contains(offer_tiers, "0101010101010101-1"), \
+    get_offers, \
     skip_offers\
   )\
 ))
@@ -70,10 +71,10 @@ get_offers:
 offer_tiers = if(\
   museum.slotElement(offer_idx) == "" ||\
     {top_tier(i2d(museum.slotTier(offer_idx)))} <=\
-      {top_tier(s2d(sub(offer_tiers, {element_to_index("")}, 2), -1.))},\
-  offer_tiers,\
-  sub(offer_tiers, 0, {element_to_index("")}) .\
-    sub(i2s(100 + museum.slotTier(offer_idx)), 1, 2) .\
+      {top_tier(s2d(sub(offer_tiers, {element_to_index("")}, 2), -1.))}, \
+  offer_tiers, \
+  sub(offer_tiers, 0, {element_to_index("")}) . \
+    sub(i2s(100 + museum.slotTier(offer_idx)), 1, 2) . \
     sub(offer_tiers, {element_to_index("  ")}, 99)\
 )
 ; There are max 10 offer slots, numbered 0 through 9. We'll exit after #9.
@@ -85,16 +86,17 @@ clear("inventory")
 
 ; Load the pre-calculated tier of stone we are buying.
 museum_tier = s2i(sub(\
-  offer_tiers,\
-  {element_to_index_base(element("loadout", museum_pos), "")},\
+  offer_tiers, \
+  {element_to_index_base(element("loadout", museum_pos), "")}, \
   2\
 ), -1)
 
 ; Determine "target_tier", the level we are trying to upgrade to. In the
 ; best case, we can upgrade 11 levels past the tier of the stones we can
 ; buy from the museum. (Which may only be tier 1.)
-target_tier = if(min(tier("loadout", museum_pos), museum_tier) < 0,\
-  -1,\
+target_tier = if(\
+  min(tier("loadout", museum_pos), museum_tier) < 0, \
+  -1, \
   d2i({top_tier(i2d(museum_tier))})\
 )
 ; If tier(museum_pos) < museum_tier, buy one of the target stone.
@@ -108,8 +110,8 @@ target_tier = if(min(tier("loadout", museum_pos), museum_tier) < 0,\
 ; back when we're done. In this way, we can always avoid eating stones,
 ; no matter what happens.
 museum.buyTier(\
-  element("loadout", museum_pos),\
-  museum_tier,\
+  element("loadout", museum_pos), \
+  museum_tier, \
   if(tier("loadout", museum_pos) < museum_tier, 1, 0)\
 )
 move("loadout", museum_pos, "inventory")
@@ -129,9 +131,12 @@ turbo.cycles.max = max(turbo.cycles.max, turbo.cycles + 15)
 ; executesync() is used here to pause us until our child Combine stops us.
 ; If we jump from the top, we have to be prepared to loop back to this instruction.
 ; in that case, this needs to be a no-op.
-executesync(if(contains("key.{start}", impulse()),\
-  "%%museum-nop%%",\
+executesync(if(\
+  contains("key.{start}", impulse()), \
+  "{garbage_requested}", \
   "{script(Combine)}"\
 ))
 
 end:
+
+; Space for convenience
