@@ -1,0 +1,104 @@
+:import adventure_lib
+:name {package}:analyze loot
+
+:local string queue
+:local string idx
+:local vector curPos
+:local string targetPos
+:local string lootPositions
+
+#setField(index, value) lss("_f" . {index}, {value})
+#getField(index) lsg("_f" . {index})
+#setTPos(index, value) lss("_t" . {index}, {value})
+#getTPos(index) lsg("_t" . {index})
+
+queue = {posToString(x(adventure.playerPos()), y(adventure.playerPos()))} . "S:"
+
+; On the first entry of this loop, the junk entry "_f" will be set to "S".
+; This has no effect.
+; In general, lootPositions, queue and setField are protected so that if the field
+; has already been set, we won't take action again.
+loop1:
+curPos = {firstElementPos}
+idx = sub(queue, 0, 4)
+lootPositions = if(\
+  {getField(idx)} == ""\
+    && contains(adventure.entityType(curPos), "Chest"),\
+  {posToString(x(curPos), y(curPos))} . ":",\
+  "") . lootPositions
+{setField(if({getField(idx)} != "", "", idx), {firstElementDir})}
+queue = sub(queue, 6, 99999) . if({getField(idx)} != {firstElementDir},\
+  "",\
+  if(\
+    adventure.isWall(curPos + vec(0., 1.)) || y(curPos) >= 18.,\
+    "",\
+    {posToString(x(curPos), y(curPos) + 1.)} . "U:"\
+  ) . if(\
+    adventure.isWall(curPos + vec(0., -1.)) || y(curPos) < 1.,\
+    "",\
+    {posToString(x(curPos), y(curPos) - 1.)} . "D:"\
+  ) . if(\
+    adventure.isWall(curPos + vec(1., 0.)) || x(curPos) >= 18.,\
+    "",\
+    {posToString(x(curPos) + 1., y(curPos))} . "R:"\
+  ) . if(\
+    adventure.isWall(curPos + vec(-1., 0.)) || x(curPos) < 1.,\
+    "",\
+    {posToString(x(curPos) - 1., y(curPos))} . "L:"\
+  )\
+)
+gotoif(loop1, queue != "")
+
+continue:
+lootPositions = {target_positions} . lootPositions
+
+loop2:
+targetPos = sub(lootPositions, 0, 4)
+curPos = {strToVec(targetPos)}
+lootPositions = sub(lootPositions, 5, 99999)
+
+innerLoop2:
+idx = {posToString(x(curPos), y(curPos))}
+global.string.set({target_pos_var}, if(\
+  {getField({posToString(\
+    x(curPos) - {nextX({getField(idx)})},\
+    y(curPos) - {nextY({getField(idx)})}\
+  )})} == "S"\
+    && false == contains({target_positions}, targetPos),\
+  targetPos . ":" . {target_positions},\
+  if(\
+    false == contains({target_positions}, targetPos) \
+      && {getTPos(idx)} != "",\
+      sub(\
+        {target_positions},\
+        0,\
+        index({target_positions}, {getTPos(idx)}, 0)\
+      )\
+        . targetPos . ":"\
+        . sub(\
+          {target_positions},\
+          index({target_positions}, {getTPos(idx)}, 0),\
+          99999\
+        ),\
+    {target_positions}\
+  )\
+))
+
+{setTPos(\
+  idx,\
+  if(\
+    false == contains({target_positions}, targetPos)\
+      || {getTPos(idx)} == sub({target_positions}, index({target_positions}, targetPos, 0) + 5, 4),\
+    targetPos,\
+    {getTPos(idx)}\
+  )\
+)}
+curPos -= {nextDir({getField(idx)})}
+goto(if(\
+  {getField({posToString(x(curPos), y(curPos))})} != "S",\
+  innerLoop2,\
+  if(len(lootPositions) > 0, loop2, end)\
+))
+
+end:
+wait(0.)

@@ -1,0 +1,54 @@
+:import adventure_lib
+:name {package}:kill enemies
+
+:global bool leon.adventure.running
+
+key.k()
+
+isopen("arcade")
+
+#enemyInDir(x, y) adventure.isEnemy(adventure.playerPos() + vec({x},{y}))
+#enemyDirection if({enemyInDir(0., 1.)}, vec(0., 1.),\
+    if({enemyInDir(1., 0.)}, vec(1., 0.),\
+    if({enemyInDir(0., -1.)}, vec(0., -1.),\
+    if({enemyInDir(-1., 0.)}, vec(-1., 0.), vec(0., 0.)))))
+#anyEnemies {enemyInDir(0., 1.)} || {enemyInDir(0., -1.)} || {enemyInDir(1., 0.)} || {enemyInDir(-1., 0.)}
+
+; Initialize variables so that pressing "k" after resetting AI
+; toggles leon.adventure.running. We're using plain execute here
+; because we want the launching script to continue and die while
+; the copy of init we execute will keep running, and eventually
+; launch another copy of "kill enemies".
+; This architecture, although roundabout, keeps the starting and
+; stopping of turbo in a single place (init) and thus ultimately
+; is simpler.
+execute(if(\
+  contains(impulse(), "key."),\
+  "{package}:init",\
+  "{package}:xNOOPx"\
+))
+  goto(if(contains(impulse(), "key."), end, loop))
+
+wait:
+adventure.wait()
+
+attack:
+executesync("TE2.2:stop")
+adventure.move({enemyDirection})
+executesync("TE2.2:start")
+
+loop:
+gotoif(\
+  if(\
+    {anyEnemies},\
+    attack,\
+    if(\
+      max(max(adventure.countEntities("Enemy"), adventure.countEntities("Elite")), adventure.countEntities("Mimic")) > 0,\
+      wait,\
+      end\
+    )\
+  ),\
+  leon.adventure.running\
+)
+end:
+wait(0.)

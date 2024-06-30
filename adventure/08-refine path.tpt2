@@ -1,0 +1,61 @@
+
+:import adventure_lib
+:name {package}:refine path
+
+:global string leon.adventure.path
+
+:local vector curPos
+:local int stepCount
+
+#curDirection sub(leon.adventure.path, stepCount, 1)
+#insert(st,i,val) sub({st},0,{i}) . ({val}) . sub({st},{i},99999)
+#escapeDirection if(\
+  adventure.entityType(curPos + vec(0., 1.)) == ""\
+    && adventure.entityType(curPos + vec(0., 2.)) == ""\
+    && false == adventure.isWall(curPos + vec(0., 1.))\
+    && y(curPos) < 17.,\
+  "BUUWDD",\
+  if(\
+    adventure.entityType(curPos + vec(0., -1.)) == ""\
+      && adventure.entityType(curPos + vec(0., -2.)) == ""\
+      && false == adventure.isWall(curPos + vec(0., -1.))\
+      && y(curPos) > 1.,\
+    "BDDWUU",\
+    if(\
+      adventure.entityType(curPos + vec(-1., 0.)) == ""\
+        && adventure.entityType(curPos + vec(-2., 0.)) == ""\
+        && false == adventure.isWall(curPos + vec(-1., 0.))\
+        && x(curPos) > 1.,\
+      "BLLWRR",\
+      "BRRWLL"\
+    )\
+  )\
+)
+
+curPos = adventure.playerPos()
+goto(start)
+
+rock:
+leon.adventure.path = {insert(\
+  leon.adventure.path,\
+  stepCount,\
+  if(adventure.hasItem("eodArmor"), "BWWW", {escapeDirection})\
+)}
+stepCount += if(adventure.hasItem("eodArmor"), 4, 6)
+
+nextTile:
+curPos += {nextDir({curDirection})}
+stepCount += 1
+
+start:
+goto(if(\
+  stepCount >= len(leon.adventure.path),\
+  end,\
+  if(\
+    adventure.entityType(curPos + {nextDir({curDirection})}) != "Rock" || adventure.hasItem("hammer"),\
+    nextTile,\
+    rock\
+  )\
+))
+end:
+wait(0.)

@@ -1,0 +1,57 @@
+
+:import adventure_lib
+:name {package}:farm keys
+
+:global int leon.adventure.maxDifficulty
+:global bool leon.adventure.running
+:global string leon.adventure.path
+
+:local double difficulty
+:local bool parity
+:local bool needs_something
+:local bool skipped
+
+:local string dir
+
+#needs_bombs adventure.bombs() < 99 && difficulty >= 80. && adventure.hasItem("leechSword")
+#needs_health adventure.playerHealth() < 99 && adventure.hasItem("leechSword")
+#needs_mana adventure.mana() < 99 && adventure.hasItem("manaReaver") && adventure.hasItem("bookSpells")
+#needs_keys adventure.keys() <= 10
+#num_enemies round(difficulty * 0.1 + 3.)
+#elite_dmg d2i(floor(difficulty * 0.01 + 1.)) * (d2i(ceil(ceil(difficulty * 0.39) * 1.5)) - adventure.playerArmor())
+
+goto(start)
+
+next:
+parity = false == parity
+leon.adventure.path = dir
+executesync("{package}:follow path")
+start:
+difficulty = {cur_difficulty(0.)}
+needs_something = {survivable(difficulty)} && ({needs_bombs} || {needs_health} || {needs_mana} || {needs_keys})
+dir = sub("XU   D  L  R", index(" 918 90 09 189", x(adventure.playerPos()) . y(adventure.playerPos()), 0), 1)
+skipped = contains("UDLR", dir) && (\
+  (adventure.countEntities("Elite") > 0) != (needs_something && {needs_bombs})\
+    && (adventure.countEntities("Elite") > 0 || adventure.playerHealth() > 100 - d2i({num_enemies} * 1.8))\
+    || (adventure.countEntities("Elite") > 0 && adventure.playerHealth() <= {elite_dmg})\
+    || (parity && false == needs_something)\
+)
+; Need to protect against arcade being closed during the loop, because
+; executesync will stall forever in that case due to the script condition
+executesync(if(\
+  skipped || isopen("arcade") == false,\
+  "{package}:xNOOPx",\
+  "{package}:kill enemies"\
+))
+; Update needs_something after clearing
+goto(if(\
+  contains("UDLR", dir) && leon.adventure.running && (\
+    needs_something && ({needs_bombs} || {needs_health} || {needs_mana} || {needs_keys})\
+      || parity\
+      || skipped\
+  ),\
+  next,\
+  end\
+))
+end:
+wait(0.)

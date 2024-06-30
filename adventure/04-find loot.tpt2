@@ -1,0 +1,87 @@
+
+:import adventure_lib
+:name {package}:find loot
+
+:global int turbo.cycles.max
+:global int turbo.cycles
+:global int leon.adventure.maxDifficulty
+:global bool leon.adventure.running
+:global string leon.adventure.path
+:global string leon.adventure.room_direction
+
+:local string market_data
+
+key.u()
+key.j()
+
+isopen("arcade")
+
+; Initialize variables so that pressing "u" or "j" after resetting AI
+; doesn't increment from 0
+executesync(if(\
+  contains(impulse(), "key."),\
+  "{package}:init",\
+  "{package}:xNOOPx"\
+))
+leon.adventure.maxDifficulty +=\
+  if(contains(impulse(), "key.j"), -1, if(contains(impulse(), "key.u"), 1, 0))
+gotoif(end, contains(impulse(), "key."))
+
+; Buy the first market item in our priority list that we don't have.
+; We don't need to worry about checking for the market or available emeralds;
+; if we can't buy the item, we'll simply fail to purchase and continue on.
+
+; This Lua macro constructs a data table that is used to iterate over the items
+; efficiently. The encoding is length-2 size, length-3 position, and
+; variable-length data. The size and position are for locating the *next* item.
+#data_table {lua(\
+  local acc = {}\
+  local item_str = "impaler,hammer,bootsPhasing,leechSword,manaReaver,eodArmor,thornsArmor,holyBomb,bookSpells"\
+  local i = 3\
+  for item in item_str:gmatch("%a+") do\
+    acc[i] = item\
+    i = i + 3\
+  end\
+  i = 3\
+  pos = 0\
+  while acc[i] do\
+    pos = pos + 5 + #acc[i]\
+    acc[i-2] = string.format("%02d", #(acc[i+3] or "") + 5)\
+    acc[i-1] = string.format("%03d", pos)\
+    i = i + 3\
+  end\
+  return table.concat(acc)\
+)}
+
+market_loop:
+market_data = sub(\
+  "{data_table}",\
+  s2i(sub(market_data, 2, 3), 0),\
+  s2i(sub(market_data, 0, 2), 12)\
+)
+; Loop until we find an unbought item. By the nature of hasItem, it will
+; always return false for the empty string at the end of the loop, so we
+; don't need an explicit end check.
+gotoif(market_loop, adventure.hasItem(sub(market_data, 5, 99)))
+adventure.buyMarketItem(sub(market_data, 5, 99))
+
+; Turn our room direction into a target exit via lookup-table.
+global.string.set({target_pos_var}, sub(\
+    "0918 0009 1809 0900",\
+    index("U    L    R    D", leon.adventure.room_direction, 0),\
+    4\
+) . ":")
+
+turbo.cycles.max = max(turbo.cycles.max, turbo.cycles + 4000)
+executesync("{package}:analyze loot")
+loop:
+executesync("{package}:find path")
+executesync("{package}:follow path")
+global.string.set({target_pos_var}, sub({target_positions}, 5, 99999))
+gotoif(loop, len({target_positions}) > 0 && leon.adventure.running)
+
+leon.adventure.path = leon.adventure.room_direction
+executesync("{package}:follow path")
+end:
+wait(0.)
+

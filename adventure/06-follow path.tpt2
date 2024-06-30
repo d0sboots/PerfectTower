@@ -1,0 +1,60 @@
+
+:import adventure_lib
+:name {package}:follow path
+
+:global bool leon.adventure.running
+:global string leon.adventure.path
+
+:local int stepCount
+:local vector curPos
+:local bool waitChest
+:local vector nextMove
+
+#nextDirection sub(leon.adventure.path, stepCount, 1)
+#nextMove {nextDir({nextDirection})}
+#curEntity adventure.entityType(curPos + {nextDir({nextDirection})})
+
+goto(if(\
+  isopen("arcade") && leon.adventure.running,\
+  start,\
+  end\
+))
+
+bomb:
+adventure.placeBomb()
+goto(move)
+
+wait:
+adventure.wait()
+
+move:
+stepCount += 1
+start:
+curPos = adventure.playerPos()
+nextMove = {nextMove}
+waitChest = contains(adventure.entityType(adventure.playerPos() + nextMove), "Chest")
+
+move2:
+executesync("TE2.2:stop")
+adventure.move(nextMove)  ; This is a no-op for invalid (0,0) moves
+executesync("TE2.2:start")
+
+loop:
+; This uses the spacing of unused values in the index expression to be equivalent
+; to lines to skip *backward*. This is much cheaper than having a nested ternary.
+; index returns -1 for the fallthrough case. (UDLR -> move)
+goto(if(\
+  stepCount < len(leon.adventure.path) && leon.adventure.running && isopen("arcade"),\
+  if(\
+    contains("BW", {nextDirection})\
+      || x(curPos) != x(adventure.playerPos())\
+      || y(curPos) != y(adventure.playerPos())\
+      || waitChest && adventure.entityType(adventure.playerPos() + nextMove) == "",\
+    (move - 1) - index("W B", {nextDirection}, 0),\
+    move2\
+  ),\
+  end\
+))
+
+end:
+wait(0.)

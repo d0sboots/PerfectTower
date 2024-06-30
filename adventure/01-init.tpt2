@@ -1,0 +1,143 @@
+:import adventure_lib
+:name {package}:init
+
+:global int leon.adventure.maxDifficulty
+:global int turbo.register
+:global bool leon.adventure.running
+:global string leon.adventure.path
+:global string leon.adventure.room_direction
+
+:local int maxDifficultyInit
+:local double difficulty
+
+key.r()
+key.i()
+
+isopen("arcade")
+#nextRoomLower if(\
+  x(adventure.roomCoords()) < 127.0 && y(adventure.roomCoords()) >= 127.0,\
+  "R",\
+  if(\
+    x(adventure.roomCoords()) >= 127.0 && y(adventure.roomCoords()) > 127.0,\
+    "D",\
+    if(\
+      x(adventure.roomCoords()) > 127.0 && y(adventure.roomCoords()) <= 127.0,\
+      "L",\
+      "U" \
+    )\
+  )\
+)
+#rotateLeft(x) sub("LDRU", index("ULDR", {x}, 0), 1)
+; Conditionally rotate the direction "x" to the left.
+; The benefit of this macro is that it only expands "x" once.
+#condRotateLeft(cond, x) sub(if({cond}, "LDRU", "ULDR"), index("ULDR", {x}, 0), 1)
+
+; ======== Start init code ==============
+
+; Because of how turbo exec works, we can't launch turbo on the frame the script
+; starts by calling "TE2.2:start", if we are being called from another script.
+; We can only do it by changing turbo.register directly, saving a layer of
+; script execution.
+; (This is because of the relative positioning of TE.turbo vs our script;
+; usually we would be before, but when we are first launched our script is after.)
+turbo.register += 1
+
+; This exists as a local variable solely to provide users an easy place to
+; customize it, after it's been imported.
+maxDifficultyInit = 81
+
+; Initialize all our global variables.
+; This is a maze of conditional expressions, because init is called from
+; *every* script that has a key impulse, in order to handle proper variable
+; initialization first.
+
+; Check the variable hider to see if this is first execution or not.
+leon.adventure.maxDifficulty = if(\
+  gsg("adv---Stop hiding---") == "" || contains(impulse(), "key.i"),\
+  maxDifficultyInit,\
+  leon.adventure.maxDifficulty\
+)
+; This variable also begins the variable hiding block with its name.
+global.string.set({target_pos_var}, {target_positions})
+
+; If we are triggered by key.r or key.k (from the kill enemies script), then
+; we should toggle the running state. This expression toggles the state when
+; the second part is true, and keeps it constant when the second part is false.
+leon.adventure.running = leon.adventure.running !=\
+    contains("key.r|{package}:kill enemies", impulse())
+leon.adventure.path = leon.adventure.path
+leon.adventure.room_direction = leon.adventure.room_direction
+gss("adv---Stop hiding---", "</size=0>")
+
+; If we are invoked from "kill enemies," it means we are using that script stand-alone.
+; We will execute the last executesync of the loop below, just to re-exec the
+; kill-enemies script. This is done to keep all the init and turbo start/stop logic
+; centralized here, in init.
+; In general, "contains" checks are more size/speed efficient than "==" checks
+; for strings, since they have one fewer argument.
+goto(if(\
+contains(impulse(), "kill enemies"),\
+  last_exec,\
+  if(\
+    contains(impulse(), "key.r") && leon.adventure.running,\
+    loop,\
+    end\
+  )\
+))
+
+; ======== Continuous loop code ==============
+
+loop:
+executesync("{package}:farm keys")
+
+; We check based on current difficulty plus 1, because it's more efficient
+; that way.
+difficulty = {cur_difficulty(1.)}
+
+; This line is responsible for maxDifficulty "creeping" upwards. When used
+; properly, it will cause the AI to slowly make spirals that cover (nearly)
+; the entire maze. However, extra lines can "trick" it and cause it to jump
+; more difficulty levels than wanted.
+;
+; Note the check against current difficulty (which is current_difficulty+1 here),
+; which prevents this from triggering multiple times before the AI can travel
+; to new rooms.
+;
+; We add 2 to maxDifficulty because adding 1 would cause us to overlap
+; prior progress, and we'd immediately add another 1 anyway.
+leon.adventure.maxDifficulty = leon.adventure.maxDifficulty + if(\
+  difficulty > i2d(leon.adventure.maxDifficulty)\
+    && adventure.isCompleted(adventure.roomCoords()),\
+  2,\
+  0\
+)
+leon.adventure.room_direction = if(\
+  difficulty == 1. && leon.adventure.room_direction != "",\
+  {rotateLeft(leon.adventure.room_direction)},\
+  {condRotateLeft({survivable(difficulty)}, {nextRoomLower})}\
+)
+
+last_exec:
+; We might be here to invoke "kill enemies", which happens iff we ourselves were
+; invoked by "kill enemies." Otherwise, we need to protect against arcade being closed,
+; because executesync will stall forever in that case due to the script condition.
+; This also prevents spurious moves in case we've cancelled the script.
+executesync(if(\
+  contains(impulse(), "kill enemies"),\
+  "{package}:kill enemies",\
+  if(\
+    isopen("arcade") && leon.adventure.running,\
+    "{package}:find loot",\
+    "{package}:xNOOPx"\
+  )\
+))
+gotoif(loop, isopen("arcade") && leon.adventure.running && contains(impulse(), "kill enemies") == false)
+
+end:
+executesync("TE2.2:stop")
+; If we were invoked by a manual action (key.r or kill enemies), we shut down
+; automatically once we reach the end of the script. This might be redundant, but
+; in some cases (such as exiting due to leaving the arcade) it is needed.
+; In any other situation, the running state should be unmodified.
+leon.adventure.running = leon.adventure.running &&\
+  contains("key.r|{package}:kill enemies", impulse()) == false

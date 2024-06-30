@@ -1,0 +1,80 @@
+
+:import adventure_lib
+:name {package}:find path
+
+:global int turbo.cycles.max
+:global int turbo.cycles
+:global string leon.adventure.path
+
+:local vector curPos
+:local string queue
+:local string idx
+:local string dir
+:local string path
+:local bool cantPhase
+
+#setField(index, value) lss("_f" . {index}, {value})
+#getField(index) lsg("_f" . {index})
+
+turbo.cycles.max = max(turbo.cycles.max, turbo.cycles + 4000)
+leon.adventure.path = ""
+cantPhase = false == adventure.hasItem("bootsPhasing")\
+|| 0 < max(\
+  max(\
+    max(\
+      adventure.countEntities("Chest"),\
+      adventure.countEntities("Enemy")\
+    ),\
+    adventure.countEntities("Elite")\
+  ),\
+  adventure.countEntities("Mimic")\
+)
+queue = {posToString(x(adventure.playerPos()), y(adventure.playerPos()))} . "S:"
+loop1:
+curPos = {firstElementPos}
+idx = sub(queue, 0, 4)
+{setField(if({getField(idx)} != "", "", idx), {firstElementDir})}
+queue = sub(queue, 6, 99999) . if({getField(idx)} != {firstElementDir},\
+  "",\
+  if(\
+    adventure.isWall(curPos + vec(0., 1.)) && cantPhase\
+      || max(x(curPos), y(curPos)) >= 18.\
+      || x(curPos) < 1.,\
+    "",\
+    {posToString(x(curPos), y(curPos) + 1.)} . "U:"\
+  ) . if(\
+    adventure.isWall(curPos + vec(0., -1.)) && cantPhase\
+      || min(x(curPos), y(curPos)) < 1.\
+      || x(curPos) >= 18.,\
+    "",\
+    {posToString(x(curPos), y(curPos) - 1.)} . "D:"\
+  ) . if(\
+    adventure.isWall(curPos + vec(1., 0.)) && cantPhase\
+      || max(x(curPos), y(curPos)) >= 18.\
+      || y(curPos) < 1.,\
+    "",\
+    {posToString(x(curPos) + 1., y(curPos))} . "R:"\
+  ) . if(\
+    adventure.isWall(curPos + vec(-1., 0.)) && cantPhase\
+      || min(x(curPos), y(curPos)) < 1.\
+      || y(curPos) >= 18.,\
+    "",\
+    {posToString(x(curPos) - 1., y(curPos))} . "L:"\
+  )\
+)
+goto(if(\
+  queue == "" || contains(idx, sub({target_positions}, 0, 4)),\
+  l2start,\
+  loop1\
+))
+
+loop2:
+leon.adventure.path = dir . leon.adventure.path
+curPos -= {nextDir(dir)}
+idx = {posToString(x(curPos), y(curPos))}
+l2start:
+dir = {getField(idx)}
+gotoif(loop2, dir != "S")
+
+executesync("{package}:refine path")
+wait(0.0)
