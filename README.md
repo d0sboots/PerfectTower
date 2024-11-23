@@ -5,8 +5,8 @@
 - [Turbo Exec v2.2](#turbo-exec-v22)
 - [Simple Skill script](#simple-skill-script)
 - [Factory automation](#factory-automation)
-- [Auto mining script V2](#auto-mining-script-v2)
-- [Turbo miner](#turbo-miner)
+- [Auto mining script V3](#auto-mining-script-v3)
+- [Example miner](#example-miner)
 - [Museum combiner v4](#museum-combiner-v4)
 - [Adventure Map](#adventure-map)
 - [Timed Task Looping](#timed-task-looping)
@@ -98,32 +98,30 @@ If you assign "Adding items to the dissolve queue" to the worker that the
 factory uses, then it will auto-pause that worker when crafting, to avoid
 losing items. Otherwise, it's just a regular worker with a funny name.
 
-## Auto mining script V2
-This script mines across all tabs, at 16x speed (i.e. all squares simultaneously). It takes 181 frames, or ~1.5 seconds to mine 10 layers * 12 tabs at the default 120 FPS (with vsync disabled). However, the amount of floating text often drops the framerate lower, such that it takes longer. The max actions required is __9__, which should be accessible to everyone. Using this with turbo exec will take the roughly the same amount of real time, but cause the game to lag until the mining is finished.
+## Auto mining script V3
+This script mines across all tabs, in 1 frame. However, the amount of floating text often drops the framerate lower, such that it takes longer. Turning off floating text (shrinking it to 0%) will greatly improve the framerate; switching to mine floor 2 will improve things even more. To use, just enter the mine with AI enabled, or turn on AI inside the mine.
 
-`D0S.Autominer 2 1 9`
-
-```
-rZZbk5owGIb/i7e9gbBc0JlehIOMFFnBlUM6vSDJjqhJlqmCi53+907QmRqldrsrdwSS9zu83wM/R1vyY1XvtqPP30buIt4vOtOmedLijDUonzgQQmgLWpUg1QlkLfHTJuR6jfnCls88kbQUPDQUsAb5lhFydsCGzfCyWmNgHqg/biiMvf68eCO3PCLw2hZ8vA05a6hjHlAeTwpgNcRIKixiz8mSGgHKiLBbsjcrwplW+jqjPlv3e6ApsG+timzflJmphZwyChW9APlMIJB2xLcOjh+1WERakZmaDb0f5/dw6cmYZgikDcqDuuhM9uyna5onzBUJI9ysiNjI2LoyM4XLoxbntozpgMFDr+9yusUgqLBj1ljEDQKppmqyTZlRgfJgj42pkit82p/fO5O9DEfJJUpc+yncjHXqW7syMxlRawvd7LUtwN/rCQ1Zx52G8qAp8sA81XCNgb4v8qAmwGqOa/oWg+hGHtFA/A9K/LC/hnr2jrPnW/XsWJ79ljw+4o+JNYvP352spKrimVXvmZD6aYf5uHue9zk9FsDaEX/clXnU4tVx7cLr4rbXlRid2ZP2D29MlnLF5VIzecFZqpXZ9OOenKu6sFepeu+FIqmK5b36e5EfPNPhSY2GZ/8+2kBvkVrLyWWfbei1Kiv6Vx6l16hf7VCeSF5IzQj71vqG39wBDl2c3Rd5esYhgY2kdYw/DOr7ClT+FNxqsR1o2KBNKGiNedLSzpSzsEeZMpue7ffcvuhBcW/f2jOFT8euXuUxxFGVY1eaR45daA3Mg1rXxVtn9R09vGLFgD4Z1O+/h3PzpcijaZEzRoTiT8devpV1H2f212uuBNd5TOWSss/peayf5tVkFLxWz1nauZwyzNNOsggBS8OA8YGazC56sMLA2v7f/4TqhWB572+B90mNG55m9DQbIm3Iba5+GX3/9Rs=
-```
-
-There's also a tweaked version that runs infinitely, instead of stopping when all tabs are mined. This version gets pretty choppy under turbo exec.
-
-`D0S.InfiniMiner 2 1 9`
+`D0S.AutominerV3 2 1 30`
 
 ```
-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
+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
 ```
 
-## Turbo Miner
-This script is very similar to my other autominer: It mines all layers across all tabs. Unlike the other script, it does this in a single frame, by **requiring turbo exec v2.2** (https://github.com/d0sboots/TPT2_scripts/blob/main/common/turbo_exec/README.md) Although it has more actions required at __15__, this should still be accessible to everyone. For best results, go to floor 2 of the mine: this will greatly reduce the lag you experience on entering, as it mines everything.
+You can also change the first line to make it run infinitely, instead of stopping after mining. Here is an import code with that, for your convenience:
 
-`D0S.TurboMiner 2 1 15`
+`D0S.AutominerV3 2 1 30` (looping version)
+
 ```
-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
+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
 ```
 
-Although this script is useful on its own, a large part of why I wrote it was to be an example for how to use turbo exec v2. It is relatively straightforward for a mining script, and all the speed comes from turbo. You can see the source, with liberal comments, at [D0S.TurboMiner](D0S.TurboMiner).
+## Example Miner
+This script is very similar to my other autominer: It mines all layers across all tabs. Unlike the other script, it is very simple, with copious comments. You can use it as-is, but it is more meant to be an example of how the AI and the external editor work. See the code at [D0S.ExampleMiner](D0S.ExampleMiner).
+
+`D0S.ExampleMiner 2 1 13`
+```
+5VVNT8MwDP0t5MCFUjXj4zDBBcENThzphNLU7aK1cZWk6iq0/46SDq3QdGoHNy7WVsfv2X5O/EE0V6IymizfPgjjRqC0v0lcR1EEBXJWhAliEWowccJRasOkcd5rZxO9xrpI3wvE6scB6mxEAhKrDklIMwp0ZVjSsTIlzLoEI7gN8H7r4eXH8LyOEtMfjkWcdbl+s75gejEI7ZXat7bspBQSQpvIxIRtUJaDBCV4mKNBL9utn005NglNwVpQB/5U5FP46XbSqXainnT7l2rS7S/lmD4KB/egwy75vjwimypQF8uxrJgSGuUvC1+c3XuZh5xT7x9t/1Sv9r/q5S98pl6+xN1ra0BJptqDNO6Gr5l+tndeezluRpiGYPPLHX1l6d0Jb+xitDNTsOoooguDjQwbIVNsQqGxAulN79r2bd9pSr863TBhMsVKmDM8vuG1Nut1067QDrC3Usd6emSl7ofp/PyEYlcB4ShT8W3Hz8cQZVUXGhxCwzZQVyQgNiz8OiFtA5fkMXoNn7asrAp4EdItpIrxDcutkwQkqdMcDFle0oDUGh72f42qYbfafQI=
+```
 
 ## Museum combiner v4
 **v4.7**
@@ -227,22 +225,20 @@ If the script hangs in the middle of combining: Have you bought the "Quick
 Combine" skill?
 
 ## Adventure Map
-**v1.1**
+**v1.2**
 
-Draws the entire 256x256 adventure map at once, so you can see what you've cleared and what you're missing.
+Draws the entire 256x256 adventure map at once, so you can see what you've cleared and what you're missing. This is somewhat obsolete with the in-game map existing, but it draws it larger.
 ![fullmap](https://github.com/d0sboots/PerfectTower/assets/459704/917ba9b3-5464-4c55-954a-087844b5372d)
 
 `Import code:`
 ```
-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
+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
 ```
-**This requires `turbo exec v2.2` to function, found here: https://github.com/d0sboots/TPT2_scripts/blob/main/common/turbo_exec/README.md**
-
 To run, go to the Arcade and press **P**. It requires the compass and map to function. If you don't have these, all you will see is a black screen.
 
 If *nothing shows up* when you press P (and the AI overlay is on), you may not have the `boots.d0s` special software. You can acquire it by turning on the debug overlay (F2) and then crashing the AI. The script includes a "crash the AI" function for this purpose - press P twice quickly.
 
-It should take a second or two to draw the whole map. Much longer than that indicates an issue with turbo exec.
+It should take a second or two to draw the whole map. Much longer than that indicates an issue.
 
 ## Timed Task Looping
 Do you constantly find yourself forgetting to check the Trading Post, or the Museum? This is the script for you!
@@ -257,13 +253,13 @@ Pressing "t" again cancels the countdown, if you want to stop looping without sh
 ```
 
 ## Autoclicker
-A small, simple script that spam-clicks where the mouse is pointing. It spawns 54 copies to click _really fast_. Press "c" to enable, and "c" to toggle it off again.
+A small, simple script that spam-clicks where the mouse is pointing. It uses the budget system to click _really fast_. Press "c" to enable, and "c" to toggle it off again.
 
 __Warning__: This is __not__ compatible with turbo-exec, if you try the sheer number of clicks will lag your game to heck and also the toggle won't work right.
 
-`D0S.SuperClick 1 0 7`
+`D0S.SuperClick 1 0 4`
 ```
-tZPRbpswFIbfJU9A3Fkak3phoKFl1Ak0A9vTLrDdhRDbQyGGwLR3nyDTFKpedFJ3g3yO5MP3/+f3z0Ujjvv61Cw+fV0Eh6T70sOtJJ4SB9wUOT6iBCGEsiMjB0u78Yzux0+gZcNBVHIf1twkVoDM8UPccoMdmkPHQ27FQ1UVS7f+06sYeVxTEtUyLE+MpDXtp7trBs4t1asm1spKHxpGkgcKXCtu0pKb5C4AFxYC1KWnsRJdWXEABxmurESJ93lWP3gTI5CK66wv8kfLSKnoTeawBDqMRJaSCMYGO0IryzpYcbDsRjYBXDtxIGh46O5p3tkih06spZJo9s8NBeeagtP3Ir/0KMiGuQd3H69rVNERa67tFc/nM9CGgcwyEo1+qecwqyRJVWBSJTQshTmMs/oihybQuOXEK4VWAwcfJu6Xe2Jv29OMEW2769rHu1HGzIt1GnjbWOGlCLM+mXxp5jPQ0rAcKqFVFeuLzkAvW0mwio3XCqCcIndtoK92BlyHA6VnHu6mQK4pcE8iXPUFwS3fv1uO/E3gvKL1RRYMflMWAj3ypT94njmjnnfbx9PMW//yRs9/GWUOB0aStQyznutV//wEB3kf1VyL/+Wbt9ld19FpJPpnXej2dvHt128=
+lVDLasQwDPwXnV3j7vaUY9s/2GMTiqMoRsSxjB+Hsuy/F5sGSvew9CKkeYhhrpAxcSwZho8rWCwsoe0wVmPM6rzM1utZxOtMZZxRQi42lE6/jOsiHNwnesYtd+wcpNx73SMvKBiTo0CJUXeoq2iXmklHydySNVWHD6WTIrz+eX36Nc3d/H+uw1HDwwpgUoASFj56nBTwHqvP1Fvd6EtjEwW7Ewzwbi76UiOlt2Y/gYJocbOucaBgroujAsPTs4Ka6fXnLKnSbbp9Aw==
 ```
 
 ## Factory auto-trasher

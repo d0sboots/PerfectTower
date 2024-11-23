@@ -1,0 +1,117 @@
+#script_name D0S.AutominerV3
+:name {script_name}
+
+; This line enables high-speed mode.
+:budget_cap max
+
+; These two impulses + one condition collectively mean that when you
+; enter the mine or start the AI while in the mine, the program will run.
+wakeup()
+open.mine()
+
+isopen("mine")
+
+; Our two state variables are "tab" and "pos". These get stored in the global state
+; when an instance is about to end, so that each script instance is synced on what it
+; needs to do.
+; When "tab" is 0, then "pos" is counting how many scripts remain to be launched.
+; 1 <= tab <= 12 means tab is the current tab, and "pos" denotes the current dig square.
+; If "pos" is 16, then we are switching tabs or refreshing layers, not digging.
+; If tab is 13, the script is ending, or (when should_loop = true) waiting to try again next frame.
+:local int tab
+:local int pos
+:local bool should_loop
+:local bool first_script
+:local bool should_layer
+:local bool has_budget
+
+; Name of our global variable, used for hiding
+#global_name "<size=0>@m*"
+#sset(value) gss({global_name}, {value})
+#sget gsg({global_name})
+
+; Should the script loop infinitely?
+should_loop = false
+
+gotoif(read_state, contains(impulse(), "{script_name}"))
+; Only set for the first out of all the parallel scripts, used when looping to reset our state.
+first_script = true
+pos = 89
+goto(advance_state)
+
+read_state:
+tab = s2i(sub({sget}, 1, 2), 1)
+pos = s2i(sub({sget}, 4, 2), 16)
+goto(if(\
+  isopen("mine"),\
+  if(\
+    tab <= 12,\
+    advance_state,\
+    if(\
+      should_loop,\
+      if(first_script, reset_state, waitframe),\
+      abort\
+    )\
+  ),\
+  abort\
+))
+reset_state:
+; advance state will advance to a proper tab-change
+tab = 0
+pos = 0
+
+advance_state:
+pos -= 1
+gotoif(check_budget, pos >= 0)
+; pos wrapped, need to advance tab properly
+pos = 16
+should_layer = tab >= 1 && hasLayers()
+tab = tab + if(tab > 12 || should_layer, 0, 1)
+
+check_budget:
+has_budget = budget() > 100
+gotoif(apply_state, has_budget && tab <= 12)
+{sset((100 + tab) . (100 + pos) . if(\
+  tab <= 12 || should_loop,\
+  '</size><color=#7B3F00>Mining...</color>',\
+  "</size>"\
+))}
+
+apply_state:
+goto(if(\
+  tab == 0,\
+  exec,\
+  if(\
+    tab > 12,\
+    if(should_loop, waitframe, abort),\
+    if(\
+      pos == 16,\
+      if(should_layer, newlayer, newtab),\
+      dig\
+    )\
+  )\
+))
+exec:
+execute(":{script_name}")
+goto(loop_end)
+
+newtab:
+tab(tab)
+goto(loop_end)
+
+newlayer:
+newlayer()
+goto(loop_end)
+
+waitframe:
+waitframe()
+goto(read_state)
+
+dig:
+dig(pos % 4, pos / 4)
+
+loop_end:
+goto(if(has_budget, advance_state, read_state))
+
+abort:
+{sset("113100</size>")}

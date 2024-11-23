@@ -1,13 +1,16 @@
 key.p()
 
+isopen("arcade")
+
 :local vector room
 :local vector scale
 :local vector offset
 :local double incr
 :local int state
-:global int turbo.cycles.max
 
-#name D0S.DungeonMap 1.1
+:budget_cap max
+
+#name D0S.DungeonMap 1.2
 :name {name}
 
 ; Make it easy to customize the colors
@@ -41,14 +44,20 @@ key.p()
 
 #varname "<size=0>^adv#"
 
-reexec:
-execute(if(\
+goto(if(\
   contains(impulse(), "{name}") ||\
     utcnow() - s2d(sub(gsg({varname}), 0, index(gsg({varname}), "<", 0)), 0.) < 5000000.,\
-  "{name}",\
-  "TE2.2:start"\
+  execloop,\
+  if(contains(gsg({varname}), "<color"), done, normal)\
 ))
 
+; Infinite loop of spawning scripts, to crash the AI
+execloop:
+execute("{name}")
+waitframe()
+goto(execloop)
+
+normal:
 ; This adjustment value breaks ties when rounding. Computer arithmetic does
 ; round-to-even in the case of exact X.5 values; this causes issues for some
 ; of the mathematical optimizations we've done inside the canvas.draw() calls.
@@ -61,36 +70,19 @@ offset = vec(\
   round(max(0., width.d() - height.d()) * 0.5) + {adj},\
   round(max(0., height.d() - width.d()) * 0.5) + {adj}\
 )
-; We jump back here to make use of this statement for drawing the
-; player's position
-; We draw nothing if we are crashing the AI or this is a spurious impulse
-toprect:
-canvas.rect(\
-  if(incr == 0., offset, offset + adventure.roomCoords() * scale),\
-  if(\
-    incr == 0.,\
-    if(\
-      contains(impulse(), "{name}") || contains(gsg({varname}), "<color"),\
-      vec(0., 0.),\
-      scale * vec(256., 256.)\
-    ),\
-    (adventure.roomCoords() + vec(1., 1.)) * scale - vec(\
-      round(x(adventure.roomCoords() * scale)),\
-      round(y(adventure.roomCoords() * scale))\
-    )\
-  ),\
-  if(incr == 0., if({isCompleted(room)}, {complete}, {black}), {player})\
-)
-goto(if(contains(impulse(), "{name}"), reexec, if(contains(gsg({varname}), "<color"), done, draw)))
-draw:
+
 gss({varname}, utcnow() . "</size><color=#FFFFFF>Dungeon Map drawing...</color>")
+canvas.rect(\
+  offset,\
+  scale * vec(256., 256.),\
+  if({isCompleted(room)}, {complete}, {black})\
+)
 
 top:
 incr = if(incr == 0., 128., incr * 0.5)
 room = vec(0., 0.)
 
 loop:
-turbo.cycles.max = max(turbo.cycles.max, 3000)
 ; Store the 2x2 state of rooms bitwise in "state". We will use this to index
 ; various lookup tables when it comes time to draw the results.
 state = if({isCompleted(room)}, 1, 0) +\
@@ -131,9 +123,18 @@ canvas.rect(\
   if({isCompleted(room)}, {black}, {complete})\
 )
 room = vec((x(room) + 2. * incr) % 256., y(room) + if(x(room) + 2. * incr >= 256., 2. * incr, 0.))
-goto(if(y(room) < 256., loop, if(incr > 1., top, toprect)))
+goto(if(y(room) < 256., loop, if(incr > 1., top, show_player)))
+
+show_player:
+canvas.rect(\
+  offset + adventure.roomCoords() * scale,\
+    (adventure.roomCoords() + vec(1., 1.)) * scale - vec(\
+      round(x(adventure.roomCoords() * scale)),\
+      round(y(adventure.roomCoords() * scale))\
+    ),\
+  {player}\
+)
 
 done:
-executesync("TE2.2:stop")
 ; Don't unset the var if we're not the master script
 gss({varname}, if(incr == 0., gsg({varname}), "</size>"))
