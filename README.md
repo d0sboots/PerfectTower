@@ -15,6 +15,7 @@
 - [Dust Up-tierer](#dust-up-tierer)
 - [Button coordinate finder](#button-coordinate-finder)
 - [AI Benchmarker](#ai-benchmarker)
+- [RNG Manipulation](#rng-manipulation)
 - [Auto Era Disabler](#auto-era-disabler)
 - [Infinity phase scripts](#infinity-phase-scripts)
 - [Other Utilities](#other-utilities)
@@ -334,6 +335,9 @@ click(if(height.d()/width.d() >= 0.5625, vec(_tallscreen_coords_), vec(_widescre
 ```
 ## AI Benchmarker
 A script/execution suite for timing how long various things take to run. Using this is a bit more involved, so it's moved to its own subpage here: [benchmarker](benchmarker).
+
+## RNG Manipulation
+I wrote a library to help with RNG manipulation. It includes a couple of examples, one of which gets 5 stacks of Rak's Curse immediately. More details at the subpage: [rng_manip](rng_manip).
 
 ## Auto Era Disabler
 SPOLERS BELOW FOR ERA PHASE! YOU HAVE BEEN WARNED!
