@@ -13,7 +13,7 @@ It automatically starts in tower testing, will exit if you don't have Rak's Curs
 as soon as it finished getting 5 stacks, which should only take a few seconds. Aside from the parts that are macro-generated
 by the rng\_manip library, it should be pretty straightforward to understand and incorporate yourself if you want to.
 
-It'll be easier to understand by looking at the source code (scroll down a bit here.)
+It'll be easier to understand by looking at the [source code](D0S.RakStak.tpt2).
 
 ## Library workspace
 
