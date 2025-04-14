@@ -24,7 +24,7 @@ useinstant(active.index("spell.raksCurse"))
 rak_count += if(cooldown(active.index("spell.raksCurse")) > 0., 1, 0)
 rak_status = rak_count . ";running"
 
-#rawWaves (infinity() * 1e10 + era()) * 1e10 + wave()
+#rawWaves (infinity() * 1e11 + era()) * 1e11 + wave()
 wait_for_rak:
 waveCount = {rawWaves}
 waitframe()
