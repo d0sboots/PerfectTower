@@ -1,0 +1,56 @@
+wakeup()
+game.newround()
+
+isTowerTesting()
+
+:import rnglib
+:budget_cap max
+
+:local int rak_count
+:local double waveCount
+:global string rak_status
+
+gotoif(exit, contains(rak_status, "running"))
+rak_status = "0;running"
+goto(if(\
+  active.index("spell.raksCurse") == 0,\
+  end,\
+  wait_for_rak\
+))
+
+do_rak:
+useinstant(active.index("spell.raksCurse"))
+; Don't increment if we didn't have mana
+rak_count += if(cooldown(active.index("spell.raksCurse")) > 0., 1, 0)
+rak_status = rak_count . ";running"
+
+#rawWaves (infinity() * 1e10 + era()) * 1e10 + wave()
+wait_for_rak:
+waveCount = {rawWaves}
+waitframe()
+; Abort if we exited or restarted or are finished with stacks
+goto(if(\
+  health(false) == 0. || {rawWaves} < waveCount || contains(rak_status, "5"),\
+  end,\
+  if(\
+    cooldown(active.index("spell.raksCurse")) == 0.,\
+    rng_reinit,\
+    wait_for_rak\
+  )\
+))
+
+{rng_init1}
+{rng_init2}
+{rng_init3(guess)}
+
+guess:
+{rng_next}
+goto(if(\
+  {rng_getrange(0, 999)} == 0,\
+  do_rak,\
+  guess + rnd(0, 0)\
+))\
+
+end:
+rak_status = sub(rak_status, 0, 1)
+exit:

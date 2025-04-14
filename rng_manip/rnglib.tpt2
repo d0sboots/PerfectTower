@@ -1,0 +1,378 @@
+; This library exists to do RNG manipulation in TPT2. If you don't know what RNG manipulation is,
+; you can find plenty of info on the web, but also this library is probably not for you.
+
+; Stub needed to make the macros not error during the examples
+{lua(function rng_code() end)}
+
+; There are three sets of macros defined in this library. The first is the 3-part rng_init sequence:
+#rng_init1 {lua(return rng_code("init1"))}
+#rng_init2 {lua(return rng_code("init2"))}
+#rng_init3(label) {lua(return rng_code("init3",[[{label}]]))}
+; To use these, place this sequence *immediately* before the event you want to manipulate.
+; {rng_init1}
+; {rng_init2}
+; {rng_init3(continue)}
+; continue:
+;
+; The last one takes a label to goto to when it is done. You can define the label on the next
+; line if you just want it to continue there. You can also use more complicated conditional
+; expressions if you want.
+;
+; It is important that you run this in the same frame as the event you are trying to manipulate,
+; ideally right before, so that other calls to the rng do not happen in-between.
+;
+; If you need to re-initialize the state, jump to :rng_reinit. Don't include this block twice,
+; because it expands to a very large amount of code.
+
+; To simulate future rolls of the rng, use this macro:
+#rng_next {lua(return rng_code("next"))}
+; You will need to call this (at least) once before calling rng_getint. Every call to {rng_next}
+; should correspond to one call to the RNG (generally via rnd()), except for the last one(s) which
+; you want to save for the actual in-game event(s) that are rolling the RNG.
+
+; This macro converts the simulated state to a 32-bit integer.
+#rng_getint {lua(return rng_code("getint"))}
+#rng_getdouble {lua(return rng_code("getdouble"))}
+; Don't forget that you need one call to {rng_next} before the result will be valid.
+; {rng_getint} will potentially be negative if the high bit is set. {rng_getdouble} avoids
+; this issue by using a double, so the result will always be a non-negative integer.
+
+; This simulates the same behavior as the rnd() function.
+#rng_getrange(min, max) {lua(return rng_code("getrange",[[{min}]],[[{max}]]))}
+; The range is inclusive. Just like with {rng_getint}, {rng_next} needs to be called
+; before this is valid.
+
+; ==========================================================================================
+; ================================= IMPLEMENTATION DETAILS =================================
+; ==========================================================================================
+
+; Change this to "global" for debugging
+#rng_local local
+
+
+; The 128-bit state of the rng, stored as 128 "1"s and "0"s.
+; It is exactly as pathetic as it sounds, but it is actually most efficient to compute
+; xor and bitshifting with numbers in string form, because we can do xor via
+; precomputed tables and bitshifts become (sub)string manipulation.
+; You'd think the same could be done with integers with * and /, but the fact that we only
+; have signed integers makes everything too awful.
+; This is used by {rng_next} to compute the next state, and {rng_getint} to convert to a number.
+; You can copy this elsewhere and restore it later if you want to simulate multiple rng seeds at once.
+:{rng_local} string rng_state
+
+; A temporary variable used during int-to-binary conversion. A double is used to avoid issues
+; with the sign bit.
+:{rng_local} double rng_r
+
+
+; The structure of the code is broken up into multiple Lua functions, to allow regular
+; comments to explain them at the top of each. Lua functions are used to construct the code,
+; instead of regular macros, so that we could define our user-visible macros such as
+; {rng_init1}, {rng_next} etc. at the top without having to give the full implementation;
+; instead, a stub implementation was given and then the function is re-implemented at the
+; bottom of the file here. This allows us to use the macros freely in comments, since macros
+; are always expanded, where otherwise we could not comment on them before they were defined.
+; As a side benefit, before the full definition takes effect they will expand to nothing,
+; which is very fast to evaluate.
+
+; This constructs the data string that will be used to initialize our lookup tables.
+; The data string is 256 entries, each 23 bytes long:
+; * 8 bytes for the name suffix of "rng_from"
+; * 11 bytes for the entire name of the xor table (entries like "0001xor0110")
+; * 4 bytes for the value of the xor table
+; All these strings are binary strings (the characters "0" and "1"), except also containing
+; "xor" in the name for the xor table.
+{lua(function rng_getLookupString()\
+  local codetable = {}\
+  local conv4 = {}\
+  for i=0, 15 do\
+    local bin = ""\
+    local idx = i\
+    for j=0, 3 do\
+      bin = bin .. string.char((i>>3) + 48)\
+      i = (i<<1) & 15\
+    end\
+    conv4[idx] = bin\
+  end\
+  for i=0, 255 do\
+    codetable[i*3+1] = conv4[i>>4] .. conv4[i&15]\
+    codetable[i*3+2] = conv4[i>>4] .. "xor" .. conv4[i&15]\
+    codetable[i*3+3] = conv4[(i>>4) ~ (i&15)]\
+  end\
+  return table.concat(codetable)\
+end\
+)}
+
+; This constructs the code for the three rng_init macros. The code for these is truly awful,
+; because what should be ~7 lines has been crammed into the minimum possible of 3 lines to
+; save space in user code.
+;
+; At a high level, {rng_init1} is a local.int.set, {rng_init2} is a local.string.set,
+; and {rng_init3()} is a goto. Each of these performs multiple different functions depending on
+; the phase of execution; they act together as a state machine in order to initialize everything
+; that needs initialization.
+;
+; The first phase is setting the "rng_from" and "xor" tables. Both of these tables have 256 entries,
+; and the data for them is encoded together in a string that we calculate and store as "codetable".
+; In this phase, we first assign the codetable data to rng_state, and then use entries from it to
+; set rng_from (an double table) and xor (a string table). We use substring to discard the front of
+; rng_state, which is the current working entry, to both load a new entry and also because the length
+; of rng_state also functions as the way to calculate the value we assign to rng_from.
+;
+; The second phase is used to read 4 values from the rng and convert them into individual bits.
+; It lasts for 128 iterations as a result. We use either
+; contains(local.string.get("1111xor1111", "0")) (the final table entry) or
+; contains(rng_state, "xor") to determine when the first phase is over;
+; the two have slight differences at both the start and end of phase 1 which dictate the use
+; of one or the other in specific places.
+;
+; Reading bits is relatively straightforward: A value from rnd() is stored in rng_r and then
+; is multiplied by an appropriate power of 2 to check the sign bit. There is an additional quirk
+; where if the value is exactly 0, it indicates a condition where we have to restart the process.
+; This is because the nature of rnd() is that it adds one to range_max, so there is a hole where
+; both 0 and 2^32-1 map to the same value and we cannot distinguish them. Since this is very
+; rare, we just restart in this case and roll again.
+;
+; Tricks that are used: Since contains("", "") is true, contains("", var) is a cheap test for
+; if a variable is unset. Also, since if() and boolean logic have the same number of nodes,
+; sometimes ternaries are used to slightly optimize node counts.
+{lua(function rng_codeCacheSetInit(cache)\
+  local codetable = rng_getLookupString()\
+--[[\
+If we are in phase 1, set rng_from appropriately. If we are in phase 2, get a new rng value\
+and save it in rng_r. We add back the minimum value to get the raw bits. We're using\
+a double to avoid issues with the sign bit.\
+There is one wrinkle in that the very first iteration will write 256\
+to "rng_from" (not technically part of the table), but this is harmless.\
+This is the simplest line, because the goto skips it whenever it isn't needed.\
+]]\
+  cache.init1 = [[\
+rng_init: {rng_local}.double.set(\
+  if(\
+    contains({rng_local}.string.get("1111xor1111"), "0"),\
+    "rng_r",\
+    "rng_from" . sub(rng_state, 0, 8)\
+  ),\
+  if(\
+    contains({rng_local}.string.get("1111xor1111"), "0"),\
+    i2d(rnd(-2147483648, 2147483646)) + 2147483648.,\
+    i2d(256 - len(rng_state) / 23)\
+  )\
+)]]\
+\
+--[[\
+This line does the bulk of the work, and thus is the most complicated. It gets called a total\
+of 641 times: 513 times in phase 1 (twice per value, and one for initial init) and 128 times in phase 2.\
+In phase 1, the sequence is that first line 1 is called to set rng_from, then this line sets\
+the xor value. Once the xor value is set, this line is looped again to shorten rng_state and\
+move to the next entry.\
+In phase 2, the size of rng_state is used to determine which bit to select by multiplying\
+by a power of 2. Because 2^31 won't fit as an integer, and the arithmetic.int() function\
+throws an exception instead of wrapping it to negative, we need to special-case that value.\
+Several extra quirks: If rng_r is 0, we reset state because of the ambiguity mentioned above.\
+This also covers the case of the last phase 1 loop, because rng_r is 0 by default.\
+Also reset when the state is size 128 (meaning we are calling back into this code\
+after prior initialization, to get a new set of random numbers).\
+]]\
+  cache.init2 = string.format([[\
+rng_reinit: {rng_local}.string.set(\
+  if(\
+    contains("", {rng_local}.string.get(sub(rng_state, 8, 11))),\
+    if(\
+      contains({rng_local}.string.get("1111xor1111"), "0") || contains("", rng_state),\
+      "rng_state",\
+      sub(rng_state, 8, 11)\
+    ),\
+    "rng_state"\
+  ),\
+  if(\
+    contains({rng_local}.string.get("1111xor1111"), "0"),\
+    if(\
+      rng_r == 0. || len(rng_state) >= 128,\
+      "",\
+      rng_state . if(\
+        rng_r * (2.^i2d(len(rng_state) %% 32)) %% (2.^32.) >= (2.^31.),\
+        "1",\
+        "0"\
+      )\
+    ),\
+    if(\
+      contains("", {rng_local}.string.get(sub(rng_state, 8, 11))),\
+      if(\
+        contains("", rng_state),\
+        "%s",\
+        sub(rng_state, 19, 4)\
+      ),\
+      sub(rng_state, 23, 99999)\
+    )\
+  )\
+)]], codetable)\
+\
+--[[\
+Continue the loop at the appropriate line. We use contains(rng_state, "xor") to check for\
+phase 1 here, because has the behavior we want at phase end: After the last loop, we want to\
+still be in phase 1 until the state has been cleared, which this test does.\
+In phase 1, we jump to the first line when the table values need to be set, othewise we skip\
+straight to line 2 to advance to the next table entry. (This also works at the end of the phase.)\
+In phase 2, we jump to the first line only when we need a new rng entry, which is every 32 bits.\
+Otherwise, we loop to line 2. The exit condition is when we have filled all 128 bits, which\
+uses the string EXTERNAL_LABEL to be replaced in rng_code().\
+]]\
+cache.init3 = [[\
+goto(\
+  if(\
+    contains(rng_state, "xor"),\
+    if(\
+      contains("", {rng_local}.string.get(sub(rng_state, 8, 11))),\
+      rng_init,\
+      rng_reinit\
+    ),\
+    if(\
+      len(rng_state) % 32 == 0,\
+      if(len(rng_state) == 128, EXTERNAL_LABEL, rng_init),\
+      rng_reinit\
+    )\
+  )\
+)\
+]]\
+;end\
+)}
+
+; Construct the {rng_getint} code. Because of the 8-bit lookup table in rng_from, we can
+; convert binary strings to numbers by looking up just 4 substrings and using multiplication
+; by 256 to shift them into the appropriate place. The upper bit may overflow into the sign
+; bit, but we want that in this case.
+; The extra balancing parens in comments are needed to deal with a deficiency
+; in the editor's macro parsing.
+{lua(function rng_codeCacheSetGetInt(cache)\
+  --[[Balancing paren (]]\
+  local res = {}\
+  for offset = 96, 120, 8 do\
+    res[#res+1] = string.format([[{rng_local}.double.get("rng_from".sub(rng_state,%d,8)))]], offset)\
+  end\
+  cache.getdouble = "((((" .. table.concat(res, " * 256. + ")\
+  local first = table.remove(res, 1)\
+  cache.getint = "(d2i(" .. first .. " * 16777216 + d2i(((" .. table.concat(res, " * 256. + ") .. ")"\
+  --[[Balancing parens ))))))))]]\
+;end\
+)}
+
+; Construct {rng_next}.
+; This is simply Margsaglia's xorshift128, modified to deal with the fact
+; that we're using a single 128-bit string and doing all the work in parallel.
+; Note that our representation is big-endian, i.e. the high bits come first and on the left.
+; This means string indexing is opposite from how you usually expect: character 0 is the
+; highest-order bit.
+; In pseudocode, xorshift128 is:
+; s = rng_state[96..128]
+; t = rng_state[0..32]
+; t ^= t << 11
+; t ^= t >> 8
+; s ^= s >> 19
+; rng_state = rng_state[32..128] .. t ^ s
+;
+; To do this simultaneuosly and in parallel, we want to compute:
+; rng_state = rng_state[32..128] .. (
+;   rng_state[96..128] ^ rng_state[96..109]       ; s ^ (s >> 19)
+; ^ rng_state[0..32] ^ (rng_state[11..32] << 11)  ; t ^ (t << 11)
+; ^ rng_state[0..24] ^ (rng_state[11..32] << 3)   ; (t ^ (t << 11)) >> 8
+; )
+; We align each of those into 4-bit aligned chunks and compute each chunk separately
+; by using the 4x4 bit xor table to compute the xors, concatenating them at the end.
+; Each index here is the base, extending +4 (or sometimes fewer) bits.
+;  96 100 104 108 112 116 120 124
+;   -   -   -   -  96  97 101 105
+;   0   4   8  12  16  20  24  28
+;  11  15  19  23  27  31   -   -
+;   -   -   0   4   8  12  16  20
+;   -   -  11  15  19  23  27  31
+{lua(function rng_codeCacheSetNext(cache)\
+--[[\
+To construct a single 4-bit term in the formula, we pass this varargs function the offsets\
+from a column in the table above, and the last value indicates the number of bits for the\
+partial term. Some chunks can be made entirely with 4-bit terms, but others have a partial\
+term made with a smaller number of bits. Thankfully, there is at most one of these per chunk.\
+We use a positive value to indicate a term that needs padding on the left, and a negative\
+value to indicate a term that needs padding on the right.\
+\
+We directly place each component in an accumulator array, to join them at the end.\
+The indexing is a little complicated; This example shows how the indices work out for args=3.\
+       1    2       3     4    5       6     7    8 9 \
+      lsg( sub() ."xor". lsg( sub() ."xor". sub() ) ) \
+]]\
+  local function singleTerm(...)\
+    local inp = table.pack(...)\
+    local args = inp.n - 1\
+    local res = {}\
+    for i = 1, args-1 do\
+      res[i*3-2] = "{rng_local}.string.get("\
+      res[i*3-1] = string.format("sub(rng_state,%d,4)", inp[i])\
+      res[i*3] = [[."xor".]]\
+      res[args*3+i-2] = ")"\
+    end\
+    if inp[args+1] > 0 then\
+      res[args*3-3] = [[."xor]] .. string.rep("0", 4 - inp[args+1]) .. [[".]]\
+      res[args*3-2] = string.format("sub(rng_state,%d,%d)", inp[args], inp[args+1])\
+    else\
+      res[args*3-3] = [[."]] .. string.rep("0", 4 + inp[args+1]) .. [[xor".]]\
+      res[args*3-2] = res[args*3-4]\
+      res[args*3-4] = string.format("sub(rng_state,%d,%d)", inp[args], -inp[args+1])\
+    end\
+    return table.concat(res)\
+  end\
+\
+  res = {}\
+  res[1] = singleTerm( 96,  0,     11,               4)\
+  res[2] = singleTerm(100,  4,     15,               4)\
+  res[3] = singleTerm(104,  8,  0, 19, 11,           4)\
+  res[4] = singleTerm(108, 12,  4, 23, 15,           4)\
+  res[5] = singleTerm(112, 16,  8, 27, 19, 96,       1)\
+  res[6] = singleTerm(116, 20, 12,     23, 97,  31, -1)\
+  res[7] = singleTerm(120, 24, 16,     27, 101,      4)\
+  res[8] = singleTerm(124, 28, 20,         105, 31, -1)\
+  cache["next"] = "rng_state = sub(rng_state, 32, 96) . " .. table.concat(res, " . ")\
+;end\
+)}
+
+{lua(function rng_getrange(min, max)\
+  local nmin = tonumber(min)\
+  local nmax = tonumber(max)\
+  local range\
+  if nmin and nmax then\
+    range = string.format("%.1f", nmax + 0.0 - nmin + 1)\
+  else\
+    range = string.format([[(i2d(%s) - i2d(%s) + 1.)]], max, min)\
+  end\
+  local modpart = string.format([[%s %% %s]], rng_codecache.getdouble, range)\
+  if nmin then\
+    if nmin == 0 then\
+      return "d2i(" .. modpart .. ")"\
+    end\
+    return string.format("d2i(%.1f + %s)", nmin, modpart)\
+  end\
+  return string.format("d2i(i2d(%s) + %s)", min, modpart)\
+;end\
+)}
+
+; Return the appropriate code (macro body) given the passed in "id". All this does is lookup
+; the precomputed code and return that; if the code hasn't been computed yet, it calls the
+; helper functions tha exist specifically to set that up.
+; The one wrinkle is that the 3rd init macro has a parameter, and that is substituted in
+; to the cached code here.
+{lua(function rng_code(id, label, arg2)\
+  if not rng_codecache then\
+    rng_codecache = {}\
+    rng_codeCacheSetInit(rng_codecache)\
+    rng_codeCacheSetNext(rng_codecache)\
+    rng_codeCacheSetGetInt(rng_codecache)\
+  end\
+  if id == "getrange" then\
+    return rng_getrange(label, arg2)\
+  end\
+  local res = rng_codecache[id]\
+  if label then\
+    return res:gsub("EXTERNAL_LABEL", label)\
+  end\
+  return res\
+;end\
+)}

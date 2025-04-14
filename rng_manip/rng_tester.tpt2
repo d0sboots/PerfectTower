@@ -1,0 +1,16 @@
+key.t()
+
+:import rnglib
+:budget_cap max
+
+:global int predicted_rng
+:global int actual_rng
+
+{rng_init1}
+{rng_init2}
+{rng_init3(guess)}
+
+guess:
+{rng_next}
+predicted_rng = {rng_getrange(0, 999999)}
+actual_rng = rnd(0, 999999)
