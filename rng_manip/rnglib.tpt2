@@ -37,6 +37,13 @@
 ; {rng_getint} will potentially be negative if the high bit is set. {rng_getdouble} avoids
 ; this issue by using a double, so the result will always be a non-negative integer.
 
+; Return a float value between 0.0 and 1.0 (inclusive).
+#rng_getuniform {lua(return rng_code("getuniform"))}
+; This performs the same function as UnityEngine.Random.value. Although the number returned
+; is a double because of TPT2 type limitations, it only has single-precision values.
+; If you need to do math that accurately mimics single-precision game math, keep that in
+; mind (you may need to use the vector type to keep the behavior consistent.)
+
 ; This simulates the same behavior as the rnd() function.
 #rng_getrange(min, max) {lua(return rng_code("getrange",[[{min}]],[[{max}]]))}
 ; The range is inclusive. Just like with {rng_getint}, {rng_next} needs to be called
@@ -242,6 +249,11 @@ goto(\
 ; convert binary strings to numbers by looking up just 4 substrings and using multiplication
 ; by 256 to shift them into the appropriate place. The upper bit may overflow into the sign
 ; bit, but we want that in this case.
+;
+; {rng_getuniform} has a bit more to it, but also doesn't use as many bits from rng_state.
+; We use the vector type, which is a pair of single-precision numbers, to get accurate
+; single-precision rounding for the calculation to mirror what Unity does.
+;
 ; The extra balancing parens in comments are needed to deal with a deficiency
 ; in the editor's macro parsing.
 {lua(function rng_codeCacheSetGetInt(cache)\
@@ -253,7 +265,9 @@ goto(\
   cache.getdouble = "((((" .. table.concat(res, " * 256. + ")\
   local first = table.remove(res, 1)\
   cache.getint = "(d2i(" .. first .. " * 16777216 + d2i(((" .. table.concat(res, " * 256. + ") .. ")"\
-  --[[Balancing parens ))))))))]]\
+  res[1] = [[{rng_local}.double.get("rng_from0".sub(rng_state,105,7))]]\
+  cache.getuniform = "x(vec(((" .. table.concat(res, " * 256. + ") .. ", 0.) * vec(1.192093e-7, 0.))"\
+  --[[Balancing parens ))))))))))]]\
 ;end\
 )}
 
