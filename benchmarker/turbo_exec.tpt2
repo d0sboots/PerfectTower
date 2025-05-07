@@ -13,4 +13,4 @@ execute("{script_name(main)}")
 ;
 ; We add cycles to this, so that turbo will continue until the next loop.
 ; The actual length of the loop that is timed is controlled by main.
-execute(if(benchmark_cycles <= NUM_CYCLES + 6, "{script_name(turbo trigger)}", ""))
+execute(if(benchmark_cycles <= NUM_CYCLES + 7, "{script_name(turbo trigger)}", ""))

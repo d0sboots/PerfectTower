@@ -39,13 +39,14 @@ start_time = now()
 
 ; benchmark_cycles will be 3 the first time this line is run. There's
 ; intrinsically 2 cycles between the two time measurements, assuming we didn't
-; wait at all. So, we subtract 1 to align these two quantities, bringing the
+; wait at all. So, we add 1 to align these two quantities, bringing the
 ; number of cycles to match the desired NUM_CYCLES.
-waituntil(benchmark_cycles - 1 >= NUM_CYCLES)
+waituntil(benchmark_cycles >= NUM_CYCLES + 1)
 elapsed_time = now() - start_time
 lds("btime" . {current_benchmark},\
   min(elapsed_time, if({bench_time} == 0., 1./0., {bench_time}))\
 )
+stop("{script_name(benchmark_)}" . {current_benchmark})
 ; Update the result display for the benchmark run
 gss(\
   if({current_benchmark} == 0, "base", "benchmark_" . {current_benchmark}),\

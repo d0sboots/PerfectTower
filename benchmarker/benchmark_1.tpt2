@@ -24,10 +24,14 @@
 ; each copy.
 #chain_infix(term, operator, num_copies) {lua(\
   local acc = {}\
-  for i = 1, {num_copies} do\
-    acc[i] = [[{term}]]\
+  for i = 1, ({num_copies}) - 1 do\
+    acc[i] = [[({term} {operator} ]]\
   end\
-  return table.concat(acc, " {operator} ")\
+  acc[#acc + 1] = [[{term}]]\
+  for i = 1, ({num_copies}) - 1 do\
+    acc[#acc + 1] = ")"\
+  end\
+  return table.concat(acc)\
 )}
 
 ; The following macros are useful for amplifying binary functions. The first
@@ -57,5 +61,10 @@
   return table.concat(acc)\
 )}
 
-;waituntil({chain_infix(true, &&, 35)})
-waituntil(contains({binary_preorder(concat, "test", 9)}, "{dup(test, 10)}"))
+;waituntil({chain_infix(true, ||, 35)})
+;waituntil(contains({binary_preorder(concat, "test", 9)}, "{dup(test, 10)}"))
+;wait(if(true, 0., if(true, 0., if(true, 0., if(true, 0., if(true, 0., if(true, 0., if(true, 0., 1.))))))))
+;museum.buyTier("fire", 0, 30)
+;museum.clear("inventory")
+;combine(0)
+goto(1)

@@ -1,6 +1,6 @@
 ; Macro for keeping all the names consistent. Changing the package name here
 ; changes it for all scripts.
-#script_name(name) D0S.Benchmark v1.0:{name}
+#script_name(name) D0S.Benchmark v1.1:{name}
 
 ; Display variable for the number of elapsed turbo cycles. As a user, you will
 ; only see the final count, because that's the value it has when the frame ends.
