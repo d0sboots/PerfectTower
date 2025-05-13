@@ -1,3 +1,4 @@
+:global int factory_target
 :local int dust_tier
 :local string dust_multipliers
 :local double acc
@@ -106,6 +107,9 @@ state = ({raw_dust_tier} * 11 + {orestate}) % 99
 ; That way, in the terminal case it'll hit the safety target exactly. If you
 ; don't have lumps, you'll be up to 3 under the target. However, we always
 ; ensure that you'll leave one leftover no matter what.
+; Wait for auto crafter to stop if enabled.
+
+waitwhile(factory_target != 0)
 
 craft("lump", {curr_dust_tier}, if({has_ore} || active("mixer"), 0., min(0.999 * count("dust", {next_dust_tier})^ 0.84, {needed_by_ratio({curr_dust_tier})} + 0.5)))
 produce(if({has_ore}, "ore", "lump"),\
