@@ -8,6 +8,7 @@
 - [Auto mining script V3](#auto-mining-script-v3)
 - [Example miner](#example-miner)
 - [Museum combiner v4](#museum-combiner-v4)
+- [Auto Adventure](#auto-adventure)
 - [Adventure Map](#adventure-map)
 - [Timed Task Looping](#timed-task-looping)
 - [Autoclicker](#autoclicker)
@@ -224,6 +225,10 @@ The script requires all the inventory slots to be unlocked.
 
 If the script hangs in the middle of combining: Have you bought the "Quick
 Combine" skill?
+
+## Auto Adventure
+Automatically plays the adventure mini-game for you. For historical reasons,
+this is at https://github.com/d0sboots/TPTAdventure/blob/main/README.md
 
 ## Adventure Map
 **v1.2**
