@@ -382,6 +382,19 @@
 {component(1, void_essence, 0 0 1)}
 {component(-1, resource_booster, 0 1 2)}
 
+{recipe(tree_booster)}
+{component(1, rubber_sapling, 6 0 0)}
+{component(5 7 0, screw, 6 2 0)}
+{component(5, ring, 2 0 0)}
+{component(2 0 5, chip, 1 0 2)}
+{component(0 7 0, block, 0 2 0)}
+{component(0 7 0, plate, 0 2 0)}
+{component(0 7 0, pipe, 0 2 0)}
+{component(1, rainbow_plate, 0 0 2)}
+{component(1, void_sapling, 0 0 6)}
+{component(1, void_essence, 0 0 10)}
+{component(-1, tree_booster, 0 1 1)}
+
 {recipe(pumpkin_producer)}
 {component(0, carved_pumpkin, 6)}
 {component(0, anti_pumpkin, 6)}
