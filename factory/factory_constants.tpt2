@@ -1,6 +1,6 @@
 :import factory macros
 
-#version v3.2.3
+#version v3.2.4
 
 ; Everything in the list below is a valid target for automation, and can be
 ; assigned to the "target_type" variable in "lanuch factory craft".
@@ -44,8 +44,9 @@
 {make(machine_booster, 3, "booster.machines")}
 {make(production_booster, 3, "booster.production.regular")}
 {make(resource_booster, 3, "booster.resource.drops")}
+{make(tree_booster, 3, "booster.trees")}
 
-{category(prod, town_producer, arcade_producer, resource_booster)}
+{category(prod, town_producer, arcade_producer, tree_booster)}
 
 ; Machines, tiers 1-10
 {make(assembly, 10, "machine.assembler")}
