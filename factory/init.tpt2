@@ -1,5 +1,7 @@
 :import factory constants
 
+:budget_cap max
+
 :name {script_name(init)}
 
 wakeup()
@@ -10,36 +12,22 @@ isopen("factory")
 :global double factory_target_amount
 :global int factory_target
 
-:global int turbo.cycles
-:global int turbo.cycles.max
-
 :local double target_value
 
 ; Run the UI, to display the current pending item.
 execute("{script_name(ui)}")
 
 ; Initial dispatch on entering the factory to determine if we are resuming
-; a crafting operation or waiting to launch a new one. This is done outside
-; of turbo, so that we never invoke turbo if we don't need to.
+; a crafting operation or waiting to launch a new one.
 gotoif(wait_loop, {get_raw(factory_target)} == 0.)
 
 ; The core factory cycle. We do each loop of factory production within
-; one call of nested turbo start/stop, which executes within one frame.
+; budget, which executes within one frame.
 ;
 ; This loop handles both calculating recipes via "run_recipes"
 ; and crafting via "craft". This is done with conditional execution,
 ; in order to save lines for future possible features.
 begin_cycle:
-executesync("TE2.2:start")
-
-; Here we up the number of cycles so that it will be enough to
-; calculate the recipes or produce items. We intentionally have a
-; frame break between the recipe calculation and the beginning of crafting
-; to prevent jarring lag on startup.
-; This formula ensures that we don't accidentally step on another script
-; that needs more cycles, and also that we get the full amount of cycles
-; even if something else started turbo before us.
-turbo.cycles.max = max(turbo.cycles.max, turbo.cycles + 4000)
 
 ; We have to save this, because the value can change as a result of executing
 ; later scripts.
@@ -49,23 +37,10 @@ target_value = {get_raw(factory_target)}
 ; is true, then we're here because of `ui`. Otherwise,
 ; this is a regular crafting iteration.
 
-; There are extra checks for isopen("factory") here. The main check is at the
-; bottom of the loop, but that happens before the end of the frame, so there will
-; be one more frame where we have exited the factory, but the loop still runs.
-; Normally, this wouldn't be an issue (all of the scripts will perform no actions
-; and leave the variables in the same state), but "produce" and "craft" have a
-; startup condition of isopen("factory"), since they do double-duty as UI impulse
-; scripts as well.
-; So, we have to protect them, otherwise executesync() will hang when it hits
-; the false condition, leading to a stuck script.
-executesync(if(\
-  isopen("factory"),\
-  if(target_value > 0., "{script_name(produce)}", "{script_name(run_recipes)}"),\
-  "###badname###"\
-))
+executesync(if(target_value > 0., "{script_name(produce)}", "{script_name(run_recipes)}"))
 stop(if(target_value > 0., "{script_name(produce)}", "{script_name(run_recipes)}"))
 executesync(if(\
-  target_value > 0. && isopen("factory"),\
+  target_value > 0.,\
   "{script_name(craft)}",\
   "###badname###"\
 ))
@@ -80,14 +55,10 @@ execute(if(factory_target == 0, "{script_name(ui)}", "###badname###"))
 ; pass.
 factory_target_amount = 0.
 
-executesync("TE2.2:stop")
-
 ; Here we either return to the next iteration of the production loop,
 ; or stall on this instruction until we need to launch the factory.
-; Because there is always 1 extra cycle of turbo after "TE2.2:stop," there
-; is enough time to execute this goto and have only a single frame break
-; before starting turbo again at the top of the loop.
 wait_loop:
+waitframe()
 gotoif(\
   if(max(factory_target_amount, {get_raw(factory_target)}) > 0.,\
     begin_cycle, wait_loop\
@@ -97,5 +68,4 @@ gotoif(\
 
 ; Remove the UI status so it doesn't clutter the variables when we're outside the
 ; factory.
-; This is safe to repeat, when turbo is looping at the end of the script.
 gss({status}, "</size>")

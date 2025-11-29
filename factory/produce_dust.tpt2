@@ -1,5 +1,7 @@
 :import factory constants
 
+:budget_cap max
+
 :name {script_name(produce dust)}
 
 :local int _tier

@@ -12,6 +12,7 @@
 #start f
 
 ; Shared hidden variables for the UI
+; Action is mostly vestigal, and functions primarily to start the hiding block now.
 #action "<size=0>fa#"
 #status "fs#"
 

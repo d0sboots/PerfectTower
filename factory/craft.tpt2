@@ -1,6 +1,8 @@
 :import factory constants
 :import recipes
 
+:budget_cap max
+
 :name {script_name(craft)}
 
 :local double previous_amount
@@ -10,16 +12,7 @@
 
 :global int factory_target
 
-key.{up}()
-key.{down}()
-
 isopen("factory")
-
-; If we were launched via key impulse, invoke the UI immediately to start turbo,
-; and set action to signal which key was pressed. Otherwise, we're being called
-; as a produce script.
-execute(if(contains(impulse(), "key."), "{script_name(ui)}", "###badname###"))
-gotoif(group_abort, contains(impulse(), "key."))
 
 ; Craft all the items.
 craftitems_loop:
@@ -72,11 +65,11 @@ i = index(group_data, "|" . (factory_target + 100), 0) + 1
 check_group_loop:
 i += 3
 goto(if(\
-  i < 4, group_abort,\
+  i < 4, end,\
   if(\
     sub(group_data, i, 1) == "|", group_complete,\
     if(\
-      gdg({queue_str} . sub(group_data, i, 3)) > 0., group_abort,\
+      gdg({queue_str} . sub(group_data, i, 3)) > 0., end,\
       check_group_loop\
     )\
   )\
@@ -84,13 +77,4 @@ goto(if(\
 
 group_complete:
 {set_raw(factory_target, 0.)}
-group_abort:
-gss({action}, if(\
- contains(impulse(), "key."),\
- if(\
-   contains(impulse(), "key.{up}"),\
-   "1",\
-   "-1"\
- ),\
- gsg({action})\
-))
+end:

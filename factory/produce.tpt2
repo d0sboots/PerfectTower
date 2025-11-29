@@ -1,6 +1,8 @@
 :import factory constants
 :import recipes
 
+:budget_cap max
+
 :name {script_name(produce)}
 
 :local int i
@@ -11,16 +13,7 @@
 :local string produce_data
 :local string source_name_raw
 
-key.{left}()
-key.{right}()
-
 isopen("factory")
-
-; If we were launched via key impulse, invoke the UI immediately to start turbo,
-; and set action to signal which key was pressed. Otherwise, we're being called
-; as a produce script.
-execute(if(contains(impulse(), "key."), "{script_name(ui)}", "###badname###"))
-gotoif(end, contains(impulse(), "key."))
 
 ; ================== BEGIN MACROS + LUA ==================
 ; The data for producing is defined in a single string, stored in
@@ -218,12 +211,3 @@ goto(if(\
 ))
 
 end:
-gss({action}, if(\
- contains(impulse(), "key."),\
- if(\
-   contains(impulse(), "key.{left}"),\
-   "1",\
-   "-1"\
- ),\
- gsg({action})\
-))

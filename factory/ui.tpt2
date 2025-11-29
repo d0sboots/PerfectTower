@@ -1,6 +1,8 @@
 :import factory constants
 :import worker_storage_lib
 
+:budget_cap max
+
 :name {script_name(ui)}
 
 :local double count
@@ -10,22 +12,16 @@
 :local int item
 :local int cursor
 
-:global int turbo.cycles
-:global int turbo.register
 :global int factory_target
 :global double factory_target_amount
 
 key.{start}()
+key.{left}()
+key.{right}()
+key.{up}()
+key.{down}()
 
 isopen("factory")
-
-; Because of how turbo exec works, we can't launch turbo on the frame the script
-; starts by calling "TE2.2:start", if we are being called from another script.
-; We can only do it by changing turbo.register directly, saving a layer of
-; script execution.
-; (This is because of the relative positioning of TE.turbo vs our script;
-; usually we would be before, but when we are first launched our script is after.)
-turbo.register += 1
 
 ; Use worker_storage_lib to find a worker_slot to use for permanent storage.
 :local int worker_slot
@@ -37,24 +33,24 @@ turbo.register += 1
 ; this stage. We don't bother checking if we've got a valid slot, because if we
 ; don't, we'll simply fail to parse and get the fallback value.
 
-#action_num s2i(gsg({action}), 0)
 ; Is the u/d action valid for this position?
 ; Using contains() instead of == and chained compares saves a lot of import space.
-#is_ud(pos) contains(impulse() . cursor, ":craft{pos}")
+#is_ud(pos) contains("key.{up}{pos}|key.{down}{pos}", impulse() . cursor)
+#ud_offset if(contains(impulse(), "key.{up}"), 1, if(contains(impulse(), "key.{down}"), -1, 0))
 
 cursor = min(9, max(0,\
   s2i(sub(worker.name(worker_slot), {len({worker_prefix})} + 11, 1), 0) +\
-  if(contains(impulse(), ":produce"), {action_num}, 0)\
+  if(contains(impulse(), "key.{left}"), 1, if(contains(impulse(), "key.{right}"), -1, 0))\
 ))
 count = min(9999999., max(1.,\
   s2d(sub(worker.name(worker_slot), {len({worker_prefix})}, 7), 1.) +\
-  if(contains(impulse(), ":craft"), i2d({action_num} * 10^(cursor - 3)), 0.)\
+  i2d({ud_offset} * 10^(cursor - 3))\
 ))
 
 #num_categories {lua(return #factory.categories)}
 category = (\
   s2i(sub(worker.name(worker_slot), {len({worker_prefix})} + 8, 1), 0) -\
-  if({is_ud(1)}, {action_num}, 0) +\
+  if(cursor == 1, {ud_offset}, 0) +\
   {num_categories}\
 ) % {num_categories}
 
@@ -103,7 +99,7 @@ item = s2i(\
     sub(\
       if({is_ud(0)},\
         if(\
-          contains(gsg({action}), "-1"),\
+          contains(impulse(), "key.{down}"),\
           "{item_inc_table(1)}",\
           "{item_inc_table(-1)}"\
         ),\
@@ -147,8 +143,8 @@ item = s2i(\
 ; when the tier isn't changing.
 visible_tier = max(0,\
   min(s2i(sub("{tier_data}", item, 1), 9) +\
-      if({is_ud(2)} && gsg({action}) == "-1", -1, 0),\
-    {saved_worker_tier} + if({is_ud(2)}, {action_num}, 0)\
+      if(contains("key.{down}2", impulse() . cursor), -1, 0),\
+    {saved_worker_tier} + if(cursor == 2, {ud_offset}, 0)\
   )\
 )
 tier = if({is_ud(2)}, visible_tier, {saved_worker_tier})
@@ -187,17 +183,15 @@ tier = if({is_ud(2)}, visible_tier, {saved_worker_tier})
 ; It looks like a no-op, but really we're ensuring that it has a slot in the
 ; globals table, even if its value empty - in this case, what we care about
 ; is the *name*, which starts with "<size=0>".
-; Do this *after* all the other work, to give turbo register time to
-; set its variables, in case we're doing this right at startup.
+; This could be moved higher if necessary.
 gss({action}, gsg({action}))
 
 ; Do conditional stuff, depending on if we're launching the factory.
 ; We set all these variables always, so that they'll have a consistent order,
 ; and also to save lines instead of jumping over this block.
 
-#valid_start contains(factory_target . impulse(), "0key.")
-; This (maybe) launches the factory. We need to do it soon enough to not
-; interrupt turbo, see the comment on "TE2.2:stop", below.
+#valid_start contains(factory_target . impulse(), "0key.{start}")
+; This (maybe) launches the factory.
 {lua(\
   for i = 1, #factory.categories do\
     if factory.categories[i].name == "grup" then\
@@ -241,31 +235,27 @@ factory_target = if({valid_start}, (item + 1) * 10 + visible_tier, factory_targe
 gss({status}, if(\
   worker_slot == 200,\
   "</size>error=<color=#fb3>No available workers!</color>",\
-  if(\
-    turbo.cycles == 0,\
-    "</size>error=<color=#fb3>Turbo exec is not working</color>",\
-    "</size>make=<color=#fff>" .\
-    sub({count_string}, 1, 9 - cursor) .\
-    "</color><color=#{curs_col}>".\
-    sub({count_string}, 10 - cursor, 1) .\
-    "</color><color=#fff>".\
-    sub({count_string}, 11 - cursor, 10) .\
-    "<smallcaps>x</smallcaps><color=#" .\
-    if(cursor == 2, "{curs_col}>T", "fff>T") .\
-    (visible_tier + 1) .\
-    if(cursor == 1, "</color> <color=#{curs_col}>", "</color> <color=#fff>") .\
-    sub("{category_names}", category * 4, 4) .\
-    if(cursor == 0, "</color> ...<br><color=#{curs_col}>", "</color> ...<br><color=#fff>") .\
-    sub("{name_data}", s2i(sub("{name_starts}", item * 3, 3), 0),\
-      s2i(sub("{name_sizes}", item * 2, 2), 0)) .\
-    "<br></color></color>" . if(\
-      contains(impulse() . gsg({action}), ":init<"),\
-      gsg({action}),\
-      if(\
-        factory_target == 0,\
-        "<color=#0df>{up}{left}{down}{right} moves, {start} crafts</color> ",\
-        "<color=#ff0>Crafting...</color>"\
-      )\
+  "</size>make=<color=#fff>" .\
+  sub({count_string}, 1, 9 - cursor) .\
+  "</color><color=#{curs_col}>".\
+  sub({count_string}, 10 - cursor, 1) .\
+  "</color><color=#fff>".\
+  sub({count_string}, 11 - cursor, 10) .\
+  "<smallcaps>x</smallcaps><color=#" .\
+  if(cursor == 2, "{curs_col}>T", "fff>T") .\
+  (visible_tier + 1) .\
+  if(cursor == 1, "</color> <color=#{curs_col}>", "</color> <color=#fff>") .\
+  sub("{category_names}", category * 4, 4) .\
+  if(cursor == 0, "</color> ...<br><color=#{curs_col}>", "</color> ...<br><color=#fff>") .\
+  sub("{name_data}", s2i(sub("{name_starts}", item * 3, 3), 0),\
+    s2i(sub("{name_sizes}", item * 2, 2), 0)) .\
+  "<br></color></color>" . if(\
+    contains(impulse() . gsg({action}), ":init<"),\
+    gsg({action}),\
+    if(\
+      factory_target == 0,\
+      "<color=#0df>{up}{left}{down}{right} moves, {start} crafts</color> ",\
+      "<color=#ff0>Crafting...</color>"\
     )\
   )\
 ))
@@ -281,21 +271,10 @@ worker.pauseName(\
   contains(gsg({status}), "Crafting")\
 )
 
-; "init" will take over as soon as factory_target_amount gets set 4 lines
-; above; it will call its own "TE2.2:start" and thus prevent the frame from
-; ending before this line takes effect.
-; We need two cycles in-between to have a seamless transition.
-; We change the variable directly, instead of calling "TE2.2:stop", for parity
-; with the way we start: This avoids some edge cases when turbo is incorrectly
-; installed. It also is fine in this case, because we don't need to wait for
-; the end of the frame.
-turbo.register -= 1
-
 ; Setting the data back in the worker is moved way down to the bottom, to function
 ; as the "filler" action that can be repeated while the script is waiting for
-; the frame to end. We can't use of the actions that set global variables for this,
-; because they may need to be modified later in the frame, and thus setting them
-; here in a loop would overwrite the value.
+; the frame to end. This is a legacy consideration from the days of turbo exec,
+; which is no longer relevant.
 worker.setName(if(worker_slot < 100, worker_slot, worker_slot - 100),\
   "{worker_prefix}" . sub(d2s(10000000. + count), 1, 7) . tier . category .\
   sub(i2s(100 + item), 1, 2) . cursor\
