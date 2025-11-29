@@ -9,11 +9,245 @@
 :local int i
 :local string itemdata
 :local string group_data
+:local int machine_idx
+:local string machine_chunk
+:local string machine_name
+:local string produce_data
+:local string source_name_raw
 
 :global int factory_target
 
-isopen("factory")
+; ================== BEGIN MACROS + LUA ==================
+; The data for producing is defined in a single string, stored in
+; produce_data. Each entry in the string is a "produce_chunk", defined
+; in the following format:
+; MULT SOURCE_CHAR DEST_ITEM
+; DEST_ITEM is a 3-byte number, denoting the raw queue value for the item.
+; (I.e. after the +100 addition.) SOURCE_CHAR is a single character that
+; is used for indexing a separate lookup table of the source item names.
+; (The source tier will be the same as the tier of DEST_ITEM.) The MULT
+; is a single number used when items produce multiple output copies.
+#produce_chunk_size 5
 
+; Here we precompute all our data tables. There are three tables:
+; produce_data, which stores the produce chunks described above.
+; item_names, which stores destination item names only, and
+; machine_data, which stores a combination of machine name and offset into produce_data.
+;
+; We also compute the character lookup table that is used to convert DEST_ITEM to/from
+; numbers for use with item_names.
+{lua(\
+  local format = string.format\
+\
+  machine_chunk_size = nil\
+  machine_data = nil\
+  item_names = nil\
+  item_names_size = nil\
+  trans_table = "0123456789abcdefghijklmnopqrstuvwxyz"\
+  produce_data = nil\
+\
+  local function pad_strings(arr)\
+    local max = 0\
+    for i = 1, #arr do\
+      max = max >= #arr[i] and max or #arr[i]\
+    end\
+    max = max + 1\
+    local fmt_str = format("%%%ds", -max)\
+    local res = {}\
+    for i = 1, #arr do\
+      res[i] = format(fmt_str, arr[i])\
+    end\
+    return res, max\
+  end\
+\
+  local machine_acc = {}\
+  local item_acc = {}\
+  local prod_acc = {}\
+  local prods_offset = 1\
+  local offsets = {}\
+  factory.prod_machines[#factory.prod_machines + 1] = "end"\
+  factory.prod_machines["end"] = #factory.prods + 1\
+  for i = 1, #factory.prod_machines do\
+    local machine = factory.prod_machines[i]\
+    machine_acc[i] = machine\
+    local next_offset = factory.prod_machines[machine]\
+    for j = 1, 10 do\
+      for k = prods_offset, next_offset - 1 do\
+        local prod = factory.prods[k]\
+        if prod.source.tier < j then goto continue end\
+        local source_name = prod.source.game_name\
+        if not item_acc[source_name] then\
+          item_acc[#item_acc + 1] = source_name\
+          item_acc[source_name] = #item_acc\
+        end\
+        prod_acc[#prod_acc + 1] = prod.mult ..\
+          string.sub(trans_table, item_acc[source_name], item_acc[source_name]) ..\
+          prod.item.id * 10 + 100 + j - 1\
+        ::continue::\
+      end\
+    end\
+    offsets[i] = format("%03d", #prod_acc * 5)\
+    prods_offset = next_offset\
+  end\
+  if #prod_acc * 5 > 999 then\
+    return "Offset overflows three digits: " .. table.concat(offsets, " ")\
+  end\
+  machine_acc, machine_chunk_size = pad_strings(machine_acc)\
+  for i = 1, #machine_acc do\
+    machine_acc[i] = offsets[i] .. machine_acc[i]\
+  end\
+\
+  machine_data = table.concat(machine_acc)\
+  machine_chunk_size = machine_chunk_size + 3\
+  item_acc, item_names_size = pad_strings(item_acc)\
+  item_names = table.concat(item_acc)\
+  trans_table = string.sub(trans_table, 1, #item_acc)\
+  produce_data = table.concat(prod_acc)\
+\
+--[[Debug functions, uncomment as needed]]\
+--[[return table.concat(prod_acc, ",")]]\
+)}
+
+;{lua(return produce_data)}_
+;{lua(return machine_data)}
+;{lua(return item_names)}
+;{lua(return trans_table)}_
+
+; When it is loaded from produce_data, the value in produce_data is
+; processed from the raw produce_chunk to lookup the SOURCE_CHAR from the
+; secondary lookup table. This still needs extra processing to trim the
+; trailing spaces, which is why the source_name macro exists.
+#dest_offset 2
+#source_char_offset 1
+#mult_offset 0
+#get_source_tier index(" 0123456789", sub(produce_data, {dest_offset} + 2, 1), 0)
+#source_name sub(source_name_raw, 0, index(source_name_raw, " ", 0))
+#mult s2d(sub(produce_data, {mult_offset}, 1), 0.)
+
+#next_offset s2i(sub(machine_chunk, {lua(return machine_chunk_size)}, 3), 0)
+
+; Raw access to the queue. This is even more direct than
+; get_raw, because we're using queue strings directly.
+#raw_dest sub(produce_data, {dest_offset}, 3)
+#get_dest global.double.get({queue_str} . {raw_dest})
+#set_dest(value) global.double.set({queue_str} . {raw_dest}, {value})
+; ================== END MACROS + LUA ==================
+
+; ================== PRODUCE DUST ==================
+:local int _tier
+
+produce_dust:
+_tier = _tier + 1
+gotoif(nocrush, {get_queue(_tier, ore)} <= 0. || active("crusher"))
+previous_amount = count("ore", _tier)
+produce("ore", _tier, {get_queue(_tier, ore)}, "crusher")
+{subtract_queue(_tier, dust, (previous_amount - count("ore", _tier)) * 2.)}
+{subtract_queue(_tier, ore, previous_amount - count("ore", _tier))}
+nocrush:
+
+gotoif(notierupdust, _tier >= 10 || {get_queue(_tier, lump)} <= 0. || active("mixer"))
+craft("lump", _tier, min(\
+  min(\
+    (count("dust", _tier) - 1.) / 4.,\
+    count("dust", _tier + 1)\
+  ),\
+  {get_queue(_tier, lump)} - count("lump", _tier)\
+))
+previous_amount = count("lump", _tier)
+produce("lump", _tier, min(previous_amount, {get_queue(_tier, lump)}), "mixer")
+{subtract_queue(_tier, dust, previous_amount - count("lump", _tier))}
+{subtract_queue(_tier, lump, previous_amount - count("lump", _tier))}
+notierupdust:
+
+gotoif(noproduceingot, active("oven") | (if(_tier == 10, 0., ({get_queue(_tier, lump)} - count("lump", min(_tier, 9)))) * 4. > 2. * min(0., count("dust", _tier) - ({get_queue(_tier, ingot)})) & count("dust", _tier) < 2. * ({get_queue(_tier, ingot)})))
+previous_amount = count("dust", _tier)
+produce("dust", _tier, min(previous_amount - 1., {get_queue(_tier, ingot)}), "oven")
+{subtract_queue(_tier, ingot, previous_amount - count("dust", _tier))}
+noproduceingot:
+
+gotoif(produce_dust, _tier <= 10)
+
+; ================== PRODUCE ==================
+machine_loop:
+; Setup machine data variables and set the produce index to the proper place.
+; We break this out into separate variables because we don't run through this
+; section as much (only once per machine, so ~8 times), and it makes the later
+; expressions more efficient. Also, we have lines to spare.
+; We get 3 extra characters after the machine chunk so that we have the next
+; offset available as well, which we use to determine when to finish the produce_loop
+; below and procede to the next machine.
+machine_chunk = sub("{lua(return machine_data)}", machine_idx, {lua(return machine_chunk_size)} + 3)
+machine_name = sub(machine_chunk, 3, index(machine_chunk, " ", 0) - 3)
+i = s2i(sub(machine_chunk, 0, 3), 0)
+machine_idx += {lua(return machine_chunk_size)}
+
+; We need to setup the production data anyway, so we branch there. This is
+; one instruction less efficient than other methods, but it lets us
+; reuse a lot of code so it's worth it.
+goto(if(\
+  contains("end", machine_name),\
+  craft,\
+  set_data\
+))
+
+produce_loop:
+source_name_raw = sub(\
+  "{lua(return item_names)}",\
+  index(\
+    "{lua(return trans_table)}",\
+    sub(produce_data, {source_char_offset}, 1),\
+    0\
+  ) * {lua(return item_names_size)},\
+  {lua(return item_names_size)}\
+)
+
+; Uncomment this line for runtime production debugging.
+; You will also need to uncomment the line in init that unhides debug.
+;gss("debug", gsg("debug") . "<br>" . {source_name} . {get_source_tier} . "_" . min(ceil({get_dest} / {mult}), count({source_name}, {get_source_tier})) . machine_name)
+
+; Just try to produce. There is a wrinkle here not present when crafting:
+; we take the minimum with the source count, so that we can use items as
+; quickly as they become available. We only craft the entire quantity, to
+; avoid needlessly filling the inventory.
+produce(\
+  {source_name},\
+  {get_source_tier},\
+  min(ceil({get_dest} / {mult}), count({source_name}, {get_source_tier})),\
+  machine_name\
+)
+
+; We can blindly subtract the number of items in the machine, because we've
+; guaranteed via the guards on our loop that we exit as soon as the machine
+; is active. This means the item in there *must* be the correct one, if the
+; count is > 0.
+{set_dest({get_dest} - {mult} * machine.item.count(machine_name))}
+
+next_item:
+i += {produce_chunk_size}
+set_data:
+produce_data = sub("{lua(return produce_data)}", i, {produce_chunk_size})
+
+; Go to the next machine if we're done with this set of machines, or the machine
+; has become active. Otherwise, either produce the next item, or skip it if
+; the quantity is <= 0.
+goto(if(\
+  i >= {next_offset},\
+  machine_loop,\
+  if(\
+    active(machine_name),\
+    machine_loop,\
+    if(\
+      {get_dest} <= 0.,\
+      next_item,\
+      produce_loop\
+    )\
+  )\
+))
+
+; ================== CRAFT ==================
+
+craft:
+i = 0
 ; Craft all the items.
 craftitems_loop:
 itemdata = {lua(return factory.composite_string("i/10", "craft"))}
@@ -36,7 +270,7 @@ goto(if(i%10 != 0,\
 crafting_done:
 
 ; Uncomment these lines for runtime item quantity debugging.
-; You will also need to uncomment the line in run_recipes that unhides debug.
+; You will also need to uncomment the line in init that unhides debug.
 ;i = 10
 ;debug_loop:
 ;gss("debug", if(i == 10, "", gsg("debug") . if({get_raw(i)} > 0., "<br>" . i . " " . {get_raw(i)}, "")))
@@ -65,7 +299,8 @@ i = index(group_data, "|" . (factory_target + 100), 0) + 1
 check_group_loop:
 i += 3
 goto(if(\
-  i < 4, end,\
+  i < 4,\
+  if({get_raw(factory_target)} <= 0., group_complete, end),\
   if(\
     sub(group_data, i, 1) == "|", group_complete,\
     if(\
@@ -77,4 +312,8 @@ goto(if(\
 
 group_complete:
 {set_raw(factory_target, 0.)}
+factory_target = 0
+; Re-display the UI when crafting is done.
+execute("{script_name(ui)}")
+
 end:
