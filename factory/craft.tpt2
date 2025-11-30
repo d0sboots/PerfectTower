@@ -16,6 +16,7 @@
 :local string source_name_raw
 
 :global int factory_target
+:global int factory_craft_idx
 
 ; ================== BEGIN MACROS + LUA ==================
 ; The data for producing is defined in a single string, stored in
@@ -136,6 +137,12 @@
 ; ================== PRODUCE DUST ==================
 :local int _tier
 
+; There are a total of 4 instructions that take budget here: 3 produce()s and 1 craft().
+; Each produce() can only be invoked if the associated machine is empty *and* there is
+; work to be performed for that tier; this means that aside from very rare edge cases,
+; only a single produce() can be triggered per machine, so the total budget from this
+; section will max at 400.
+
 produce_dust:
 _tier = _tier + 1
 gotoif(nocrush, {get_queue(_tier, ore)} <= 0. || active("crusher"))
@@ -168,6 +175,11 @@ noproduceingot:
 gotoif(produce_dust, _tier <= 10)
 
 ; ================== PRODUCE ==================
+; There is only one budget-consuming item in here, the produce(). By the nature of the
+; logic, it will only be triggered when the machine is inactive and something can actually
+; be made. Thus, adding from produce_dust above, there can be only 100 * (machines + 1) =
+; 1100 budget spent on these two parts, which is well below the minimum a script will have.
+
 machine_loop:
 ; Setup machine data variables and set the produce index to the proper place.
 ; We break this out into separate variables because we don't run through this
@@ -200,6 +212,11 @@ source_name_raw = sub(\
   ) * {lua(return item_names_size)},\
   {lua(return item_names_size)}\
 )
+
+; Spend an extra line to avoid spending budget on items we can't make.
+; We can't add this check into the main goto because we had to extract source_name_raw
+; above, and speed-wise it's better to avoid doing that on items needlessly.
+gotoif(next_item, count({source_name}, {get_source_tier}) <= 0.)
 
 ; Uncomment this line for runtime production debugging.
 ; You will also need to uncomment the line in main that unhides debug.
@@ -245,28 +262,48 @@ goto(if(\
 ))
 
 ; ================== CRAFT ==================
+; The only budget-using line here is craft(). However, unlike with produce we can't
+; tell ahead of time if a craft will work, so potentially we have to try crafting every
+; item involved in the recipe, which in the worst case is all of them. This means we can't
+; count on our budget lasting through this loop - we have to be prepared to re-exec craft
+; to get more budget, and factory_craft_idx is a global variable that saves our progress.
 
 craft:
-i = 0
+; We need to execute this now, so that items_count will function.
+{lua(itemdata_expr = factory.composite_string("factory_craft_idx/10 - 1", "craft"))}
+
+; Because items and tiers start at 1, we have to add 1 or (pre-multiplying, 10) to the start value.
+; However, tier is zero-based inside our indexing representation, so we don't add it there.
+; We must conditionally re-initialize this only on fresh loads of the AI, or if the
+; previous craft loop is done.
+factory_craft_idx = if(\
+  factory_craft_idx == 0 || factory_craft_idx >= {items_count} * 10 + 10,\
+  10,\
+  factory_craft_idx\
+)
 ; Craft all the items.
 craftitems_loop:
-itemdata = {lua(return factory.composite_string("i/10", "craft"))}
+itemdata = {lua(return itemdata_expr)}
 
 do_craft:
-; Because items and tiers start at 1, but i is zero-based, we have to add 1
-; or (pre-multiplying, 10) in these expressions.
-; However, tier is zero-based inside our indexing representation, so we don't
-; add it there.
-previous_amount = count({get_name}, i%10 + 1)
-craft({get_name}, i%10 + 1, {get_raw(10 + i)})
-{set_raw(10 + i, {get_raw(10 + i)} - (count({get_name}, i%10 + 1) - previous_amount))}
+previous_amount = count({get_name}, factory_craft_idx%10 + 1)
+craft({get_name}, factory_craft_idx%10 + 1, {get_raw(factory_craft_idx)})
+{set_raw(factory_craft_idx, {get_raw(factory_craft_idx)} - (count({get_name}, factory_craft_idx%10 + 1) - previous_amount))}
 inc:
 ; This skips over tiers that don't exist for the given item, by using the
 ; tier data embedded in "itemdata".
-i = i + if(i2s(i%10) == {tiers_char}, 10 - i%10, 1)
-goto(if(i%10 != 0,\
-     if({get_raw(10 + i)} > 0., do_craft, inc),\
-     if(i < {items_count} * 10, craftitems_loop, crafting_done)))
+factory_craft_idx += if(i2s(factory_craft_idx%10) == {tiers_char}, 10 - factory_craft_idx%10, 1)
+; If we don't have enough budget to keep going, we exec another copy to pick up where
+; we left off.
+goto(if(\
+  budget() <= 100,\
+  exec,\
+  if(\
+    factory_craft_idx%10 != 0,\
+    if({get_raw(factory_craft_idx)} > 0., do_craft, inc),\
+    if(factory_craft_idx < {items_count} * 10 + 10, craftitems_loop, crafting_done)\
+  )\
+))
 crafting_done:
 
 ; Uncomment these lines for runtime item quantity debugging.
@@ -314,6 +351,10 @@ group_complete:
 {set_raw(factory_target, 0.)}
 factory_target = 0
 ; Re-display the UI when crafting is done.
-execute("{script_name(main)}")
+; We borrow this to save a line when we need to re-exec craft. If we get here
+; and factory_target is *not* 0, we are still crafting and are asking for a re-exec
+; for extra budget. We will safely exit the bottom of the script after.
+exec:
+execute(if(factory_target == 0, "{script_name(main)}", "{script_name(craft)}"))
 
 end:

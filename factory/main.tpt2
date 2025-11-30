@@ -18,6 +18,7 @@ isopen("factory")
 
 :global double factory_target_amount
 :global int factory_target
+:global int factory_craft_idx
 
 :local double count
 :local int visible_tier
@@ -199,6 +200,9 @@ worker.setName(if(worker_slot < 100, worker_slot, worker_slot - 100),\
 ; This could be moved higher if necessary.
 gss({action}, gsg({action}))
 
+; Another no-op just for variable hiding
+factory_craft_idx = factory_craft_idx
+
 ; Do conditional stuff, depending on if we're launching the factory.
 ; We set all these variables always, so that they'll have a consistent order,
 ; and also to save lines instead of jumping over this block.
@@ -296,11 +300,11 @@ goto(if(contains("wakeup|open.factory", impulse()), master_goto, end))
 ; budget, which executes within one frame.
 ;
 ; Craft will re-execute itself to get more budget, so that it can do all its work in
-; one frame. As a safety measure, we stop any existing leftover copies before starting
-; this chain. This means that the frame crafting finishes, we will have already yielded
-; via waitframe(), and won't find out about it until the *next* frame.
+; one frame. This means that the frame crafting finishes, we will have already yielded
+; via waitframe(), and won't find out about it until the *next* frame. However,
+; craft will re-execute a copy of main to update the UI when it is done, so that happens
+; on the same frame.
 begin_cycle:
-;stop("{script_name(craft)}")
 execute("{script_name(craft)}")
 
 ; Here we either return to the next iteration of the production loop,
