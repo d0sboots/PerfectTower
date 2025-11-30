@@ -1,5 +1,6 @@
 :import factory constants
 :import recipes
+:import worker_storage_lib
 
 :budget_cap max
 
@@ -7,20 +8,289 @@
 
 wakeup()
 open.factory()
+key.{start}()
+key.{left}()
+key.{right}()
+key.{up}()
+key.{down}()
 
 isopen("factory")
 
 :global double factory_target_amount
 :global int factory_target
 
-:local double target_value
+:local double count
+:local int visible_tier
+:local int tier
+:local int category
+:local int item
+:local int cursor
 
-; Run the UI, to display the current pending item.
-execute("{script_name(ui)}")
+; ======================= UI =======================
+ui:
+
+; Use worker_storage_lib to find a worker_slot to use for permanent storage.
+; On subsequent runs, this is a no-op.
+:local int worker_slot
+{worker_lib_line_1([factory])}
+{worker_lib_line_2}
+
+; Split out the worker data into separate variables. We take advantage of this
+; time to also perform increment/decrement, since we can easily combine it in
+; this stage. We don't bother checking if we've got a valid slot, because if we
+; don't, we'll simply fail to parse and get the fallback value.
+
+; Is the u/d action valid for this position?
+; Using contains() instead of == and chained compares saves a lot of import space.
+#is_ud(pos) contains("key.{up}{pos}|key.{down}{pos}", impulse() . cursor)
+#ud_offset if(contains(impulse(), "key.{up}"), 1, if(contains(impulse(), "key.{down}"), -1, 0))
+
+cursor = min(9, max(0,\
+  s2i(sub(worker.name(worker_slot), {len({worker_prefix})} + 11, 1), 0) +\
+  if(contains(impulse(), "key.{left}"), 1, if(contains(impulse(), "key.{right}"), -1, 0))\
+))
+count = min(9999999., max(1.,\
+  s2d(sub(worker.name(worker_slot), {len({worker_prefix})}, 7), 1.) +\
+  i2d({ud_offset} * 10^(cursor - 3))\
+))
+
+#num_categories {lua(return #factory.categories)}
+category = (\
+  s2i(sub(worker.name(worker_slot), {len({worker_prefix})} + 8, 1), 0) -\
+  if(cursor == 1, {ud_offset}, 0) +\
+  {num_categories}\
+) % {num_categories}
+
+; Because math expressions are so expensive, in terms of import space, it's best
+; to just pre-compute tables of the next/previous item to go to for every item.
+; To avoid duplicating expressions, we also make a no-op table for the case where
+; we're not incrementing or decrementing.
+{lua(\
+  function factory.item_inc_table(inc)\
+    local acc = {}\
+    local default = string.format("%02d", factory.categories[1].default - 1)\
+    for i = 1, #factory.categories do\
+      local cat = factory.categories[i]\
+      local cat_size = cat.last - cat.first + 1\
+      for j = cat.first, cat.last do\
+        acc[j] = string.format("%02d", (j + inc - cat.first) % cat_size + cat.first - 1)\
+      end\
+    end\
+    for i = 1, #factory.items do\
+      acc[i] = acc[i] or default\
+    end\
+    return table.concat(acc)\
+  end\
+)}
+#item_inc_table(inc) {lua(return factory.item_inc_table({inc}))}
+#category_defaults {lua(\
+  local acc = {}\
+  for i = 1, #factory.categories do\
+    acc[i] = string.format("%02d", factory.categories[i].default - 1)\
+  end\
+  return table.concat(acc)\
+)}
+
+; Items in this variable are zero-indexed, as opposed to their regular ids, which
+; start from 1.
+; We increment the items in the opposite direction from the action, because pressing
+; up (action 1) *increments* numerical values but *decrements* elements in an
+; alphabetically sorted list.
+item = s2i(\
+  if({is_ud(1)},\
+    sub(\
+      "{category_defaults}",\
+      category * 2,\
+      2\
+    ),\
+    sub(\
+      if({is_ud(0)},\
+        if(\
+          contains(impulse(), "key.{down}"),\
+          "{item_inc_table(1)}",\
+          "{item_inc_table(-1)}"\
+        ),\
+        "{item_inc_table(0)}"\
+      ),\
+      s2i(\
+        sub(worker.name(worker_slot), {len({worker_prefix})} + 9, 2),\
+        {lua(return factory.categories[1].default - 1)}\
+      ) * 2,\
+      2\
+    )\
+  ),\
+  0\
+)
+
+; The distinction between "tier" and "visible_tier" has to do with the fact that
+; items have different tier maximums. When a user is scrolling through different
+; items, if the "tier" is T10 (represented as "9" in our zero-indexed scheme),
+; then the "visible_tier" will change to fit the maximum tier for the item, while
+; the tier remains at T10. However, if the item is a producer (max of T5), and
+; the user moves the cursor to the tier field and presses "W", the attempt to
+; increment "tier" will fix it at a new value of T5 (4).
+#tier_data {lua(\
+  local acc = {};\
+  for i = 1, #factory.items do\
+    local item = factory.items[i];\
+    acc[i] = string.format("%d", item.tier - 1);\
+  end\
+  return table.concat(acc)\
+)}
+
+; Expression to load the saved tier data from the worker name, including
+; a default value when there is no data.
+#saved_worker_tier s2i(sub(worker.name(worker_slot), {len({worker_prefix})} + 7, 1), 0)
+
+; It makes the most sense to set visible_tier first. There is a complication
+; when adjusting the tier down; in this case, we reduce the maximum bounds by
+; one, so that (for instance) if the max tier is T5, and the current tier is T10,
+; we'll properly clip the visible_tier to T4 after subtracting 1 to get T9.
+; This type of adjustment isn't needed (or wanted) in the other direction, or
+; when the tier isn't changing.
+visible_tier = max(0,\
+  min(s2i(sub("{tier_data}", item, 1), 9) +\
+      if(contains("key.{down}2", impulse() . cursor), -1, 0),\
+    {saved_worker_tier} + if(cursor == 2, {ud_offset}, 0)\
+  )\
+)
+tier = if({is_ud(2)}, visible_tier, {saved_worker_tier})
+
+; Save the data back in the worker.
+worker.setName(if(worker_slot < 100, worker_slot, worker_slot - 100),\
+  "{worker_prefix}" . sub(d2s(10000000. + count), 1, 7) . tier . category .\
+  sub(i2s(100 + item), 1, 2) . cursor\
+)
+
+; Finally, construct the visible name for use in the variable.
+{lua(\
+  local names = {}\
+  local name_starts = {}\
+  local name_sizes = {}\
+  local name_len = 0\
+\
+  for i = 1, #factory.items do\
+    local name = factory.items[i].name\
+    names[i] = name\
+    name_starts[i] = string.format("%03d", name_len)\
+    name_len = name_len + #name\
+    name_sizes[i] = string.format("%02d", #name)\
+  end\
+  factory.name_data = table.concat(names)\
+  factory.name_starts = table.concat(name_starts)\
+  factory.name_sizes = table.concat(name_sizes)\
+  factory.items_count = #factory.items\
+\
+  names = {}\
+  for i = 1, #factory.categories do\
+    names[i] = factory.categories[i].name\
+  end\
+  factory.category_names = table.concat(names)\
+)}
+#name_data {lua(return factory.name_data)}
+#name_starts {lua(return factory.name_starts)}
+#name_sizes {lua(return factory.name_sizes)}
+#category_names {lua(return factory.category_names)}
+
+; Set this variable in order to begin a variable-hiding block.
+; It looks like a no-op, but really we're ensuring that it has a slot in the
+; globals table, even if its value empty - in this case, what we care about
+; is the *name*, which starts with "<size=0>".
+; This could be moved higher if necessary.
+gss({action}, gsg({action}))
+
+; Do conditional stuff, depending on if we're launching the factory.
+; We set all these variables always, so that they'll have a consistent order,
+; and also to save lines instead of jumping over this block.
+
+#valid_start contains(factory_target . impulse(), "0key.{start}")
+; This (maybe) launches the factory.
+{lua(\
+  for i = 1, #factory.categories do\
+    if factory.categories[i].name == "grup" then\
+      grup_cat = i - 1;\
+      return;\
+    end\
+  end\
+  return "Couldn't find grup"\
+)}
+factory_target_amount = if(\
+  {valid_start},\
+  count,\
+  factory_target_amount\
+)
+
+; Only set factory_target if it's zero, which indicates that the factory is idle.
+; This prevents repeated keypresses from messing things up.
+factory_target = if({valid_start}, (item + 1) * 10 + visible_tier, factory_target)
+
+; Construct the status line. There's a *lot* that goes into this.
+;
+; For starters, we fake the variable - it's not really "make", but rather a
+; totally different variable that's less likely to collide. The true variable name
+; is never seen, because it's still part of the <size=0> block. We put our fake
+; variable name after. We do all this so that we can "unset" the variable by
+; just changing its value - this way, it's not truly unset, and we don't have
+; issues with variable ordering as a result.
+;
+; This also means we can change the variable name to something else, like
+; "error", if we need to, all without actually creating a new variable or
+; changing ordering.
+;
+; All the clauses are dynamically created on the fly here. We also create the
+; "cursor" by highlighting a specific part of the result in green. This involves
+; a great deal more complexity.
+#curs_col 2f4
+; For later - scanning rework
+;count_string if(category == {lua(return grup_cat)}, "  -SCAN-", d2s(10000000. + count))
+#count_string d2s(10000000. + count)
+
+gss({status}, if(\
+  worker_slot == 200,\
+  "</size>error=<color=#fb3>No available workers!</color>",\
+  "</size>make=<color=#fff>" .\
+  sub({count_string}, 1, 9 - cursor) .\
+  "</color><color=#{curs_col}>".\
+  sub({count_string}, 10 - cursor, 1) .\
+  "</color><color=#fff>".\
+  sub({count_string}, 11 - cursor, 10) .\
+  "<smallcaps>x</smallcaps><color=#" .\
+  if(cursor == 2, "{curs_col}>T", "fff>T") .\
+  (visible_tier + 1) .\
+  if(cursor == 1, "</color> <color=#{curs_col}>", "</color> <color=#fff>") .\
+  sub("{category_names}", category * 4, 4) .\
+  if(cursor == 0, "</color> ...<br><color=#{curs_col}>", "</color> ...<br><color=#fff>") .\
+  sub("{name_data}", s2i(sub("{name_starts}", item * 3, 3), 0),\
+    s2i(sub("{name_sizes}", item * 2, 2), 0)) .\
+  "<br></color></color>" . if(\
+    contains(impulse() . gsg({action}), ":init<"),\
+    gsg({action}),\
+    if(\
+      factory_target == 0,\
+      "<color=#0df>{up}{left}{down}{right} moves, {start} crafts</color> ",\
+      "<color=#ff0>Crafting...</color>"\
+    )\
+  )\
+))
+
+; Pause/unpause a dissolve worker, if it occupies our data slot.
+; If it's a different type of worker, leave it alone by dummying out the name.
+worker.pauseName(\
+  if(\
+    contains(worker.task(worker.name(worker_slot)), "factory.dissolveManagement"),\
+    worker.name(worker_slot),\
+    "![@#nosuchtask#@]!"\
+  ),\
+  contains(gsg({status}), "Crafting")\
+)
+
+; ======================= MAIN =======================
 
 ; Initial dispatch on entering the factory to determine if we are resuming
 ; a crafting operation or waiting to launch a new one.
-goto(master_goto)
+; If we weren't invoked on startup/factory enter, this was just a temporary exec
+; for the purposes of updated the UI.
+goto(if(contains("wakeup|open.factory", impulse()), master_goto, end))
 
 ; The core factory cycle. We do each loop of factory production within
 ; budget, which executes within one frame.
@@ -420,3 +690,4 @@ clear_status:
 ; Remove the UI status so it doesn't clutter the variables when we're outside the
 ; factory.
 gss({status}, "</size>")
+end:
