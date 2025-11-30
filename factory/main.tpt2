@@ -4,7 +4,7 @@
 
 :budget_cap max
 
-:name {script_name(init)}
+:name {script_name(main)}
 
 wakeup()
 open.factory()
@@ -263,7 +263,7 @@ gss({status}, if(\
   sub("{name_data}", s2i(sub("{name_starts}", item * 3, 3), 0),\
     s2i(sub("{name_sizes}", item * 2, 2), 0)) .\
   "<br></color></color>" . if(\
-    contains(impulse() . gsg({action}), ":init<"),\
+    contains(gsg({action}), "<"),\
     gsg({action}),\
     if(\
       factory_target == 0,\
@@ -664,6 +664,7 @@ gss(\
 )
 
 :local int k
+k = 0
 unset_loop:
 ; If there's an error, clear the queue. We take advantage of initial value being 0 to
 ; cut down on lines. The first item is (raw) id 110, corresponding to
@@ -681,10 +682,11 @@ gotoif(\
   if(global.double.get({queue_str} . (109 + k)) == 0., skip_unset, unset_loop),\
   contains(gsg({action}), "<") && k < {lua(return #factory.items * 10 + 1)}\
 )
-k = 0
 gss("fhide2", "</line-height></size>")
-; We intentionally skip a frame after calculation to reduce lag
-goto(wait_loop)
+; Update the ui, to show crafting and/or error message.
+; This will immediately dump us into the main crafting loop, since we can only
+; reach this point from the main copy of the script.
+goto(ui)
 
 clear_status:
 ; Remove the UI status so it doesn't clutter the variables when we're outside the

@@ -202,7 +202,7 @@ source_name_raw = sub(\
 )
 
 ; Uncomment this line for runtime production debugging.
-; You will also need to uncomment the line in init that unhides debug.
+; You will also need to uncomment the line in main that unhides debug.
 ;gss("debug", gsg("debug") . "<br>" . {source_name} . {get_source_tier} . "_" . min(ceil({get_dest} / {mult}), count({source_name}, {get_source_tier})) . machine_name)
 
 ; Just try to produce. There is a wrinkle here not present when crafting:
@@ -270,7 +270,7 @@ goto(if(i%10 != 0,\
 crafting_done:
 
 ; Uncomment these lines for runtime item quantity debugging.
-; You will also need to uncomment the line in init that unhides debug.
+; You will also need to uncomment the line in main that unhides debug.
 ;i = 10
 ;debug_loop:
 ;gss("debug", if(i == 10, "", gsg("debug") . if({get_raw(i)} > 0., "<br>" . i . " " . {get_raw(i)}, "")))
@@ -314,6 +314,6 @@ group_complete:
 {set_raw(factory_target, 0.)}
 factory_target = 0
 ; Re-display the UI when crafting is done.
-execute("{script_name(init)}")
+execute("{script_name(main)}")
 
 end:
