@@ -146,10 +146,13 @@
 produce_dust:
 _tier = _tier + 1
 gotoif(nocrush, {get_queue(_tier, ore)} <= 0. || active("crusher"))
-previous_amount = count("ore", _tier)
 produce("ore", _tier, {get_queue(_tier, ore)}, "crusher")
-{subtract_queue(_tier, dust, (previous_amount - count("ore", _tier)) * 2.)}
-{subtract_queue(_tier, ore, previous_amount - count("ore", _tier))}
+; We can blindly subtract the number of items in the machine, because we've
+; guaranteed via the guards that we exit as soon as the machine
+; is active. This means the item in there *must* be the correct one, if the
+; count is > 0.
+{subtract_queue(_tier, dust, 2. * machine.item.count("crusher"))}
+{subtract_queue(_tier, ore, machine.item.count("crusher"))}
 nocrush:
 
 gotoif(notierupdust, _tier >= 10 || {get_queue(_tier, lump)} <= 0. || active("mixer"))
@@ -160,16 +163,14 @@ craft("lump", _tier, min(\
   ),\
   {get_queue(_tier, lump)} - count("lump", _tier)\
 ))
-previous_amount = count("lump", _tier)
-produce("lump", _tier, min(previous_amount, {get_queue(_tier, lump)}), "mixer")
-{subtract_queue(_tier, dust, previous_amount - count("lump", _tier))}
-{subtract_queue(_tier, lump, previous_amount - count("lump", _tier))}
+produce("lump", _tier, min(count("lump", _tier), {get_queue(_tier, lump)}), "mixer")
+{subtract_queue(_tier, dust, machine.item.count("mixer"))}
+{subtract_queue(_tier, lump, machine.item.count("mixer"))}
 notierupdust:
 
 gotoif(noproduceingot, active("oven") | (if(_tier == 10, 0., ({get_queue(_tier, lump)} - count("lump", min(_tier, 9)))) * 4. > 2. * min(0., count("dust", _tier) - ({get_queue(_tier, ingot)})) & count("dust", _tier) < 2. * ({get_queue(_tier, ingot)})))
-previous_amount = count("dust", _tier)
-produce("dust", _tier, min(previous_amount - 1., {get_queue(_tier, ingot)}), "oven")
-{subtract_queue(_tier, ingot, previous_amount - count("dust", _tier))}
+produce("dust", _tier, min(count("dust", _tier) - 1., {get_queue(_tier, ingot)}), "oven")
+{subtract_queue(_tier, ingot, machine.item.count("oven"))}
 noproduceingot:
 
 gotoif(produce_dust, _tier <= 10)
