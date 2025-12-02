@@ -40,8 +40,7 @@ goto(if(\
 ))
 
 {rng_init1}
-{rng_init2}
-{rng_init3(guess)}
+{rng_init2(guess)}
 
 guess:
 {rng_next}
