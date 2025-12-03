@@ -5,6 +5,14 @@ key.t()
 
 :global int predicted_rng
 :global int actual_rng
+:global int correct
+:global int wrong
+
+:local int i
+:local string which
+
+correct = 0
+wrong = 0
 
 {rng_init1}
 {rng_init2(guess)}
@@ -13,3 +21,7 @@ guess:
 {rng_next}
 predicted_rng = {rng_getrange(0, 999999)}
 actual_rng = rnd(0, 999999)
+which = if(predicted_rng == actual_rng, "correct", "wrong")
+gis(which, 1 + gig(which))
+i += 1
+gotoif(guess, i < 10000)

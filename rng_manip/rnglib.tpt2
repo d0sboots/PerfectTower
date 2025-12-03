@@ -1,3 +1,5 @@
+; Version 2.1
+;
 ; This library exists to do RNG manipulation in TPT2. If you don't know what RNG manipulation is,
 ; you can find plenty of info on the web, but also this library is probably not for you.
 
@@ -149,13 +151,13 @@ goto(\
 ; to zero, messing everything up. Instead, we use getdouble to operate on an unsigned
 ; version, and floor the result.
 {lua(function rng_codeCacheSetNext(cache)\
-  cache["next"] = "rng_state = sub(rng_state, 11, 33) . (" ..\
+  cache["next"] = "rng_state = sub(rng_state, 11, 33) . sub(" ..\
   cache.getint(33) .. " %^ d2i(floor(" ..\
   cache.getdouble(33) .. " / 524288.)) %^ " ..\
   cache.getint(0) .. " %^ " ..\
   cache.getint(0) .. " * 2048 %^ d2i(floor(" ..\
   cache.getdouble(0) .. " / 256.)) %^ (" ..\
-  cache.getint(0) .. " * 8) %& 16777215)"\
+  cache.getint(0) .. ' * 8) %& 16777215 . "          ", 0, 11)'\
 ;end\
 )}
 
