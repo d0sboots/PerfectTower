@@ -1,0 +1,234 @@
+:import museum5_macros
+:name {script(Combining)}
+
+; This isn't included in this subdirectory, but comes from the factory/ directory.
+:import worker_storage_lib
+
+:budget_cap max
+
+wakeup()
+open.museum()
+key.{start}()
+key.{down}()
+key.{up}()
+
+; Because of this condition, it is vital that we never blindly execute this script
+; after a frame-break without checking if we've left the museum!
+isopen("museum")
+
+; Despite being called "Combining" this script does not do the the guts of combining!
+; The other script does that; this script handles secondary combining tasks, including
+; the waitframe() of the combine loop. Thus, this is the script that shows up in the
+; task lisk when combining is happening, and that's why it's named this way.
+;
+; In many ways this is the "main" script of the combiner. It handles all impulses, including
+; wakeup/entry into the museum. It hands off to "Waiting" when we are in the "waiting"
+; states (0 and 8), where we spend our downtime. "Waiting" also handles state 2,
+; the initial calculations for beginning the combine.
+;
+; Both this and "Waiting" usually stop the other script. In normal states, either one or
+; the other will be running but not both.
+
+:global string museum_status
+
+; We do some heinous things to make all our global ints have exactly 10 characters
+; in their names. This combined with the macro makes it easy to initialize them in a loop.
+
+ ; 0 for ready, 2 for start_combining (transition state),
+ ; 4 for combining, 6 for stop_combining (transition state),
+ ; 8 for waiting-for-timer
+ ; The states are multiples of 2 to allow for a lookup-table with 2 char data
+ ; without needing to multiply, see below.
+{intvar(state_____)}
+{intvar(budgetTier)}  ; The tier we are trying to get *all* stones to, based on resources
+{intvar(targetTier)}  ; What we are trying to get the current stone to
+{intvar(buyTier___)}  ; What tier of stone we buy from the shop
+{intvar(numUpgTier)}  ; How many +levels we will upgrade, controlled by user
+{intvar(numLoops__)}  ; How many loops Combine has run for, if >0 then we are combining
+
+; When the combiner should next framebreak at
+:global double sleepTime
+; All the tiers of the inventory. Used to check if the combiner is stuck.
+:global string lastInventory
+:local string currInventory
+
+; Our ubiquitous local counter. Always returned to 0 after each loop, so that we
+; don't need a line to reset it ever.
+:local int i
+
+; In *all* circumstances, we want to kill anything existing in "Waiting" (whether it's
+; finished or not), because we want to become the only running script. We may re-execute
+; "Waiting" during this frame, and expect to be killed by it, in turn.
+stop("{script(Waiting)}")
+
+; Construct the jump table for the goto below.
+; Because of the one-pass nature of the editor, we can't make this work with labels
+; directly - they won't fold into the expressions. Instead, we define the targets
+; with macros and have a "debug assert" we enable below that checks that the values
+; are correct.
+#j_sw 25
+#j_cm 16
+#jumptable {j_sw}{j_sw}{j_cm}{j_sw}{j_sw}
+#labels_jump (switch . switch . combine . switch . switch)
+
+; This is the "debug-assert" that we use to check they are the same. It adds a
+; condition to the master error-check statement. This stays compiled out for the
+; production version.
+;#prod_condition [REST]
+#prod_condition if(\
+  "{jumptable}" != {labels_jump},\
+  "<color=#fb3>Internal error: Bad constants {jumptable} != " .{labels_jump} . "</color>",\
+  [REST]\
+)
+
+; Master dispatch goto. This is our second line because our script wears many hats, and
+; we want to decide what we're doing immediately.
+;
+; If we've entered into an error state, don't do any further logic. We switch to "Waiting"
+; to wait until the museum is exited, which will clear the (error) status.
+; If we were executed by our scripts, we are continuing existing logic. We use a jump
+; table to jump directly to the relevant line.
+; Otherwise, we are an impulse and either reset our state completely, or else only update
+; certain variables and continue on. Note that being executed by an external script will
+; also end up in the last bucket, so external scripts will be treated similar to W/S/M
+; which is correct.
+goto(if(\
+  {in_error},\
+  switch,\
+  if(\
+    contains(impulse(), "D0S.Museum"),\
+    s2i(sub("{jumptable}", state_____, 2), 99),\
+    if(\
+      contains("wakeup|open.museum", impulse()),\
+      reset_variables,\
+      set_upg_tier\
+    )\
+  )\
+))
+
+reset_variables:
+; Temporarily define variables here before the hiding block, if you need to debug them
+;budgetTier = 0
+
+; This starts variable hiding.
+{set_elem("fire")}
+
+; Initialize all our int variables here, inside the variable-hiding block.
+init_var_loop:
+global.int.set(\
+  sub("{lua(return intvar_names)}", i, 10),\
+  0\
+)
+i = (i + 10) % {lua(return #intvar_names)}
+gotoif(init_var_loop, i != 0)
+
+sleepTime = 0.
+lastInventory = ""
+
+set_upg_tier:
+; Use worker_storage_lib to find a worker_slot to use for permanent storage.
+#prefix [museum5]
+:local int worker_slot
+{worker_lib_line_1({prefix})}
+{worker_lib_line_2}
+
+; Fetch numUpgTier from the chosen worker. The s2i fallback handles the case
+; where we're allocating new storage, as well. This is limited from 10 through 14;
+; 10 is "instant" (not quite but very fast), while 14 is "very slow". Each additional
+; tier takes 3x as long to run (so a total of 81x between 10 and 14), and every two tiers
+; results in roughly an additional tier of final result (see budgetTier below).
+;
+; 14 is the highest that can be supported practically given the constraint of 30 inventory
+; slots; 10 was chosen for the low end because it's fast enough that smaller isn't needed.
+;
+; This also increases or decreases based on keypress. Nothing should change
+; when we are erroring, or the combiner is running. The index condition finds
+; which up/down keypress was used, returning -1 if not matching. The substring
+; truncates -1 to the start of the string, so we get " 0" for no match and either
+; "01" or "-1" otherwise.
+numUpgTier = max(10, min(14,\
+  s2i(sub(worker.name(worker_slot), {len({prefix})}, 99), 13) +\
+  if(\
+    {in_error} || state_____ == 4,\
+    0,\
+    s2i(sub(\
+      " 01___-1",\
+      index(" key.{up}key.{down}", impulse(), 0),\
+      2\
+    ), 0)\
+  )\
+))
+
+; Construct our status line. This is a complicated conditional, based on all the bits
+; of state. If this contains the color "red", it is an error and the museum will refuse
+; to function further until it is reset (leave and come back, or F4).
+;
+; All actions have been atomic so far, except for the initial stop.
+; Thus, we can directly check our budget to see how much the user has. We want a bare
+; minimum so that combining will be efficient; this also ensures they know about upgrades.
+{set_status(if(\
+  budget() < 2200 - 100,\
+  "<color=#fb3>You need at least 3Kb of RAM.<br>Buy more servers in the HQ.</color>",\
+  if(\
+    worker_slot == 200,\
+    "<color=#fb3>No available workers!</color>",\
+    {prod_condition}\
+  )\
+))}
+
+; Save numUpgTier back. It will always naturally be 2 digits.
+worker.setName(worker_slot - if(worker_slot < 100, 0, 100), "{prefix}" . numUpgTier)
+
+; Advance state if needed by impulse
+; 0->2, 2->2, 4->6, 6->6, 8->0
+state_____ = if(\
+  not({in_error}) && contains(impulse(), "key.{start}"),\
+  s2i(sub("2 2 6 6 0 ", state_____, 2), 0),\
+  state_____\
+)
+
+check_state:
+; The active combining states are handled here. All the other states are handled in
+; "Waiting", so we do a script switch.
+gotoif(switch, state_____ < 4 || state_____ > 6)
+
+combine:
+goto(if(\
+  tier("inventory", 0) >= targetTier,\
+  finish_combine,\
+  if(\
+    now() >= sleepTime,\
+    framebreak,\
+    0\
+  )\
+))
+numLoops__ = 0
+
+finish_combine:
+framebreak:
+currInventory = if(i == 0, "", currInventory) . tier("inventory", i)
+i = (i + 1) % 30
+gotoif(framebreak, i != 0)
+
+{set_status(if(\
+  lastInventory == currInventory,\
+  "<color=#fb3>Combining is stalled.<br>Do you have the quick-combine skill?</color>",\
+  [REST]\
+))}
+
+lastInventory = currInventory
+waitframe()
+; We want to maintain a steady 5FPS, so we pause every 200ms. The timer counts ticks
+; that are .1µS each, so that's 2e6 ticks. By advancing relative to the previous time,
+; we smooth over jitters caused by not sleeping exactly on time.
+; However, in case of severe lag spikes or sustained slowdowns (which can happen if
+; the user is looking at the Power Stones tab), we don't want sleepTime to "back up"
+; and then have a run of very short frames. So, in case of lags we skip forward so
+; that our frame always has at least 90ms of scheduled duration.
+sleepTime = max(sleepTime + 2e6, now() + 9e5)
+; TODO: Check for changes here
+
+switch:
+execute("{script(Waiting)}")
+
+end:

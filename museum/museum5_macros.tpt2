@@ -1,0 +1,91 @@
+; Standardized (package) naming across all the scripts
+#script(name) D0S.Museum v5.0:{name}
+
+; Keybindings. You can edit these here, or edit them in the scripts directly
+; (but it will be much more error-prone).
+#up w
+#down s
+#start m
+
+; Macro-substitution for the museum timer, allows mocking it out easily for
+; testing. The timer counts in seconds, not ticks.
+#timer museum.timer()
+
+; Name of the buy_elem variable, which begins the script-hiding block.
+#buy_elem_name "<size=0>mbe*~"
+#buy_elem global.string.get({buy_elem_name})
+#set_elem(x) global.string.set({buy_elem_name}, {x})
+
+#in_error contains(museum_status, "color=#fb3")
+
+{lua(intvar_names = "")}
+#intvar(name) {lua(\
+  local name = [[{name}]]\
+  if #name ~= 10 then\
+    return "! intvar " .. name .. " not length 10!"\
+  end\
+  intvar_names = intvar_names .. name\
+  return ":global int " .. name\
+)}
+
+; Normally we would take the ceiling of the time remaining, because that's
+; how timers work. (You show 1 second left until the time hits 0.)
+; However, the display timer in the museum uses floor, and we want to match
+; that, so we use floor too.
+; The parameter is a divisor, to make dealing with minutes easier.
+#time_floor(x) floor({timer} / {x})
+
+; Descriptions for each tier. We stick the closing parens on, and allow a variable
+; number of spaces after, since they won't be seen due to a linefeed that follows.
+#tier_desc "(" . 
+
+; Set the status. There's a lot of cases to this:
+; * Error for no workers available.
+;   - We don't have direct visibilty to worker_slot, but Buy will signal the
+;     error by setting budget to negative, which will never happen otherwise.
+; * Error for a bad Turbo install. This is disturbingly frequent.
+; * Show our current budget, with green highlighting to prompt that this
+;   can be adjusted.
+; * Show a brief help line, also with green highlighting to link the keys
+;   to the budget.
+; * If we've pressed {start}, show the Combining message instead. This is
+;   important because certain things key off of it. target_tier = -2 is the
+;   signal for this.
+;
+; We need to set the status several times in the script, but each time it has a different
+; set of error conditions that are being checked. To handle this, we pass a customizable
+; "if" block, with a literal "[REST]" token that we will lua-substitute with the inner
+; part of the status condition.
+#set_status(error_conditions) {lua(\
+  --[[ The innermost part of the status line, which is in common for all of them.\
+       We show how many +tiers we are upgrading, with color highlighting aligned with\
+       our key help. There is a lookup table to describe each of the tier amounts, which\
+       for implementation simplicity has the parens attached. The final part is determined\
+       by the current state.]]\
+  local inner_conditions = ([[ {error_conditions} ]]):gsub("%[REST%]", [[\
+    "museum=<color=#fff>+<color=#2f4>" .\
+    numUpgTier . "</color> " .\
+    sub("(instant)(fast)   (normal) (slow)   (glacial)",\
+      (numUpgTier - 10) * 9,\
+      s2i(sub("_________|96869", numUpgTier, 1), 0)\
+    ) .\
+    "→T" . budgetTier . \
+    "</color><br>" .\
+    "<color=#0df><color=#2f4>{up}</color>/<color=#2f4>{down}</color> changes, <color=#2f4>{start}</color> " .\
+    if(\
+      state_____ < 2,\
+      "begins</color>",\
+      if(\
+        state_____ >= 4,\
+        "stops</color><br><color=#fff>Waiting " .\
+          {time_floor(60.)} . ":" . sub(d2s({time_floor(1.)} %% 60. + 100.), 1, 2) .\
+        "</color>",\
+        "stops</color><br><color=#fff>Running " .\
+          "100%% " .\
+        "</color>"\
+      )\
+    )]])\
+  --[[ The outer part of the condition: If there was an error message, preserve it,\
+       otherwise close the variable-hiding block and pass to the inner conditions. ]]\
+  return [[museum_status = if({in_error}, museum_status, "</size>" . ]] .. inner_conditions .. ")"\
+)}
