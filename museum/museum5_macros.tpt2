@@ -63,13 +63,17 @@
        for implementation simplicity has the parens attached. The final part is determined\
        by the current state.]]\
   local inner_conditions = ([[ {error_conditions} ]]):gsub("%[REST%]", [[\
-    "museum=<color=#fff>+<color=#2f4>" .\
-    numUpgTier . "</color> " .\
-    sub("(instant)(fast)   (normal) (slow)   (glacial)",\
-      (numUpgTier - 10) * 9,\
-      s2i(sub("_________|96869", numUpgTier, 1), 0)\
+    if(\
+      budgetTier == 0,\
+      "museum=<color=#f44>Empty loadout!",\
+      "museum=<color=#fff>+<color=#2f4>" .\
+      numUpgTier . "</color> " .\
+      sub("(instant)(fast)   (normal) (slow)   (glacial)",\
+        (numUpgTier - 10) * 9,\
+        s2i(sub("_________|96869", numUpgTier, 1), 0)\
+      ) .\
+      "→T" . budgetTier\
     ) .\
-    "→T" . budgetTier . \
     "</color><br>" .\
     "<color=#0df><color=#2f4>{up}</color>/<color=#2f4>{down}</color> changes, <color=#2f4>{start}</color> " .\
     if(\

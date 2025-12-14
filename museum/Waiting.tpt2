@@ -93,16 +93,14 @@ budgetTier += 1
 
 budget_inner_loop:
 ; Explanation of specific terms in this equation:
-; The first term is the number of stones we'll be buying, which scales with 3^x.
-; The second term is the cost savings from a pre-existing stone, which also scales
-;   with 3^x, but negatively.
+; The first term is the cost savings from a pre-existing stone, which scales
+;   with 3^x, but negatively. It is multiplied by 3 to avoid a correction factor
+;   of 1 to budgetTier; this is cancelled in the next term.
 ; The last term is an if-chain to get the base cost of the gems.
 ; There is an odd factor of 1/3 that has been redistributed to avoid adding
-; one te budgetTier, instead absorbing it into constants.
+; one to budgetTier, instead absorbing it into constants.
 neededCubes = if(i == 0, 0., neededCubes) +\
-  (3. ^ i2d(min(numUpgTier, budgetTier))) *\
   max(0.0, 3.0 - 3. ^ i2d(tier("loadout", i) - budgetTier)) *\
-  (18. ^ i2d(max(budgetTier - numUpgTier, 0))) *\
   if(\
     contains(element("loadout", i), "universal"),\
     20000. / 3.,\
@@ -118,6 +116,18 @@ neededCubes = if(i == 0, 0., neededCubes) +\
   )
 ; The loadout grid is 15x9 = 135
 i = (i + 1) % 135
+; Multi-condition loop. Because ifs early-out, most of the expensive condtions
+; here aren't evaluated for the common case, which is just doing the next iteration.
+;
+; The first special case is if neededCubes is 0. This happens iff the grid is
+; empty, and we let budget_adjust set the tier to 0 in this case. It prevents us
+; from having to iterate through a lot of levels, reducing FPS.
+;
+; The comparison against neededCubes is multiplied by the number of stones we'll
+; be buying, which scales with 3^x, and the tier of stones we're buying, which
+; scales with 18x. These terms doesn't depend on i, so we can
+; factor them out here and only evaluate them once.
+;
 ; If we successfully reach T50, we can exit without testing the next tier.
 ; Since budget_tier = 49 for that case, we must adjust it up. Otherwise, if
 ; we fail due to budget then it is already set correctly.
@@ -125,18 +135,24 @@ goto(if(\
   i != 0,\
   budget_inner_loop,\
   if(\
-    neededCubes > resource("museum.resources"),\
-    budget_done,\
+    neededCubes <= 0.,\
+    budget_adjust,\
     if(\
-      budgetTier >= 49,\
-      budget_adjust,\
-      budget_outer_loop\
+      (3. ^ i2d(min(numUpgTier, budgetTier))) *\
+        (18. ^ i2d(max(budgetTier - numUpgTier, 0))) * neededCubes >\
+        resource("museum.resources"),\
+      budget_done,\
+      if(\
+        budgetTier >= 49,\
+        budget_adjust,\
+        budget_outer_loop\
+      )\
     )\
   )\
 ))
 
 budget_adjust:
-budgetTier += 1
+budgetTier = if(neededCubes <= 0., 0, budgetTier + 1)
 
 budget_done:
 ; Update the budget every 200ms
