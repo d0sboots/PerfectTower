@@ -21,6 +21,16 @@
 
 :local int i
 
+; Construct the jump table for the goto below.
+; Because of the one-pass nature of the editor, we can't make this work with labels
+; directly - they won't fold into the expressions. Instead, we define the targets
+; with macros and have a "debug assert" that is enabled as part of the museum status.
+#j_ui 02
+#j_se 16
+#j_cm 16
+#jumptable {j_ui}{j_se}{j_cm}{j_ui}{j_ui}
+#labels_jump (0 . ui_loop . setup_combine . start_combine . 0 . ui_loop . 0 . ui_loop)
+
 ; Master dispatch goto. This is our first line because our script wears many hats, and
 ; we want to decide what we're doing immediately. Also, for the combiner to be effecient
 ; we want to execute as little extra cruft as possible (it will run millions of times).
@@ -160,6 +170,11 @@ nextBudget = now() + 2000000.
 
 ui_set:
 {set_status([REST])}
+; From observation, stones spawn in the market in the range
+; [preferredTier - 10, preferredTier] inclusive (11 tiers total), uniformly.
+; We will never use a powerstone *higher* than what is needed to get to budgetTier,
+; so we set the preferredTier accordingly.
+museum.setPreferredTier(max(1, budgetTier - numUpgTier - 10))
 waitframe()
 
 ; We refresh the UI every frame to display the timer as it changes. (When the
@@ -181,6 +196,8 @@ goto(if(\
 close_ui:
 museum_status = "</size>"
 goto(99)
+
+setup_combine:
 
 start_combine:
 ; We kill our parent to avoid copies of it piling up. This takes budget, so we usually don't

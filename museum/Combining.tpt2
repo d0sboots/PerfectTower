@@ -64,22 +64,11 @@ stop("{script(Waiting)}")
 ; Construct the jump table for the goto below.
 ; Because of the one-pass nature of the editor, we can't make this work with labels
 ; directly - they won't fold into the expressions. Instead, we define the targets
-; with macros and have a "debug assert" we enable below that checks that the values
-; are correct.
+; with macros and have a "debug assert" that is enabled as part of the museum status.
 #j_sw 25
 #j_cm 16
 #jumptable {j_sw}{j_sw}{j_cm}{j_sw}{j_sw}
 #labels_jump (switch . switch . combine . switch . switch)
-
-; This is the "debug-assert" that we use to check they are the same. It adds a
-; condition to the master error-check statement. This stays compiled out for the
-; production version.
-;#prod_condition [REST]
-#prod_condition if(\
-  "{jumptable}" != {labels_jump},\
-  "<color=#fb3>Internal error: Bad constants {jumptable} != " .{labels_jump} . "</color>",\
-  [REST]\
-)
 
 ; Master dispatch goto. This is our second line because our script wears many hats, and
 ; we want to decide what we're doing immediately.
@@ -168,11 +157,11 @@ numUpgTier = max(10, min(14,\
 ; minimum so that combining will be efficient; this also ensures they know about upgrades.
 {set_status(if(\
   budget() < 2200 - 100,\
-  "<color=#fb3>You need at least 3Kb of RAM.<br>Buy more servers in the HQ.</color>",\
+  "<color={error}>You need at least 3Kb of RAM.<br>Buy more servers in the HQ.</color>",\
   if(\
     worker_slot == 200,\
-    "<color=#fb3>No available workers!</color>",\
-    {prod_condition}\
+    "<color={error}>No available workers!</color>",\
+    [REST]\
   )\
 ))}
 
@@ -212,7 +201,7 @@ gotoif(framebreak, i != 0)
 
 {set_status(if(\
   lastInventory == currInventory,\
-  "<color=#fb3>Combining is stalled.<br>Do you have the quick-combine skill?</color>",\
+  "<color={error}>Combining is stalled.<br>Do you have the quick-combine skill?</color>",\
   [REST]\
 ))}
 

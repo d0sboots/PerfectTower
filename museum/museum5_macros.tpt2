@@ -1,6 +1,11 @@
 ; Standardized (package) naming across all the scripts
 #script(name) D0S.Museum v5.0:{name}
 
+; Enable for testing assertions, which increase the size of the package.
+; This should be enabled when making modifications, to ensure the jumptable
+; targets are set correctly.
+{lua(museum_assert = true)}
+
 ; Keybindings. You can edit these here, or edit them in the scripts directly
 ; (but it will be much more error-prone).
 #up w
@@ -16,7 +21,8 @@
 #buy_elem global.string.get({buy_elem_name})
 #set_elem(x) global.string.set({buy_elem_name}, {x})
 
-#in_error contains(museum_status, "color=#fb3")
+#error #fb3
+#in_error contains(museum_status, "color={error}")
 
 {lua(intvar_names = "")}
 #intvar(name) {lua(\
@@ -39,30 +45,44 @@
 ; number of spaces after, since they won't be seen due to a linefeed that follows.
 #tier_desc "(" . 
 
-; Set the status. There's a lot of cases to this:
-; * Error for no workers available.
-;   - We don't have direct visibilty to worker_slot, but Buy will signal the
-;     error by setting budget to negative, which will never happen otherwise.
-; * Error for a bad Turbo install. This is disturbingly frequent.
-; * Show our current budget, with green highlighting to prompt that this
+; Set the status. There's a lot of moving parts to this:
+; * We have an optional debug-assert to check jumptable correctness. This depends
+;   on macros [jumptable] and [labels_jump] that have been set up in each of
+;   the scripts.
+; * We take a set of error_conditions as a parameter, which are checked to see
+;   if various conditions have gone awry such as lacking execution budget.
+; * Show our current tier, with green highlighting to prompt that this
 ;   can be adjusted.
 ; * Show a brief help line, also with green highlighting to link the keys
 ;   to the budget.
-; * If we've pressed {start}, show the Combining message instead. This is
-;   important because certain things key off of it. target_tier = -2 is the
-;   signal for this.
+; * If we've pressed {start}, show the Combining message instead.
+; * Show the timer if we are waiting.
 ;
 ; We need to set the status several times in the script, but each time it has a different
 ; set of error conditions that are being checked. To handle this, we pass a customizable
 ; "if" block, with a literal "[REST]" token that we will lua-substitute with the inner
 ; part of the status condition.
 #set_status(error_conditions) {lua(\
+  --[[ The outer part of the condition: If there was an error message, preserve it,\
+       otherwise close the variable-hiding block and pass to the inner conditions.\
+       We also handle debug assertion here. ]]\
+  local parts = {}\
+  parts[1] = [[museum_status = if({in_error}, museum_status, "</size>" . ]]\
+  parts[2] = ")"\
+  local ins_point = 2\
+  if museum_assert then\
+    table.insert(parts, ins_point, [==[if(\
+      "{jumptable}" != {labels_jump},\
+      "<color={error}>Internal error: Bad constants {jumptable} != " . {labels_jump} . "</color>",]==])\
+    ins_point = ins_point + 1\
+    table.insert(parts, ins_point, ")")\
+  end\
   --[[ The innermost part of the status line, which is in common for all of them.\
        We show how many +tiers we are upgrading, with color highlighting aligned with\
        our key help. There is a lookup table to describe each of the tier amounts, which\
        for implementation simplicity has the parens attached. The final part is determined\
        by the current state.]]\
-  local inner_conditions = ([[ {error_conditions} ]]):gsub("%[REST%]", [[\
+  local inner_part = ([==[ {error_conditions} ]==]):gsub("%[REST%]", [[\
     if(\
       budgetTier == 0,\
       "museum=<color=#f44>Empty loadout!",\
@@ -89,7 +109,6 @@
         "</color>"\
       )\
     )]])\
-  --[[ The outer part of the condition: If there was an error message, preserve it,\
-       otherwise close the variable-hiding block and pass to the inner conditions. ]]\
-  return [[museum_status = if({in_error}, museum_status, "</size>" . ]] .. inner_conditions .. ")"\
+  table.insert(parts, ins_point, inner_part)\
+  return table.concat(parts)\
 )}
