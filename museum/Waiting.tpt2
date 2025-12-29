@@ -11,6 +11,7 @@
 :global int numUpgTier
 
 :global string museum_status
+:global string combineSlots
 
 ; Cubes needed to upgrade to budgetTier. Temporary variable, can be made global
 ; for debugging.
@@ -27,7 +28,7 @@
 ; with macros and have a "debug assert" that is enabled as part of the museum status.
 #j_ui 02
 #j_se 16
-#j_cm 16
+#j_cm 30
 #jumptable {j_ui}{j_se}{j_cm}{j_ui}{j_ui}
 #labels_jump (0 . ui_loop . setup_combine . start_combine . 0 . ui_loop . 0 . ui_loop)
 
@@ -41,11 +42,7 @@ goto(if(\
   if(\
     {in_error},\
     ui_loop,\
-    if(\
-      state_____ == 2,\
-      start_combine,\
-      ui_loop\
-    )\
+    s2i(sub("{jumptable}", state_____, 2), 99)\
   )\
 ))
 
@@ -174,7 +171,7 @@ ui_set:
 ; [preferredTier - 10, preferredTier] inclusive (11 tiers total), uniformly.
 ; We will never use a powerstone *higher* than what is needed to get to budgetTier,
 ; so we set the preferredTier accordingly.
-museum.setPreferredTier(max(1, budgetTier - numUpgTier - 10))
+museum.setPreferredTier(max(1, budgetTier - numUpgTier))
 waitframe()
 
 ; We refresh the UI every frame to display the timer as it changes. (When the
@@ -197,7 +194,73 @@ close_ui:
 museum_status = "</size>"
 goto(99)
 
+; Set to global for debugging of these expressions
+#offscope local
+; The first two letters are enough to uniquely identify every element
+#offvar ("offer_" . sub(museum.slotElement(i), 0, 2))
+
 setup_combine:
+; Initialize the offers. Most elements are always available at tier 1 from the
+; market, but universal *must* be bought from offshore.
+; Because these loops are small (10 elements) and the next loops are bigger,
+; we don't store the tier of the market offer but instead the tier that we will
+; be able to combine to *using* this offer; this is +numUpgTier from the first
+; value.
+;
+; We could potentially fold this into the next expression with careful arranging,
+; but that would rely on the automatic 0-initialization of local variables. Since
+; we want to be able to switch to globals for debugging, we spend the extra lines
+; to initialize explicitly.
+{offscope}.int.set(\
+  "offer_" . sub("lielfidanaaiwaeaun", i, 2),\
+  if(i == 16, -99, min(budgetTier, 1 + numUpgTier))\
+)
+i = (i + 2) % 18
+gotoif(setup_combine, i != 0)
+
+offshore_loop:
+; Loop over all the offshore market offers to find the limiting offer to use for
+; each element. We can't exceed budgetTier. If we hit a slot with
+; no offer, we will harmlessly set the variable "offer_", so the rest of the
+; expression does not matter.
+{offscope}.int.set(\
+  {offvar},\
+  max(\
+    {offscope}.int.get({offvar}),\
+    if(museum.slotTier(i) + numUpgTier > budgetTier, -99, museum.slotTier(i) + numUpgTier)\
+  )\
+)
+i = (i + 1) % 10
+gotoif(offshore_loop, i != 0)
+
+; Bucket-sort: We traverse the loadout once, looking for eligible slots, and
+; add them to one of 9 different lists based on element. Then we combine those
+; lists together at the end so that each element is grouped together. Grouping
+; by element lets us reuse gems that remain in the inventory across combines,
+; and precalculating the slots saves us time and effort during the combine, as
+; well as making it easy to compute a (reasonably) accurate completion percentage.
+#slotvar(x) ({x} . sub(element("loadout", i), 0, 2))
+calculate_slots:
+; In the comparison here, we don't need to worry about the case where the tier
+; is -1 because that will also return "" for the element, and thus get appended
+; to the garbage variable "slots_".
+local.string.set({slotvar("slots_")},\
+  local.string.get({slotvar("slots_")}) . if(\
+    tier("loadout", i) >= {offscope}.int.get({slotvar("offer_")}),\
+    "",\
+    sub(i . "   ", 0, 4)\
+  )\
+)
+i = (i + 1) % 135
+gotoif(calculate_slots, i != 0)
+
+combineSlots = ""
+combine_slots:
+combineSlots .= local.string.get("slots_" . sub("lielfidanaaiwaeaun", i, 2))
+i = (i + 2) % 18
+gotoif(combine_slots, i != 0)
+
+goto(99)
 
 start_combine:
 ; We kill our parent to avoid copies of it piling up. This takes budget, so we usually don't

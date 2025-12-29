@@ -51,6 +51,10 @@ isopen("museum")
 ; All the tiers of the inventory. Used to check if the combiner is stuck.
 :global string lastInventory
 :local string currInventory
+; Ordered list of slots in the loadout to combine. Stored as 4-character strings,
+; even though each number is 3 long at most, for debuggability. The slots will be
+; grouped by element, so that remaning gems in the inventory can be reused.
+:global string combineSlots
 
 ; Our ubiquitous local counter. Always returned to 0 after each loop, so that we
 ; don't need a line to reset it ever.
@@ -113,6 +117,7 @@ gotoif(init_var_loop, i != 0)
 
 sleepTime = 0.
 lastInventory = ""
+;combineSlots = ""
 
 set_upg_tier:
 ; Use worker_storage_lib to find a worker_slot to use for permanent storage.
