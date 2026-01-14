@@ -333,7 +333,7 @@ run_recipes:
     local item = factory.items[i];\
     acc[#acc+1] = string.format("%02d %-18s [", i, item.name);\
     for j = 1, item.tier do\
-      if j ~= 1 then acc[#acc+1] = string.format("\n%23s", "") end\
+      if j ~= 1 then acc[#acc+1] = string.format("\r%23s", "") end\
       acc[#acc+1] = "(";\
       local recipe = factory.recipes[i * 10 + j - 1];\
       for k = 1, #recipe do\
@@ -342,7 +342,7 @@ run_recipes:
       end\
       acc[#acc+1] = ")";\
     end\
-    acc[#acc+1] = "]\n";\
+    acc[#acc+1] = "]\r";\
   end\
   return table.concat(acc);\
 )}
@@ -437,7 +437,7 @@ run_recipes:
     for j = 1, #recipe do\
       acc[#acc+1] = string.format(" %3s", recipe[j]);\
     end\
-    acc[#acc+1] = "\n";\
+    acc[#acc+1] = "\r";\
   end\
   return table.concat(acc);\
 )}
