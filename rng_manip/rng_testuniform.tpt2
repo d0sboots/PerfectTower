@@ -14,8 +14,7 @@ key.t()
 correct = 0
 wrong = 0
 
-{rng_init1}
-{rng_init2(guess)}
+{rng_init(guess)}
 
 guess:
 {rng_next}

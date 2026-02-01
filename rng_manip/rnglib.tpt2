@@ -1,4 +1,4 @@
-; Version 2.1
+; Version 2.2
 ;
 ; This library exists to do RNG manipulation in TPT2. If you don't know what RNG manipulation is,
 ; you can find plenty of info on the web, but also this library is probably not for you.
@@ -6,23 +6,21 @@
 ; Stub needed to make the macros not error during the examples
 {lua(function rng_code() end)}
 
-; There are three sets of macros defined in this library. The first is the 2-part rng_init sequence:
-#rng_init1 {lua(return rng_code("init1"))}
-#rng_init2(label) {lua(return rng_code("init2",[[{label}]]))}
-; To use these, place this sequence *immediately* before the event you want to manipulate.
-; {rng_init1}
-; {rng_init2(continue)}
+; There are three sets of macros defined in this library. The first is rng_init:
+#rng_init(label) {lua(return rng_code("init",[[{label}]]))}
+; To use this, place this sequence *immediately* before the event you want to manipulate.
+; {rng_init(continue)}
 ; continue:
 ;
-; The last one takes a label to goto to when it is done. You can define the label on the next
+; rng_init takes a label to goto when it is done. You can define the label on the next
 ; line if you just want it to continue there. You can also use more complicated conditional
 ; expressions if you want.
 ;
 ; It is important that you run this in the same frame as the event you are trying to manipulate,
 ; ideally right before, so that other calls to the rng do not happen in-between.
 ;
-; If you need to re-initialize the state, jump to :rng_reinit. Don't include this block twice,
-; because you will get an error about duplicate labels.
+; If you need to re-initialize the state, jump to :rng_reinit. Don't use this macro twice,
+; because you will get an error about duplicate labels. It expands to 2 lines and a label.
 
 ; To simulate future rolls of the rng, use this macro:
 #rng_next {lua(return rng_code("next"))}
@@ -72,40 +70,37 @@
 ; The structure of the code is broken up into multiple Lua functions, to allow regular
 ; comments to explain them at the top of each. Lua functions are used to construct the code,
 ; instead of regular macros, so that we could define our user-visible macros such as
-; {rng_init1}, {rng_next} etc. at the top without having to give the full implementation;
+; {rng_init()}, {rng_next} etc. at the top without having to give the full implementation;
 ; instead, a stub implementation was given and then the function is re-implemented at the
 ; bottom of the file here. This allows us to use the macros freely in comments, since macros
 ; are always expanded, where otherwise we could not comment on them before they were defined.
 ; As a side benefit, before the full definition takes effect they will expand to nothing,
 ; which is very fast to evaluate.
 
-; This constructs the code for the two rng_init macros.
-; At a high level, {rng_init1} is a local.string.set, and {rng_init2()} is a goto.
+; This constructs the code for the rng_init macro.
+; At a high level, {rng_init()} is a local.string.set and a goto.
 ;
 ; Setting the state is relatively straightforward: A value from rnd() is just converted to
 ; a string and padded. We can easily do this 4 times in one expression.
-{lua(function rng_codeCacheSetInit(cache)\
-  cache.init1 = [[\
-rng_reinit: rng_state =\
+;
+; There is an additional quirk where if the value is exactly 0, it indicates a condition
+; where we have to restart the process. This is because the nature of rnd() is that it adds
+; one to range_max, so there is a hole where both 0 and 2^32-1 map to the same value and
+; we cannot distinguish them. Since this is very rare, we just restart in this case and roll
+; again. This is the purpose of the second line.
+{lua(function rng_codeCacheSetInit(cache)
+  cache.init = [[
+rng_reinit:
+rng_state =\
   sub((rnd(-2147483648, 2147483646) %^ -2147483648) . "          ", 0, 11) .\
   sub((rnd(-2147483648, 2147483646) %^ -2147483648) . "          ", 0, 11) .\
   sub((rnd(-2147483648, 2147483646) %^ -2147483648) . "          ", 0, 11) .\
-  sub((rnd(-2147483648, 2147483646) %^ -2147483648) . "          ", 0, 11)\
-]]\
-\
---[[\
-There is an additional quirk where if the value is exactly 0, it indicates a condition\
-where we have to restart the process. This is because the nature of rnd() is that it adds\
-one to range_max, so there is a hole where both 0 and 2^32-1 map to the same value and\
-we cannot distinguish them. Since this is very rare, we just restart in this case and roll\
-again. This is the purpose of the second line.\
-]]\
-cache.init2 = [[\
+  sub((rnd(-2147483648, 2147483646) %^ -2147483648) . "          ", 0, 11)
 goto(\
   if(contains(rng_state, "0          "), rng_reinit, EXTERNAL_LABEL)\
 )\
-]]\
-;end\
+]]
+end
 )}
 
 ; Construct the {rng_getint} code. This is simply the last number in the state.
@@ -116,15 +111,15 @@ goto(\
 ; {rng_getuniform} has a bit more to it, but also only uses 23 bits from rng_state.
 ; We use the vector type, which is a pair of single-precision numbers, to get accurate
 ; single-precision rounding for the calculation to mirror what Unity does.
-{lua(function rng_codeCacheSetGetInt(cache)\
-  cache.getint = function(pos)\
-    return string.format("s2i(sub(rng_state, %s, 11), 0)", pos)\
-  end\
-  cache.getdouble = function(pos)\
-    return "(i2d(" .. cache.getint(pos) .. " %^ -2147483648) + 2147483648.)"\
-  end\
-  cache.getuniform = "x(vec(i2d(" .. cache.getint(33) .. " %& 8388607), 0.) * vec(1.192093e-7, 0.))"\
-;end\
+{lua(function rng_codeCacheSetGetInt(cache)
+  cache.getint = function(pos)
+    return string.format("s2i(sub(rng_state, %s, 11), 0)", pos)
+  end
+  cache.getdouble = function(pos)
+    return "(i2d(" .. cache.getint(pos) .. " %^ -2147483648) + 2147483648.)"
+  end
+  cache.getuniform = "x(vec(i2d(" .. cache.getint(33) .. " %& 8388607), 0.) * vec(1.192093e-7, 0.))"
+end
 )}
 
 ; Construct {rng_next}.
@@ -150,35 +145,35 @@ goto(\
 ; We can divide by a power of two, but negative values will copy the sign bit and round
 ; to zero, messing everything up. Instead, we use getdouble to operate on an unsigned
 ; version, and floor the result.
-{lua(function rng_codeCacheSetNext(cache)\
-  cache["next"] = "rng_state = sub(rng_state, 11, 33) . sub(" ..\
-  cache.getint(33) .. " %^ d2i(floor(" ..\
-  cache.getdouble(33) .. " / 524288.)) %^ " ..\
-  cache.getint(0) .. " %^ " ..\
-  cache.getint(0) .. " * 2048 %^ d2i(floor(" ..\
-  cache.getdouble(0) .. " / 256.)) %^ (" ..\
-  cache.getint(0) .. ' * 8) %& 16777215 . "          ", 0, 11)'\
-;end\
+{lua(function rng_codeCacheSetNext(cache)
+  cache["next"] = "rng_state = sub(rng_state, 11, 33) . sub(" ..
+  cache.getint(33) .. " %^ d2i(floor(" ..
+  cache.getdouble(33) .. " / 524288.)) %^ " ..
+  cache.getint(0) .. " %^ " ..
+  cache.getint(0) .. " * 2048 %^ d2i(floor(" ..
+  cache.getdouble(0) .. " / 256.)) %^ (" ..
+  cache.getint(0) .. ' * 8) %& 16777215 . "          ", 0, 11)'
+end
 )}
 
-{lua(function rng_getrange(min, max)\
-  local nmin = tonumber(min)\
-  local nmax = tonumber(max)\
-  local range\
-  if nmin and nmax then\
-    range = string.format("%.1f", nmax + 0.0 - nmin + 1)\
-  else\
-    range = string.format([[(i2d(%s) - i2d(%s) + 1.)]], max, min)\
-  end\
-  local modpart = string.format([[%s %% %s]], rng_codecache.getdouble(33), range)\
-  if nmin then\
-    if nmin == 0 then\
-      return "d2i(" .. modpart .. ")"\
-    end\
-    return string.format("d2i(%.1f + %s)", nmin, modpart)\
-  end\
-  return string.format("d2i(i2d(%s) + %s)", min, modpart)\
-;end\
+{lua(function rng_getrange(min, max)
+  local nmin = tonumber(min)
+  local nmax = tonumber(max)
+  local range
+  if nmin and nmax then
+    range = string.format("%.1f", nmax + 0.0 - nmin + 1)
+  else
+    range = string.format([[(i2d(%s) - i2d(%s) + 1.)]], max, min)
+  end
+  local modpart = string.format([[%s %% %s]], rng_codecache.getdouble(33), range)
+  if nmin then
+    if nmin == 0 then
+      return "d2i(" .. modpart .. ")"
+    end
+    return string.format("d2i(%.1f + %s)", nmin, modpart)
+  end
+  return string.format("d2i(i2d(%s) + %s)", min, modpart)
+end
 )}
 
 ; Return the appropriate code (macro body) given the passed in "id". All this does is lookup
@@ -186,23 +181,23 @@ goto(\
 ; helper functions tha exist specifically to set that up.
 ; The one wrinkle is that the 3rd init macro has a parameter, and that is substituted in
 ; to the cached code here.
-{lua(function rng_code(id, label, arg2)\
-  if not rng_codecache then\
-    rng_codecache = {}\
-    rng_codeCacheSetInit(rng_codecache)\
-    rng_codeCacheSetGetInt(rng_codecache)\
-    rng_codeCacheSetNext(rng_codecache)\
-  end\
-  if id == "getrange" then\
-    return rng_getrange(label, arg2)\
-  end\
-  if id == "getint" or id == "getdouble" then\
-    return rng_codecache[id](33)\
-  end\
-  local res = rng_codecache[id]\
-  if label then\
-    return res:gsub("EXTERNAL_LABEL", label)\
-  end\
-  return res\
-;end\
+{lua(function rng_code(id, label, arg2)
+  if not rng_codecache then
+    rng_codecache = {}
+    rng_codeCacheSetInit(rng_codecache)
+    rng_codeCacheSetGetInt(rng_codecache)
+    rng_codeCacheSetNext(rng_codecache)
+  end
+  if id == "getrange" then
+    return rng_getrange(label, arg2)
+  end
+  if id == "getint" or id == "getdouble" then
+    return rng_codecache[id](33)
+  end
+  local res = rng_codecache[id]
+  if label then
+    return res:gsub("EXTERNAL_LABEL", label)
+  end
+  return res
+end
 )}
