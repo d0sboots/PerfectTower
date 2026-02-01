@@ -54,8 +54,7 @@ executesync("TE2.2:start")
 ; Use worker_storage_lib to find a worker_slot to use for permanent storage.
 #prefix [museum]
 :local int worker_slot
-{worker_lib_line_1({prefix})}
-{worker_lib_line_2}
+{worker_storage_lib({prefix})}
 
 ; Fetch the budget from the chosen worker. The s2d fallback handles the case
 ; where we're allocating new storage, as well.

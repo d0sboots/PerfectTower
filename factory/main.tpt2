@@ -33,8 +33,8 @@ ui:
 ; Use worker_storage_lib to find a worker_slot to use for permanent storage.
 ; On subsequent runs, this is a no-op.
 :local int worker_slot
-{worker_lib_line_1([factory])}
-{worker_lib_line_2}
+#worker_prefix [factory]
+{worker_storage_lib({worker_prefix})}
 
 ; Split out the worker data into separate variables. We take advantage of this
 ; time to also perform increment/decrement, since we can easily combine it in

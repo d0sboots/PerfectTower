@@ -123,8 +123,7 @@ set_upg_tier:
 ; Use worker_storage_lib to find a worker_slot to use for permanent storage.
 #prefix [museum5]
 :local int worker_slot
-{worker_lib_line_1({prefix})}
-{worker_lib_line_2}
+{worker_storage_lib({prefix})}
 
 ; Fetch numUpgTier from the chosen worker. The s2i fallback handles the case
 ; where we're allocating new storage, as well. This is limited from 10 through 14;

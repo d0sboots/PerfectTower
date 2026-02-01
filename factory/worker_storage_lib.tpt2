@@ -17,29 +17,23 @@
 ; approriate action.
 ;
 ; A complete example looks like this (replace angle brackets with curlies):
+; The macro expands to 2 lines and a label.
 ;
 ; :local int worker_slot
-; <worker_lib_line_1([TOKEN])>
-; <worker_lib_line_2>
+; <worker_storage_lib([TOKEN])>
 
 ; =================================================================================
 
-#worker_prefix {lua(return worker_lib_prefix)}
-#worker_lacks_prefix sub(worker.name(worker_slot), 0, {len({worker_prefix})}) != "{worker_prefix}"
+#worker_lacks_prefix(prefix) sub(worker.name(worker_slot), 0, {len({prefix})}) != "{prefix}"
 
-; The first macro, which defines the first line and the loop variable that we
-; jump to. We also store the worker_prefix with Lua, so that we don't need to
-; repeat it on the 2nd macro.
+; A multiline macro, which defines the two lines and the loop variable that we jump to.
+#worker_storage_lib(prefix)={
+find_worker_slot_loop:
 ; We don't want to skip slot 0. Doing it like this saves a line.
-#worker_lib_line_1(worker_prefix_arg) {lua(\
-  worker_lib_prefix = "{worker_prefix_arg}"\
-)}\
-find_worker_slot_loop: worker_slot = worker_slot + if({worker_lacks_prefix}, 1, 0)
-
-; The second macro, which iterates until we're done.
-; The test against worker.group() checks for non-existant workers. They would
-; otherwise show as acceptable candidates, and we need to keep iterating to 200
-; in that case.
-#worker_lib_line_2 gotoif(find_worker_slot_loop,\
-  worker_slot < 100 && {worker_lacks_prefix} ||\
+worker_slot = worker_slot + if({worker_lacks_prefix({prefix})}, 1, 0)
+; The test against worker.group() checks for non-existant workers. They would otherwise
+; show as acceptable candidates, and we need to keep iterating to 200 in that case.
+gotoif(find_worker_slot_loop,\
+  worker_slot < 100 && {worker_lacks_prefix({prefix})} ||\
   worker_slot >= 100 && worker_slot < 200 && (worker.group(worker_slot - 100) == -1 || contains(sub(worker.name(worker_slot - 100), 0, 1), "[")))
+}
